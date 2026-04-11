@@ -3,7 +3,7 @@ from typing import Dict, Union, Optional, TYPE_CHECKING
 from typeguard import typechecked
 
 if TYPE_CHECKING:
-    from .Stage import Stage
+    from .stage import Stage
 
 
 class Prim:

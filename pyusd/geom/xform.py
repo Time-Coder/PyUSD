@@ -1,4 +1,4 @@
-from ..Prim import Prim
+from ..prim import Prim
 
 
 class Xform(Prim):

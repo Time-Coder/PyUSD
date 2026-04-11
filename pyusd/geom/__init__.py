@@ -1,2 +1,7 @@
-from .Xform import Xform
-from .Sphere import Sphere
+from .xform import Xform
+from .sphere import Sphere
+
+__all__ = [
+    "Xform",
+    "Sphere"
+]

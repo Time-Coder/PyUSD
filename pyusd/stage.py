@@ -2,7 +2,7 @@ from typing import Dict, Union
 import os
 from typeguard import typechecked
 
-from .Prim import Prim
+from .prim import Prim
 
 
 class Stage:
