@@ -1,6 +1,8 @@
 from __future__ import annotations
-from typing import Dict, Union, Optional, TYPE_CHECKING
+from typing import Dict, Union, Optional, List, TYPE_CHECKING
 from typeguard import typechecked
+
+from .attribute import Attribute
 
 if TYPE_CHECKING:
     from .stage import Stage
@@ -18,6 +20,7 @@ class Prim:
         self._name:str = name
         self._parent:Prim = None
         self._children:Dict[str, Prim] = {}
+        self._prop_names:List[str] = []
 
     @typechecked
     def __getitem__(self, name:str)->Prim:
@@ -156,9 +159,22 @@ class Prim:
     
     def to_str(self, indents:int=0)->str:
         tabs = "    " * indents
-        result = f'{tabs}def {self.__class__.__name__} "{self.name}"\n'
+        prim_type_name = self.__class__.__name__
+        if prim_type_name == "Prim":
+            result = f'{tabs}def "{self.name}"\n'
+        else:
+            result = f'{tabs}def {prim_type_name} "{self.name}"\n'
+
         result += f'{tabs}{{\n'
         
+        for prop_name in self._prop_names:
+            prop = getattr(self, prop_name)
+            if isinstance(prop, Attribute):
+                if prop.value is not None:
+                    result += f'{prop.to_str(indents+1)}\n'
+            elif isinstance(prop, Prim):
+                result += f'{tabs}rel {prop_name} = <{prop.path}>\n'
+
         for child in self._children.values():
             result += child.to_str(indents + 1)
 
