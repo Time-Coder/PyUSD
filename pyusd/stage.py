@@ -16,34 +16,65 @@ class Stage:
         return self._file_name
 
     @typechecked
-    def __getitem__(self, name:str)->Prim:
-        if name not in self._root_prims:
-            prim = Prim(name)
-            prim._set_stage(self)
-            self._root_prims[name] = prim
+    def __getitem__(self, path:str)->Prim:
+        if path.startswith("/"):
+            path_items = path[1:].split("/")
+        else:
+            path_items = path.split("/")
 
-        return self._root_prims[name]
+        root_name = path_items[0]
+        path_items = path_items[1:]
+        root_prim = self._root_prims[root_name]
+        return root_prim._getitem(path_items)
     
     @typechecked
-    def __setitem__(self, name:str, prim:Prim)->None:
-        prim.detach_from_parent()
-        prim.detach_from_stage()
+    def __setitem__(self, path:str, prim:Prim)->None:
+        if path.startswith("/"):
+            path_items = path[1:].split("/")
+        else:
+            path_items = path.split("/")
+
+        root_name = path_items[0]
+        if len(path_items) == 1:
+            prim.detach_from_parent()
+            prim.detach_from_stage()
+            
+            prim._name = root_name
+            prim._set_stage(self)
+            self._root_prims[root_name] = prim
+            return
         
-        prim._name = name
-        prim._set_stage(self)
-        self._root_prims[name] = prim
+        path_items = path_items[1:]
+        if root_name not in self._root_prims:
+            parent_prim = Prim(root_name)
+            parent_prim._set_stage(self)
+            self._root_prims[root_name] = parent_prim
+        parent_prim = self._root_prims[root_name]
+        parent_prim._setitem(path_items, prim)
 
     @typechecked
-    def __delitem__(self, name:str)->None:
-        if name not in self._root_prims:
-            raise KeyError(name)
+    def __delitem__(self, path:str)->None:
+        if path.startswith("/"):
+            path_items = path[1:].split("/")
+        else:
+            path_items = path.split("/")
+
+        root_name = path_items[0]
+        if len(path_items) == 1:
+            if root_name not in self._root_prims:
+                raise KeyError(root_name)
+            
+            prim:Prim = self._root_prims[root_name]
+            prim._set_stage(None)
+            del self._root_prims[root_name]
+            return
         
-        prim:Prim = self._root_prims[name]
-        prim._set_stage(None)
-        del self._root_prims[name]
+        path_items = path_items[1:]
+        parent_prim = self._root_prims[root_name]
+        parent_prim._delitem(path_items)
 
     @typechecked
-    def add_prim(self, prim:Prim)->None:
+    def add_root_prim(self, prim:Prim)->None:
         if prim._parent is None and prim._stage is self:
             return
         
@@ -54,7 +85,7 @@ class Stage:
         prim._set_stage(self)
 
     @typechecked
-    def remove_prim(self, prim:Union[str, Prim])->Prim:
+    def remove_root_prim(self, prim:Union[str, Prim])->Prim:
         if isinstance(prim, str):
             if prim not in self._root_prims:
                 raise KeyError(prim)
@@ -69,18 +100,26 @@ class Stage:
         return prim
     
     @typechecked
-    def def_(self, prim_type:type, name:str)->Prim:
-        prim = prim_type(name)
-        self.add_prim(prim)
+    def def_(self, prim_type:type, path:str)->Prim:
+        prim = prim_type()
+        self[path] = prim
         return prim
     
+    @typechecked
+    def root_prim(self, name:str)->Prim:
+        return self._root_prims[name]
+
     def __repr__(self)->str:
         return f'Stage("{self.file_name}")'
     
     def to_str(self)->str:
         result = "#usda 1.0\n\n"
+
+        prims_str_list = []
         for prim in self._root_prims.values():
-            result += prim.to_str()
+            prims_str_list.append(prim.to_str())
+
+        result += "\n".join(prims_str_list)
 
         return result
     

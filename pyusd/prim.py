@@ -3,6 +3,7 @@ from typing import Dict, Union, Optional, List, TYPE_CHECKING
 from typeguard import typechecked
 
 from .attribute import Attribute
+from .attribute_prefix import AttributePrefix
 
 if TYPE_CHECKING:
     from .stage import Stage
@@ -16,41 +17,84 @@ class Prim:
         if name == "":
             name = self.__generate_name()
 
+        if not name.isidentifier():
+            raise ValueError(f'"{name}" is not a valid name')
+        
         self._stage:Stage = None
         self._name:str = name
         self._parent:Prim = None
         self._children:Dict[str, Prim] = {}
         self._prop_names:List[str] = []
 
-    @typechecked
-    def __getitem__(self, name:str)->Prim:
-        if name not in self._children:
-            prim = Prim(name)
-            prim._set_stage(self._stage)
-            prim._parent = self
-            self._children[name] = prim
+    def _getitem(self, path_items:List[str])->Prim:
+        prim = self
+        for path_item in path_items:            
+            prim = prim._children[path_item]
 
-        return self._children[name]
-    
+        return prim
+
     @typechecked
-    def __setitem__(self, name:str, prim:Prim)->None:
+    def __getitem__(self, path:str)->Prim:
+        if path.startswith("/"):
+            raise ValueError("path must be relative")
+
+        path_items = path.split("/")
+        return self._getitem(path_items)
+    
+    def _setitem(self, path_items:List[str], prim:Prim)->None:
+        name = path_items[-1]
+        if not name.isidentifier():
+            raise ValueError(f'"{name}" is not a valid name')
+        
+        path_items = path_items[:-1]
+        parent_prim = self
+        for path_item in path_items:
+            if path_item not in parent_prim._children:
+                new_prim = Prim(path_item)
+                new_prim._set_stage(self._stage)
+                new_prim._parent = parent_prim
+                parent_prim._children[path_item] = new_prim
+            parent_prim = parent_prim._children[path_item]
+
         prim.detach_from_parent()
         prim.detach_from_stage()
 
-        prim._parent = self
+        prim._parent = parent_prim
         prim._name = name
         prim._set_stage(self._stage)
-        self._children[name] = prim
+        parent_prim._children[name] = prim
 
     @typechecked
-    def __delitem__(self, name:str)->None:
-        if name not in self._children:
-            raise KeyError(name)
+    def __setitem__(self, path:str, prim:Prim)->None:
+        if path.startswith("/"):
+            raise ValueError("path must be relative")
         
-        prim:Prim = self._children[name]
+        path_items = path.split("/")
+        self._setitem(path_items, prim)
+
+    def _delitem(self, path_items:List[str])->None:
+        name = path_items[-1]
+        path_items = path_items[:-1]
+        parent_prim = self
+        for path_item in path_items:            
+            parent_prim = parent_prim._children[path_item]
+        
+        prim:Prim = parent_prim._children[name]
         prim._parent = None
         prim._set_stage(None)
-        del self._children[name]
+        del parent_prim._children[name]
+
+    @typechecked
+    def __delitem__(self, path:str)->None:
+        if path.startswith("/"):
+            raise ValueError("path must be relative")
+        
+        path_items = path.split("/")
+        self._delitem(path_items)
+
+    @typechecked
+    def child(self, name:str)->Prim:
+        return self._children[name]
 
     @typechecked
     def add_child(self, prim:Prim)->None:
@@ -65,9 +109,9 @@ class Prim:
         prim._set_stage(self._stage)
 
     @typechecked
-    def def_(self, prim_type:type, name:str)->Prim:
-        prim = prim_type(name)
-        self.add_child(prim)
+    def def_(self, prim_type:type, path:str)->Prim:
+        prim = prim_type()
+        self[path] = prim
         return prim
 
     @typechecked
@@ -96,16 +140,46 @@ class Prim:
         if self._stage is None or self._parent is not None:
             return
         
-        self._stage.remove_prim(self)
+        self._stage.remove_root_prim(self)
 
     @property
     def name(self)->str:
         return self._name
     
+    @property
+    def type_name(self)->str:
+        return self.__class__.__name__
+
     @name.setter
     @typechecked
     def name(self, name:str)->None:
+        if self._name == name:
+            return
+        
+        if not name.isidentifier():
+            raise ValueError(f'"{name}" is not a valid name')
+
+        old_parent = self._parent
+        old_stage = self._stage
+        if old_parent is None and old_stage is None:
+            self._name = name          
+            return
+        
+        if old_parent is not None:
+            if name in old_parent._children:
+                raise ValueError(f'Prim with name "{name}" already exists in parent\'s children')
+        elif old_stage is not None:
+            if name in old_stage._root_prims:
+                raise ValueError(f'Prim with name "{name}" already exists in stage\'s root prims')
+
+        self.detach_from_parent()
+        self.detach_from_stage()
         self._name = name
+
+        if old_parent is not None:
+            old_parent.add_child(self)
+        elif old_stage is not None:
+            old_stage.add_prim(self)
 
     @property
     def parent(self)->Prim:
@@ -167,16 +241,22 @@ class Prim:
 
         result += f'{tabs}{{\n'
         
+        props_str_list = []
         for prop_name in self._prop_names:
             prop = getattr(self, prop_name)
             if isinstance(prop, Attribute):
                 if prop.value is not None:
-                    result += f'{prop.to_str(indents+1)}\n'
+                    props_str_list.append(prop.to_str(indents+1))
             elif isinstance(prop, Prim):
-                result += f'{tabs}rel {prop_name} = <{prop.path}>\n'
+                props_str_list.append(f'{tabs}rel {prop_name} = <{prop.path}>')
+            elif isinstance(prop, AttributePrefix):
+                props_str_list.append(prop.to_str(indents+1))
+        result += "\n".join(props_str_list) + "\n"
 
+        children_str_list = []
         for child in self._children.values():
-            result += child.to_str(indents + 1)
+            children_str_list.append(child.to_str(indents + 1))
+        result += "\n".join(children_str_list)
 
         result += f'{tabs}}}\n'
         return result
