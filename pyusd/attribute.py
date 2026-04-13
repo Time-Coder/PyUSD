@@ -1,7 +1,36 @@
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
+
+from .gf import double2, double3, double4, float2, float3, float4, int2, int3, int4, matrix2d, matrix3d, matrix4d
 
 
 class Attribute:
+
+    __type_map = {
+        "bool": bool,
+        "double": float,
+        "float": float,
+        "half": float,
+        "int": int,
+        "int64": int,
+        "string": str,
+        "token": str,
+        "timecode": float,
+        "uchar": int,
+        "uint": int,
+        "uint64": int,
+        "double2": double2,
+        "double3": double3,
+        "double4": double4,
+        "float2": float2,
+        "float3": float3,
+        "float4": float4,
+        "int2": int2,
+        "int3": int3,
+        "int4": int4,
+        "matrix2d": matrix2d,
+        "matrix3d": matrix3d,
+        "matrix4d": matrix4d
+    }
 
     def __init__(self, type_name:str, name:str)->None:
         self._type_name:str = type_name
