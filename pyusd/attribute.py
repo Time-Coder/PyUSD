@@ -92,8 +92,7 @@ class Attribute:
         "_uniform",
         "_children",
         "value",
-        "uniform",
-
+        "uniform"
     ]
 
     def __init__(self, type_name:str, name:str, extentable:bool=False)->None:
@@ -128,7 +127,16 @@ class Attribute:
     
     @value.setter
     def value(self, value:Any)->None:
+        if value is self:
+            return
+
         self._value = self._convert_from(value)
+
+    def get(self)->Any:
+        return self.value
+
+    def set(self, value:Any)->None:
+        self.value = value
 
     @property
     def uniform(self)->bool:
@@ -171,6 +179,9 @@ class Attribute:
         return "\n".join(result_list)
 
     def _convert_from(self, value:Any)->Any:
+        if isinstance(value, Attribute):
+            value = value.value
+
         if value is NoOpinion or value is None:
             return value
 
@@ -218,7 +229,7 @@ class Attribute:
     
     def __iadd__(self, other:Any)->Any:
         self.value += self._other_value(other)
-        return self.value
+        return self
 
     def __sub__(self, other:Any)->Any:
         return self.value - self._other_value(other)
@@ -228,7 +239,7 @@ class Attribute:
     
     def __isub__(self, other:Any)->Any:
         self.value -= self._other_value(other)
-        return self.value
+        return self
 
     def __mul__(self, other:Any)->Any:
         return self.value * self._other_value(other)
@@ -238,7 +249,7 @@ class Attribute:
     
     def __imul__(self, other:Any)->Any:
         self.value *= self._other_value(other)
-        return self.value
+        return self
 
     def __truediv__(self, other:Any)->Any:
         return self.value / self._other_value(other)
@@ -248,7 +259,7 @@ class Attribute:
     
     def __itruediv__(self, other:Any)->Any:
         self.value /= self._other_value(other)
-        return self.value
+        return self
 
     def __floordiv__(self, other:Any)->Any:
         return self.value // self._other_value(other)
@@ -258,7 +269,7 @@ class Attribute:
     
     def __ifloordiv__(self, other:Any)->Any:
         self.value //= self._other_value(other)
-        return self.value
+        return self
 
     def __mod__(self, other:Any)->Any:
         return self.value % self._other_value(other)
@@ -268,7 +279,7 @@ class Attribute:
     
     def __imod__(self, other:Any)->Any:
         self.value %= self._other_value(other)
-        return self.value
+        return self
 
     def __pow__(self, other:Any)->Any:
         return self.value ** self._other_value(other)
@@ -278,7 +289,7 @@ class Attribute:
     
     def __ipow__(self, other:Any)->Any:
         self.value **= self._other_value(other)
-        return self.value
+        return self
 
     def __eq__(self, other:Any)->bool:        
         return (self.value == self._other_value(other))

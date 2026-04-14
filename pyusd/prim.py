@@ -75,7 +75,7 @@ class Prim:
         name = path_items[-1]
         path_items = path_items[:-1]
         parent_prim = self
-        for path_item in path_items:            
+        for path_item in path_items:
             parent_prim = parent_prim._children[path_item]
         
         prim:Prim = parent_prim._children[name]
@@ -90,6 +90,15 @@ class Prim:
         
         path_items = path.split("/")
         self._delitem(path_items)
+
+    @typechecked
+    def prop(self, name:str)->Union[Attribute, Prim]:
+        prop_items = name.split(":")
+        target = self
+        for prop_item in prop_items:
+            target = getattr(target, prop_item)
+
+        return target
 
     @typechecked
     def child(self, name:str)->Prim:
@@ -178,7 +187,7 @@ class Prim:
         if old_parent is not None:
             old_parent.add_child(self)
         elif old_stage is not None:
-            old_stage.add_prim(self)
+            old_stage.add_root_prim(self)
 
     @property
     def parent(self)->Prim:
