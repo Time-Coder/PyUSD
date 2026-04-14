@@ -21,13 +21,13 @@ from .double2 import double2
 from .double3 import double3
 from .double4 import double4
 
-from .matrix2f import matrix2f, matrix2f
-from .matrix3f import matrix3f, matrix3f
-from .matrix4f import matrix4f, matrix4f
+from .matrix2f import matrix2f
+from .matrix3f import matrix3f
+from .matrix4f import matrix4f
 
-from .matrix2d import matrix2d, matrix2d
-from .matrix3d import matrix3d, matrix3d
-from .matrix4d import matrix4d, matrix4d
+from .matrix2d import matrix2d
+from .matrix3d import matrix3d
+from .matrix4d import matrix4d
 
 from .quatf import quatf
 from .quatd import quatd

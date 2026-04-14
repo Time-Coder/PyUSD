@@ -24,16 +24,16 @@ class genType(ABC):
         float, ctypes.c_float, ctypes.c_double
     ]
     __uint_index:int = __type_order.index(ctypes.c_uint)
-    __gen_type_map:Dict[Tuple[type,int], type] = {}
-    __dtype_prefix_map:Dict[type, str] = {
-        ctypes.c_bool: 'b',
-        ctypes.c_int: 'i',
-        ctypes.c_uint: 'u',
-        ctypes.c_float: '',
-        ctypes.c_double: 'd',
-        bool: 'b',
-        int: 'i',
-        float: ''
+    __gen_type_map:Dict[Tuple[MathForm, type, int], type] = {}
+    __dtype_name_map:Dict[type, str] = {
+        ctypes.c_bool: 'bool',
+        ctypes.c_int: 'int',
+        ctypes.c_uint: 'uint',
+        ctypes.c_float: 'float',
+        ctypes.c_double: 'double',
+        bool: 'bool',
+        int: 'int',
+        float: 'float'
     }
     __dtype_python_type_map:Dict[type, type] = {
         ctypes.c_bool: bool,
@@ -109,17 +109,19 @@ class genType(ABC):
     @staticmethod
     def gen_type(math_form:MathForm, dtype:type, shape:Tuple[int])->type:
         key:Tuple[MathForm, type, int] = (math_form, dtype, shape)
+        dtype_name:str = genType.__dtype_name_map[dtype]
+        suffix:str = dtype_name[0]
         if key not in genType.__gen_type_map:
             if math.prod(shape) == 1 or math_form == MathForm.Scalar:
                 genType.__gen_type_map[key] = genType.__dtype_python_type_map[dtype]
             elif math_form == MathForm.Vec:
-                result_name:str = f"{genType.__dtype_prefix_map[dtype]}vec{shape[0]}"
+                result_name:str = f"{dtype_name}{shape[0]}"
                 genType.__gen_type_map[key] = from_import("." + result_name, result_name)
             elif math_form == MathForm.Mat:
-                result_name:str = f"{genType.__dtype_prefix_map[dtype]}mat{shape[0]}x{shape[1]}"
+                result_name:str = f"matrix{shape[0]}{suffix}"
                 genType.__gen_type_map[key] = from_import("." + result_name, result_name)
             elif math_form == MathForm.Quat:
-                result_name:str = f"{genType.__dtype_prefix_map[dtype]}quatf"
+                result_name:str = f"quat{suffix}"
                 genType.__gen_type_map[key] = from_import("." + result_name, result_name)
 
         return genType.__gen_type_map[key]
