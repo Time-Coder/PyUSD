@@ -3,7 +3,6 @@ from typing import Dict, Union, Optional, List, TYPE_CHECKING
 from typeguard import typechecked
 
 from .attribute import Attribute
-from .attribute_prefix import AttributePrefix
 
 if TYPE_CHECKING:
     from .stage import Stage
@@ -228,7 +227,7 @@ class Prim:
         Prim.__name_indices[cls] += 1
         return cls.__name__ + str(index)
     
-    def __repr__(self)->str:
+    def __str__(self)->str:
         return self.__class__.__name__ + "(<" + self.path + ">)"
     
     def to_str(self, indents:int=0)->str:
@@ -245,18 +244,21 @@ class Prim:
         for prop_name in self._prop_names:
             prop = getattr(self, prop_name)
             if isinstance(prop, Attribute):
-                if prop.value is not None:
-                    props_str_list.append(prop.to_str(indents+1))
+                prop_str = prop.to_str(indents+1)
+                if prop_str:
+                    props_str_list.append(prop_str)
             elif isinstance(prop, Prim):
                 props_str_list.append(f'{tabs}rel {prop_name} = <{prop.path}>')
-            elif isinstance(prop, AttributePrefix):
-                props_str_list.append(prop.to_str(indents+1))
-        result += "\n".join(props_str_list) + "\n"
+
+        if props_str_list:
+            result += "\n".join(props_str_list) + "\n"
 
         children_str_list = []
         for child in self._children.values():
             children_str_list.append(child.to_str(indents + 1))
-        result += "\n".join(children_str_list)
+
+        if children_str_list:
+            result += "\n".join(children_str_list)
 
         result += f'{tabs}}}\n'
         return result

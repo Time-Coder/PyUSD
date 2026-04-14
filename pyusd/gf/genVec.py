@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Set, List, Dict, Union, Any, Optional, Tuple, TYPE_CHECKING
+from typing import Set, List, Dict, Union, Any, Optional, Tuple, TYPE_CHECKING, TypeAlias
 from .helper import generate_getter_swizzles, generate_setter_swizzles, is_number
-from .genType import genType, MathForm
+from .genType import genType, MathForm, Number
 from abc import abstractmethod
 
 if TYPE_CHECKING:
@@ -205,3 +205,5 @@ class genVec(genType):
     
     def __contains__(self, value:Any)->bool:
         return (value in self._data)
+
+VecType: TypeAlias = Union[genVec, Tuple[Number, ...]]

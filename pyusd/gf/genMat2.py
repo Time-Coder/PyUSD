@@ -1,5 +1,6 @@
-from typing import Tuple
+from typing import Tuple, Union, TypeAlias
 from .genMat import genMat
+from .genVec2 import Vec2Type
 
 
 class genMat2(genMat):
@@ -8,4 +9,4 @@ class genMat2(genMat):
     def shape(self)->Tuple[int]:
         return (2, 2)
     
-genMat2 = genMat2
+Mat2Type: TypeAlias = Union[genMat2, Tuple[Vec2Type, Vec2Type]]

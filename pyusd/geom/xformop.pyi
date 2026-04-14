@@ -1,0 +1,49 @@
+from ..attribute import Attribute
+from ..gf import Vec3Type, Mat4Type
+
+
+class XformOp(Attribute):
+
+    def __init__(self)->None: ...
+
+    @property
+    def translate(self)->Attribute: ...
+
+    @translate.setter
+    def translate(self, value:Vec3Type)->None: ...
+
+    @property
+    def rotateXYZ(self)->Attribute: ...
+
+    @rotateXYZ.setter
+    def rotateXYZ(self, value:Vec3Type)->None: ...
+
+    @property
+    def rotateX(self)->Attribute: ...
+
+    @rotateX.setter
+    def rotateX(self, value:float)->None: ...
+
+    @property
+    def rotateY(self)->Attribute: ...
+
+    @rotateY.setter
+    def rotateY(self, value:float)->None: ...
+
+    @property
+    def rotateZ(self)->Attribute: ...
+
+    @rotateZ.setter
+    def rotateZ(self, value:float)->None: ...
+
+    @property
+    def scale(self)->Attribute: ...
+
+    @scale.setter
+    def scale(self, value:Vec3Type)->None: ...
+
+    @property
+    def transform(self)->Attribute: ...
+
+    @transform.setter
+    def transform(self, value:Mat4Type)->None: ...

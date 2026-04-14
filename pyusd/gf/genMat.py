@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import Tuple, Union, Any
-from .genVec import genVec
+from typing import Tuple, Union, Any, TypeAlias
+from .genVec import genVec, VecType
 from .genType import genType, MathForm
 from .helper import is_number
 
@@ -171,3 +171,5 @@ class genMat(genType):
             return self
             
         return genType._iop(self, operator, other)
+
+MatType: TypeAlias = Union[genMat, Tuple[VecType, ...]]

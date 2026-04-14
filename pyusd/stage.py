@@ -109,7 +109,7 @@ class Stage:
     def root_prim(self, name:str)->Prim:
         return self._root_prims[name]
 
-    def __repr__(self)->str:
+    def __str__(self)->str:
         return f'Stage("{self.file_name}")'
     
     def to_str(self)->str:

@@ -1,13 +1,13 @@
-from .genType import MathForm, genType
-from .genVec import genVec
-from .genVec2 import genVec2
-from .genVec3 import genVec3
-from .genVec4 import genVec4
-from .genMat import genMat
-from .genMat2 import genMat2
-from .genMat3 import genMat3
-from .genMat4 import genMat4
-from .genQuat import genQuat
+from .genType import MathForm, genType, Number
+from .genVec import genVec, VecType
+from .genVec2 import genVec2, Vec2Type
+from .genVec3 import genVec3, Vec3Type
+from .genVec4 import genVec4, Vec4Type
+from .genMat import genMat, MatType
+from .genMat2 import genMat2, Mat2Type
+from .genMat3 import genMat3, Mat3Type
+from .genMat4 import genMat4, Mat4Type
+from .genQuat import genQuat, QuatType
 
 from .int2 import int2
 from .int3 import int3
@@ -43,3 +43,43 @@ from .funcs import (
     matrixCompMult, outerProduct, lessThan, lessThanEqual,
     greaterThan, greaterThanEqual, equal, notEqual, any, all, not_, sizeof, value_ptr
 )
+
+__all__ = [
+    "MathForm",
+    "genType", "Number",
+    "genVec", "VecType",
+    "genVec2", "Vec2Type",
+    "genVec3", "Vec3Type",
+    "genVec4", "Vec4Type",
+    "genMat", "MatType",
+    "genMat2", "Mat2Type",
+    "genMat3", "Mat3Type",
+    "genMat4", "Mat4Type",
+    "genQuat", "QuatType",
+    "int2",
+    "int3",
+    "int4",
+    "float2",
+    "float3",
+    "float4",
+    "double2",
+    "double3",
+    "double4",
+    "matrix2f",
+    "matrix3f",
+    "matrix4f",
+    "matrix2d",
+    "matrix3d",
+    "matrix4d",
+    "quatf",
+    "quatd",
+    "abs", "sign", "floor", "ceil", "trunc", "round", "roundEven", "fract", "mod",
+    "min", "max", "clamp", "mix", "step", "smoothstep", "sqrt", "inversesqrt",
+    "pow", "exp", "exp2", "exp10", "log", "log2", "log10",
+    "sin", "cos", "tan", "asin", "acos", "atan",
+    "sinh", "cosh", "tanh", "asinh", "acosh", "atanh",
+    "length", "normalize", "distance", "dot", "cross", "faceforward", "reflect", "refract",
+    "transpose", "determinant", "inverse", "trace", "conjugate",
+    "matrixCompMult", "outerProduct", "lessThan", "lessThanEqual",
+    "greaterThan", "greaterThanEqual", "equal", "notEqual", "any", "all", "not_", "sizeof", "value_ptr"
+]

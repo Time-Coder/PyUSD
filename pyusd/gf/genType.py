@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List, Dict, Tuple, Union, Any, Optional, Callable
+from typing import List, Dict, Tuple, Union, Any, Optional, Callable, TypeAlias
 import ctypes
 from .helper import from_import, is_number
 import math
@@ -69,8 +69,12 @@ class genType(ABC):
     def __deepcopy__(self, memo)->genType:
         return self.__class__(*self._data)
 
-    def __repr__(self)->str:
+    def __str__(self)->str:
         return f"{self.__class__.__name__}({', '.join([str(value) for value in self])})"
+
+    @property
+    def usd_str(self)->str:
+        return f"({', '.join([value.usd_str if isinstance(value, genType) else str(value) for value in self])})"
 
     @property
     def on_changed(self)->Optional[Callable[[], None]]:
@@ -363,3 +367,6 @@ class genType(ABC):
     
     def __rle__(self, other:Union[float, bool, int, genType])->genType:
         return self._compare_rop("<=", other)
+
+
+Number:TypeAlias = Union[float, int]

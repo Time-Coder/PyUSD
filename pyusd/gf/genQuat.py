@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from .genType import genType, MathForm
+from .genType import genType, MathForm, Number
 from .genVec import genVec
 from .genVec3 import genVec3
 from .helper import is_number
 
-from typing import Tuple, Any, Union
+from typing import Tuple, Any, Union, TypeAlias
 import math
 
 
@@ -183,3 +183,5 @@ class genQuat(genType):
             raise TypeError(f"unsupported operand type(s) for {operator}=: '{self.__class__.__name__}' and '{other.__class__.__name__}'")
 
         return genType._iop(self, operator, other)
+
+QuatType: TypeAlias = Union[genQuat, Tuple[Number, Number, Number, Number]]
