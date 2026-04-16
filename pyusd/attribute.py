@@ -1,124 +1,84 @@
 from __future__ import annotations
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from collections.abc import Iterable
 from typeguard import typechecked
 
-from .gf import double2, double3, double4, float2, float3, float4, int2, int3, int4, matrix2d, matrix3d, matrix4d, quatf, quatd, genType
+from .property import Property
+from .gf import double2, double3, double4, float2, float3, float4, int2, int3, int4, matrix2d, matrix3d, matrix4d, quatf, quatd
+from .dtypes import double, half, int64, string, token, timecode, uchar, uint, uint64, namespace
+from .utils import usd_type_str, usd_value_str
 
 
-class NoOpinonType:
-    
-    def __str__(self)->str:
-        return "NoOpinion"
-
-NoOpinion = NoOpinonType()
-
-class Attribute:
-
-    __type_map = {
-        "bool": bool,
-        "double": float,
-        "float": float,
-        "half": float,
-        "int": int,
-        "int64": int,
-        "string": str,
-        "token": str,
-        "timecode": float,
-        "uchar": int,
-        "uint": int,
-        "uint64": int,
-        "double2": double2,
-        "double3": double3,
-        "double4": double4,
-        "float2": float2,
-        "float3": float3,
-        "float4": float4,
-        "int2": int2,
-        "int3": int3,
-        "int4": int4,
-        "matrix2d": matrix2d,
-        "matrix3d": matrix3d,
-        "matrix4d": matrix4d,
-        "quatf": quatf,
-        "quatd": quatd
-    }
+class Attribute(Property):
 
     __scalar_types = [
-        "bool",
-        "double",
-        "float",
-        "half",
-        "int",
-        "int64",
-        "string",
-        "token",
-        "timecode",
-        "uchar",
-        "uint",
-        "uint64"
+        bool,
+        double,
+        float,
+        half,
+        int,
+        int64,
+        string,
+        token,
+        timecode,
+        uchar,
+        uint,
+        uint64
     ]
 
     __vector_types = [
-        "double2",
-        "double3",
-        "double4",
-        "float2",
-        "float3",
-        "float4",
-        "int2",
-        "int3",
-        "int4"
+        double2,
+        double3,
+        double4,
+        float2,
+        float3,
+        float4,
+        int2,
+        int3,
+        int4
     ]
 
     __matrix_types = [
-        "matrix2d",
-        "matrix3d",
-        "matrix4d"
+        matrix2d,
+        matrix3d,
+        matrix4d
     ]
 
     __quat_types = [
-        "quatf",
-        "quatd"
+        quatf,
+        quatd
     ]
 
-    __basic_attrs = [
-        "_target_type",
-        "_type_name",
-        "_name",
+    __basic_types = [
+        *__scalar_types,
+        *__vector_types,
+        *__matrix_types,
+        *__quat_types
+    ]
+
+    _basic_attrs = Property._basic_attrs | {
+        "_type",
         "_time_samples",
         "_value",
-        "_extentable",
         "_uniform",
         "_children",
         "value",
-        "uniform"
-    ]
+        "uniform",
+        "_custom",
+    }
 
-    def __init__(self, type_name:str, name:str, extentable:bool=False)->None:
-        if type_name in Attribute.__type_map:
-            self._target_type:Optional[type] = Attribute.__type_map[type_name]
-        else:
-            self._target_type:Optional[type] = None
+    @typechecked
+    def __init__(self, value_type:type, name:str, is_leaf:bool=True, uniform:bool=False, custom:bool=False)->None:
+        Property.__init__(self, name, is_leaf)
 
-        self._type_name:str = type_name
-        self._name:str = name
+        self._type:type = value_type
         self._time_samples:Dict[float, Any] = {}
-        self._value:Any = NoOpinion
-        self._extentable:bool = extentable
-        self._uniform:bool = False
-        self._children:Dict[str, Attribute] = {}
-
-    @property
-    def type_name(self)->str:
-        return self._type_name
+        self._value:Any = None
+        self._uniform:bool = uniform
+        self._custom:bool = custom
     
     @property
-    def name(self)->str:
-        return self._name
-    
-    @property
-    def time_samples(self)->Dict[float, Any]:
+    def timeSamples(self)->Dict[float, Any]:
         return self._time_samples
     
     @property
@@ -131,6 +91,11 @@ class Attribute:
             return
 
         self._value = self._convert_from(value)
+        self._value_state = Attribute.ValueState.Authored
+
+    def clear(self)->None:
+        self._value = None
+        self._value_state = Attribute.ValueState.Cleared
 
     def get(self)->Any:
         return self.value
@@ -148,58 +113,79 @@ class Attribute:
         self._uniform = flag
 
     @property
+    def custom(self)->bool:
+        return self._custom
+
+    @property
     def is_namespace(self)->bool:
-        return (self._type_name == "namespace")
+        return (self._type == namespace)
+    
+    @property
+    def type(self)->type:
+        return self._type
 
     @property
-    def is_extentable(self)->bool:
-        return self._extentable
+    def type_name(self)->str:
+        return usd_type_str(self._type)
 
-    @property
-    def usd_str(self)->str:
-        if isinstance(self.value, genType):
-            return self.value.usd_str
-        else:
-            return str(self.value)
+    @typechecked
+    def value_str(self, indent:int=0)->str:
+        return usd_value_str(self.value, indent)
 
     def to_str(self, indents:int=0)->str:
         result_list = []
-        if self._value is not NoOpinion:
+        if self._value_state != Property.ValueState.Fallback:
             tabs = "    " * indents
+            prefix = ""
+            if self._custom:
+                prefix += "custom "
             if self._uniform:
-                result_list.append(f"{tabs}uniform {self._type_name} {self._name} = {self.usd_str}")
-            else:
-                result_list.append(f"{tabs}{self._type_name} {self._name} = {self.usd_str}")
+                prefix += "uniform "
+
+            line = f"{tabs}{prefix}{self.type_name} {self._name}"
+            if self._value_state != Property.ValueState.NotAuthored:
+                line += f" = {self.value_str(indents)}"
+
+            metadata_str = self._metadata.to_str(indents)
+            if metadata_str:
+                line += (" " + metadata_str)
+
+            result_list.append(line)
+
+            if self._time_samples:
+                line = f"{tabs}{prefix}{self.type_name} {self._name}.timeSamples = " + usd_value_str(self._time_samples, indents)
+                result_list.append(line)
 
         for child in self._children.values():
             child_str = child.to_str(indents)
             if child_str:
                 result_list.append(child_str)
 
-        return "\n".join(result_list)
+        result = "\n".join(result_list)
+        return result
 
     def _convert_from(self, value:Any)->Any:
         if isinstance(value, Attribute):
             value = value.value
 
-        if value is NoOpinion or value is None:
+        if value is None:
             return value
 
         current_type = type(value)
-        if current_type == self._target_type:
+        if current_type == self._type:
             return value
 
-        if self._type_name in Attribute.__scalar_types:
-            return self._target_type(value)
-        elif self._type_name in Attribute.__vector_types or self._type_name in Attribute.__quat_types:
+        if self._type in Attribute.__scalar_types:
+            return self._type(value)
+        elif self._type in Attribute.__vector_types or self._type in Attribute.__quat_types:
             if isinstance(value, Iterable):
-                return self._target_type(*value)
+                return self._type(*value)
             else:
-                return self._target_type(value)
-        elif self._type_name in Attribute.__matrix_types:
+                return self._type(value)
+        elif self._type in Attribute.__matrix_types:
             if isinstance(value, Iterable):
                 args = []
-                subvec_type = self._target_type.subvec_type()
+                subvec_type = self._type.subvec_type()
                 for sub_value in value:
                     if isinstance(sub_value, subvec_type):
                         args.append(sub_value)
@@ -207,9 +193,11 @@ class Attribute:
                         args.append(subvec_type(*sub_value))
                     else:
                         args.append(subvec_type(sub_value))
-                return self._target_type(*args)
+                return self._type(*args)
             else:
-                return self._target_type(value)
+                return self._type(value)
+        else:
+            raise TypeError(f"canot convert {type(value)} to {self._type}")
 
     @staticmethod
     def _other_value(other:Any)->Any:
@@ -220,6 +208,9 @@ class Attribute:
 
     def __str__(self)->str:
         return str(self.value)
+    
+    def __repr__(self)->str:
+        return repr(self.value)
 
     def __add__(self, other:Any)->Any:
         return self.value + self._other_value(other)
@@ -327,17 +318,4 @@ class Attribute:
     def __rle__(self, other:Any)->bool:
         return (self._other_value(other) <= self.value)
 
-    def __getattr__(self, name:str)->Attribute:
-        return self._children[name]
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        if name in Attribute.__basic_attrs:
-            super().__setattr__(name, value)
-        else:
-            if name not in self._children:
-                if not self._extentable:
-                    raise AttributeError(f"{self._name} is not extentable")
-
-                self._children[name] = Attribute(self._type_name, self._name + ":" + name)
-
-            self._children[name].value = value
+    

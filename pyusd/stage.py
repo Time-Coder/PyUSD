@@ -3,6 +3,7 @@ import os
 from typeguard import typechecked
 
 from .prim import Prim
+from .metadata import Metadata
 
 
 class Stage:
@@ -10,10 +11,15 @@ class Stage:
     def __init__(self, file_name:str="")->None:
         self._file_name:str = file_name
         self._root_prims:Dict[str, Prim] = {}
+        self._metadata:Metadata = Metadata()
 
     @property
     def file_name(self)->str:
         return self._file_name
+    
+    @property
+    def metadata(self)->Metadata:
+        return self._metadata
 
     @typechecked
     def __getitem__(self, path:str)->Prim:
@@ -114,6 +120,10 @@ class Stage:
     
     def to_str(self)->str:
         result = "#usda 1.0\n\n"
+
+        metadata_str = self._metadata.to_str()
+        if metadata_str:
+            result += metadata_str + "\n\n"
 
         prims_str_list = []
         for prim in self._root_prims.values():

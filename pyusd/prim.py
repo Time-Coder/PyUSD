@@ -1,8 +1,9 @@
 from __future__ import annotations
-from typing import Dict, Union, Optional, List, TYPE_CHECKING
+from typing import Dict, Union, Optional, List, Any, TYPE_CHECKING
 from typeguard import typechecked
 
-from .attribute import Attribute
+from .property import Property
+from .metadata import Metadata
 
 if TYPE_CHECKING:
     from .stage import Stage
@@ -11,6 +12,16 @@ if TYPE_CHECKING:
 class Prim:
 
     __name_indices:Dict[type, int] = {}
+
+    _basic_attrs = {
+        "_name",
+        "name",
+        "_stage",
+        "_metadata",
+        "_children",
+        "_parent",
+        "_props"
+    }
     
     def __init__(self, name:str="")->None:
         if name == "":
@@ -23,7 +34,8 @@ class Prim:
         self._name:str = name
         self._parent:Prim = None
         self._children:Dict[str, Prim] = {}
-        self._prop_names:List[str] = []
+        self._props:Dict[str, Property] = {}
+        self._metadata:Metadata = Metadata()
 
     def _getitem(self, path_items:List[str])->Prim:
         prim = self
@@ -92,7 +104,7 @@ class Prim:
         self._delitem(path_items)
 
     @typechecked
-    def prop(self, name:str)->Union[Attribute, Prim]:
+    def prop(self, name:str)->Property:
         prop_items = name.split(":")
         target = self
         for prop_item in prop_items:
@@ -149,6 +161,10 @@ class Prim:
             return
         
         self._stage.remove_root_prim(self)
+
+    @property
+    def metadata(self)->Metadata:
+        return self._metadata
 
     @property
     def name(self)->str:
@@ -243,21 +259,21 @@ class Prim:
         tabs = "    " * indents
         prim_type_name = self.__class__.__name__
         if prim_type_name == "Prim":
-            result = f'{tabs}def "{self.name}"\n'
+            result = f'{tabs}def "{self.name}"'
         else:
-            result = f'{tabs}def {prim_type_name} "{self.name}"\n'
+            result = f'{tabs}def {prim_type_name} "{self.name}"'
 
-        result += f'{tabs}{{\n'
+        metadata_str = self._metadata.to_str(indents)
+        if metadata_str:
+            result += (" " + metadata_str)
+
+        result += f'\n{tabs}{{\n'
         
         props_str_list = []
-        for prop_name in self._prop_names:
-            prop = getattr(self, prop_name)
-            if isinstance(prop, Attribute):
-                prop_str = prop.to_str(indents+1)
-                if prop_str:
-                    props_str_list.append(prop_str)
-            elif isinstance(prop, Prim):
-                props_str_list.append(f'{tabs}rel {prop_name} = <{prop.path}>')
+        for prop in self._props.values():
+            prop_str = prop.to_str(indents+1)
+            if prop_str:
+                props_str_list.append(prop_str)
 
         if props_str_list:
             result += "\n".join(props_str_list) + "\n"
@@ -272,3 +288,42 @@ class Prim:
         result += f'{tabs}}}\n'
         return result
     
+    def __getattr__(self, name:str)->Property:
+        if name not in self._props:
+            self._props[name] = Property(name, is_leaf=False)
+
+        return self._props[name]
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name in self._basic_attrs:
+            super().__setattr__(name, value)
+            return
+        
+        from .attribute import Attribute
+        from .relationship import Relationship
+
+        if name in self._props:
+            prop = self._props[name]
+            if isinstance(prop, Attribute) and isinstance(value, Prim):
+                if not prop._custom:
+                    raise TypeError(f"cannot assign Prim to Attribute")
+                
+                del self._props[name]
+
+            if isinstance(prop, Relationship) and not isinstance(value, Prim):
+                if not prop._custom:
+                    raise TypeError(f"cannot assign none Prim object to Relationship")
+                
+                del self._props[name]
+
+        if name not in self._props:
+            if not isinstance(value, Prim):
+                self._props[name] = Attribute(type(value), self._name + ":" + name, uniform=False, custom=True, is_leaf=False)
+            else:
+                self._props[name] = Relationship(self._name + ":" + name, is_leaf=False)
+
+        prop = self._props[name]
+        if isinstance(prop, Attribute):
+            prop.value = value
+        elif isinstance(prop, Relationship):
+            prop.rel(value)
