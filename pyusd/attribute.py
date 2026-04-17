@@ -1,63 +1,20 @@
 from __future__ import annotations
-from typing import Dict, Any
+from typing import Dict, Any, TypeVar, Generic, Optional
 from collections.abc import Iterable
 from typeguard import typechecked
 
 from .property import Property
-from .gf import double2, double3, double4, float2, float3, float4, int2, int3, int4, matrix2d, matrix3d, matrix4d, quatf, quatd
-from .dtypes import double, half, int64, string, token, timecode, uchar, uint, uint64, namespace
-from .utils import usd_type_str, usd_value_str
+from .dtypes import namespace
+from .utils import usd_type_str, usd_value_str, analyze_list_type
 
 
-class Attribute(Property):
-
-    __scalar_types = [
-        bool,
-        double,
-        float,
-        half,
-        int,
-        int64,
-        string,
-        token,
-        timecode,
-        uchar,
-        uint,
-        uint64
-    ]
-
-    __vector_types = [
-        double2,
-        double3,
-        double4,
-        float2,
-        float3,
-        float4,
-        int2,
-        int3,
-        int4
-    ]
-
-    __matrix_types = [
-        matrix2d,
-        matrix3d,
-        matrix4d
-    ]
-
-    __quat_types = [
-        quatf,
-        quatd
-    ]
-
-    __basic_types = [
-        *__scalar_types,
-        *__vector_types,
-        *__matrix_types,
-        *__quat_types
-    ]
+T = TypeVar('T')
+class Attribute(Property, Generic[T]):
 
     _basic_attrs = Property._basic_attrs | {
         "_type",
+        "_dtype",
+        "_array_dim",
         "_time_samples",
         "_value",
         "_uniform",
@@ -70,23 +27,26 @@ class Attribute(Property):
     @typechecked
     def __init__(self, value_type:type, name:str, is_leaf:bool=True, uniform:bool=False, custom:bool=False)->None:
         Property.__init__(self, name, is_leaf)
+        dtype, array_dim = analyze_list_type(value_type)
 
         self._type:type = value_type
-        self._time_samples:Dict[float, Any] = {}
-        self._value:Any = None
+        self._dtype:type = dtype
+        self._array_dim:int = array_dim
+        self._time_samples:Dict[float, T] = {}
+        self._value:Optional[T] = None
         self._uniform:bool = uniform
         self._custom:bool = custom
     
     @property
-    def timeSamples(self)->Dict[float, Any]:
+    def timeSamples(self)->Dict[float, T]:
         return self._time_samples
     
     @property
-    def value(self)->Any:
+    def value(self)->T:
         return self._value
     
     @value.setter
-    def value(self, value:Any)->None:
+    def value(self, value:T)->None:
         if value is self:
             return
 
@@ -97,7 +57,7 @@ class Attribute(Property):
         self._value = None
         self._value_state = Attribute.ValueState.Cleared
 
-    def get(self)->Any:
+    def get(self)->T:
         return self.value
 
     def set(self, value:Any)->None:
@@ -126,7 +86,7 @@ class Attribute(Property):
 
     @property
     def type_name(self)->str:
-        return usd_type_str(self._type)
+        return usd_type_str(self._dtype, self._array_dim)
 
     @typechecked
     def value_str(self, indent:int=0)->str:
@@ -164,7 +124,7 @@ class Attribute(Property):
         result = "\n".join(result_list)
         return result
 
-    def _convert_from(self, value:Any)->Any:
+    def _convert_from(self, value:Any)->T:
         if isinstance(value, Attribute):
             value = value.value
 
@@ -200,7 +160,7 @@ class Attribute(Property):
             raise TypeError(f"canot convert {type(value)} to {self._type}")
 
     @staticmethod
-    def _other_value(other:Any)->Any:
+    def _other_value(other:Any)->T:
         if isinstance(other, Attribute):
             return other.value
 

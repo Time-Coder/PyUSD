@@ -51,6 +51,10 @@ class Property:
         self._targets = [prim]
         self._value_state = Property.ValueState.Authored
 
+    def create(self, attr_type:type)->None:
+        from .attribute import Attribute
+        self.__class__ = Attribute
+
     def __getattr__(self, name:str)->Property:
         if name not in self._children:
             self._children[name] = Property(name, is_leaf=False)

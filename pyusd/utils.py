@@ -1,5 +1,56 @@
-from typing import Any
+from typing import List, Any, Set, get_origin, get_args
 
+import numpy as np
+
+from .gf import double2, double3, double4, float2, float3, float4, int2, int3, int4, matrix2d, matrix3d, matrix4d, quatf, quatd
+from .dtypes import double, half, int64, string, token, timecode, uchar, uint, uint64, namespace
+
+
+usd_scalar_types = [
+    bool,
+    double,
+    float,
+    half,
+    int,
+    int64,
+    string,
+    token,
+    timecode,
+    uchar,
+    uint,
+    uint64
+]
+
+usd_vector_types = [
+    double2,
+    double3,
+    double4,
+    float2,
+    float3,
+    float4,
+    int2,
+    int3,
+    int4
+]
+
+usd_matrix_types = [
+    matrix2d,
+    matrix3d,
+    matrix4d
+]
+
+usd_quat_types = [
+    quatf,
+    quatd
+]
+
+usd_basic_types = [
+    namespace,
+    *usd_scalar_types,
+    *usd_vector_types,
+    *usd_matrix_types,
+    *usd_quat_types
+]
 
 def usd_value_str(value:Any, indents:int=0, degenerate_list:bool=False):
     from .gf import genType
@@ -54,12 +105,115 @@ def usd_value_str(value:Any, indents:int=0, degenerate_list:bool=False):
     else:
         return str(value)
     
-def usd_type_str(type_:type)->str:
-    if type_ == str:
-        return "string"
-    elif type_ == float:
-        return "double"
-    elif type_ == dict:
-        return "dictionary"
+def usd_type_str(type_:type, array_dim:int=0)->str:
+    dtype, dim = analyze_list_type(type_)
+    array_dim += dim
+
+    result = ""
+    if dtype == str:
+        result = "string"
+    elif dtype == float:
+        result = "double"
+    elif dtype == dict:
+        result = "dictionary"
     else:
-        return type_.__name__
+        result = dtype.__name__
+
+    result += "[]" * array_dim
+    return result
+
+def analyze_list_type(type_hint):
+    depth = 0
+    current_type = type_hint
+    
+    while True:
+        origin = get_origin(current_type)
+        
+        if origin is list:
+            args = get_args(current_type)
+            if not args:
+                raise TypeError(f"no element type int List")
+            
+            inner_type = args[0]
+            inner_origin = get_origin(inner_type)
+            
+            if inner_origin is not None and inner_origin is not list:
+                if inner_origin in [dict, tuple, set, frozenset]:
+                    raise TypeError(f"not support type {inner_origin}")
+            
+            depth += 1
+            current_type = inner_type
+        else:
+            break
+
+    return current_type, depth
+
+def infer_type_hint(data: Any, allowed_types: Set[type]) -> str:
+    TYPE_PRIORITY = { int: 1, float: 2 }
+    NUMPY_TO_PY_TYPE_MAP = {
+        np.int8: int, np.int16: int, np.int32: int, np.int64: int,
+        np.uint8: int, np.uint16: int, np.uint32: int, np.uint64: int,
+        np.float16: float, np.float32: float, np.float64: float,
+        np.bool_: bool
+    }
+
+    def _analyze(item: Any) -> tuple:
+        if isinstance(item, list):
+            if not item: return 1, Any, None
+            
+            children_results = [_analyze(elem) for elem in item]
+            first_depth, first_type, _ = children_results[0]
+            
+            if any(depth != first_depth for depth, _, _ in children_results):
+                raise TypeError("list dimension not match")
+            
+            child_types = [t for _, t, _ in children_results]
+            unique_types = set(child_types)
+            
+            final_type = None
+            if len(unique_types) == 1:
+                final_type = child_types[0]
+            elif unique_types.issubset({int, float}):
+                final_type = max(unique_types, key=lambda t: TYPE_PRIORITY.get(t, 0))
+            else:
+                raise TypeError(f"list type not compatible: {unique_types}")
+                
+            return first_depth + 1, final_type, None
+
+        elif isinstance(item, np.ndarray):
+            py_equiv_type = NUMPY_TO_PY_TYPE_MAP.get(item.dtype.type, item.dtype.type)
+            
+            if py_equiv_type not in allowed_types:
+                 pass 
+            
+            return 0, py_equiv_type, item.dtype
+
+        else:
+            val_type = type(item)
+            if val_type not in allowed_types:
+                raise TypeError(f"not supported type: {val_type}")
+            return 0, val_type, None
+
+    if isinstance(data, np.ndarray):
+        if data.dtype == np.object_:
+             pass 
+        
+        depth, elem_type, dtype_obj = _analyze(data)
+        target_type = NUMPY_TO_PY_TYPE_MAP.get(data.dtype.type, data.dtype.type)
+        
+        ndim = data.ndim
+        result = target_type
+        for _ in range(ndim):
+            result = List[result]
+        return result
+
+    depth, element_type, _ = _analyze(data)
+    
+    if depth == 0:
+        return element_type
+    
+    current_type = element_type
+    for _ in range(depth):
+        current_type = List[current_type]
+        
+    return current_type
