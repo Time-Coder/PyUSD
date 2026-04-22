@@ -7,4 +7,4 @@ class Sphere(Prim):
     
     def __init__(self, name:str="")->None:
         Prim.__init__(self, name)
-        self._props["radius"] = Attribute(double, "radius")
+        self._props["radius"] = Attribute(self, None, double, "radius")

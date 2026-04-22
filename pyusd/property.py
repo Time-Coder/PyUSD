@@ -1,9 +1,10 @@
 from __future__ import annotations
-from typing import Dict, Any, TYPE_CHECKING
+from typing import Dict, Any, TYPE_CHECKING, Optional
 from typeguard import typechecked
 from enum import Enum
 
 from .metadata import Metadata
+from .utils import infer_type
 
 if TYPE_CHECKING:
     from .prim import Prim
@@ -18,6 +19,8 @@ class Property:
         Cleared = 3
 
     _basic_attrs = {
+        "_parent_prim",
+        "_parent_property",
         "_name",
         "_metadata",
         "_children",
@@ -26,12 +29,22 @@ class Property:
     }
 
     @typechecked
-    def __init__(self, name:str, is_leaf:bool=True)->None:
+    def __init__(self, parent_prim:Optional[Prim], parent_property:Optional[Property], name:str, is_leaf:bool=True)->None:
+        self._parent_prim:Prim = parent_prim
+        self._parent_property:Property = parent_property
         self._name:str = name
         self._metadata:Metadata = Metadata()
         self._children:Dict[str, Property] = {}
         self._is_leaf:bool = is_leaf
         self._value_state:Property.ValueState = Property.ValueState.Fallback
+
+    @property
+    def parent_prim(self)->Prim:
+        return self._parent_prim
+    
+    @property
+    def parent_property(self)->Property:
+        return self._parent_property
 
     @property
     def is_leaf(self)->bool:
@@ -57,7 +70,7 @@ class Property:
 
     def __getattr__(self, name:str)->Property:
         if name not in self._children:
-            self._children[name] = Property(name, is_leaf=False)
+            self._children[name] = Property(self._parent_prim, self._parent_property, name, is_leaf=False)
 
         return self._children[name]
 
@@ -93,14 +106,16 @@ class Property:
                     target_type = self._type
                     target_uniform = self._uniform
                     target_custom = self._custom
+                    target_fix_type = self._fix_type
                 else:
-                    target_type = type(value)
+                    target_type = infer_type(value)
                     target_uniform = False
                     target_custom = True
+                    target_fix_type = False
 
-                self._children[name] = Attribute(target_type, self._name + ":" + name, uniform=target_uniform, custom=target_custom, is_leaf=(not target_custom))
+                self._children[name] = Attribute(self._parent_prim, self, target_type, self._name + ":" + name, uniform=target_uniform, custom=target_custom, is_leaf=(not target_custom), fix_type=target_fix_type)
             else:
-                self._children[name] = Relationship(self._name + ":" + name, is_leaf=False)
+                self._children[name] = Relationship(self._parent_prim, self, self._name + ":" + name, is_leaf=False)
 
         prop = self._children[name]
         if isinstance(prop, Attribute):

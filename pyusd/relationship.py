@@ -1,5 +1,6 @@
 from __future__ import annotations
-from typing import List, TYPE_CHECKING
+from typing import List, TYPE_CHECKING, Optional
+from typeguard import typechecked
 
 from .property import Property
 from .utils import usd_value_str
@@ -14,8 +15,9 @@ class Relationship(Property):
         "_targets"
     }
 
-    def __init__(self, name:str, is_leaf:bool=True)->None:
-        Property.__init__(self, name, is_leaf)
+    @typechecked
+    def __init__(self, parent_prim:Optional[Prim], parent_property:Optional[Property], name:str, is_leaf:bool=True)->None:
+        Property.__init__(self, parent_prim, parent_property, name, is_leaf)
         self._targets:List[Prim] = []
 
     @property

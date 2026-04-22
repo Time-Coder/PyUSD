@@ -1,11 +1,14 @@
 from __future__ import annotations
-from typing import Dict, Any, TypeVar, Generic, Optional
+from typing import Dict, Any, TypeVar, Generic, Optional, TYPE_CHECKING
 from collections.abc import Iterable
 from typeguard import typechecked
 
 from .property import Property
 from .dtypes import namespace
-from .utils import usd_type_str, usd_value_str, analyze_list_type
+from .utils import nest_map, usd_type_str, usd_value_str, analyze_list_type, infer_type, usd_scalar_types, usd_vector_types, usd_quat_types, usd_matrix_types
+
+if TYPE_CHECKING:
+    from .prim import Prim
 
 
 T = TypeVar('T')
@@ -22,11 +25,12 @@ class Attribute(Property, Generic[T]):
         "value",
         "uniform",
         "_custom",
+        "_fix_type"
     }
 
     @typechecked
-    def __init__(self, value_type:type, name:str, is_leaf:bool=True, uniform:bool=False, custom:bool=False)->None:
-        Property.__init__(self, name, is_leaf)
+    def __init__(self, parent_prim:Optional[Prim], parent_property:Optional[Property], value_type:type, name:str, is_leaf:bool=True, uniform:bool=False, custom:bool=False, fix_type:bool=True)->None:
+        Property.__init__(self, parent_prim, parent_property, name, is_leaf)
         dtype, array_dim = analyze_list_type(value_type)
 
         self._type:type = value_type
@@ -36,6 +40,7 @@ class Attribute(Property, Generic[T]):
         self._value:Optional[T] = None
         self._uniform:bool = uniform
         self._custom:bool = custom
+        self._fix_type:bool = fix_type
     
     @property
     def timeSamples(self)->Dict[float, T]:
@@ -131,33 +136,49 @@ class Attribute(Property, Generic[T]):
         if value is None:
             return value
 
-        current_type = type(value)
+        current_type = infer_type(value)
         if current_type == self._type:
             return value
+        
+        current_dtype, current_array_dim = analyze_list_type(current_type)
+        if self._array_dim == current_array_dim and self._dtype == current_dtype:
+            return value
+        
+        if not self._fix_type:
+            self._dtype, self._array_dim = current_dtype, current_array_dim
+            self._type = current_type
+            return value
 
-        if self._type in Attribute.__scalar_types:
-            return self._type(value)
-        elif self._type in Attribute.__vector_types or self._type in Attribute.__quat_types:
-            if isinstance(value, Iterable):
-                return self._type(*value)
+        if self._array_dim != current_array_dim:
+            raise TypeError(f"cannot convert {current_type} to {self._type}")
+
+        if self._dtype in usd_scalar_types:
+            return nest_map(value, self._dtype)
+        elif self._dtype in usd_vector_types or self._dtype in usd_quat_types:
+            if issubclass(current_dtype, Iterable):
+                return nest_map(value, lambda x: self._dtype(*x))
             else:
-                return self._type(value)
-        elif self._type in Attribute.__matrix_types:
-            if isinstance(value, Iterable):
-                args = []
-                subvec_type = self._type.subvec_type()
-                for sub_value in value:
-                    if isinstance(sub_value, subvec_type):
-                        args.append(sub_value)
-                    elif isinstance(sub_value, Iterable):
-                        args.append(subvec_type(*sub_value))
-                    else:
-                        args.append(subvec_type(sub_value))
-                return self._type(*args)
+                return nest_map(value, self._dtype)
+        elif self._dtype in usd_matrix_types:
+            if issubclass(current_dtype, Iterable):
+                
+                def func(x):
+                    args = []
+                    subvec_type = self._dtype.subvec_type()
+                    for sub_value in x:
+                        if isinstance(sub_value, subvec_type):
+                            args.append(sub_value)
+                        elif isinstance(sub_value, Iterable):
+                            args.append(subvec_type(*sub_value))
+                        else:
+                            args.append(subvec_type(sub_value))
+                    return self._type(*args)
+                
+                return nest_map(value, func)
             else:
-                return self._type(value)
+                return nest_map(value, self._dtype)
         else:
-            raise TypeError(f"canot convert {type(value)} to {self._type}")
+            raise TypeError(f"canot convert {current_type} to {self._type}")
 
     @staticmethod
     def _other_value(other:Any)->T:
@@ -278,4 +299,14 @@ class Attribute(Property, Generic[T]):
     def __rle__(self, other:Any)->bool:
         return (self._other_value(other) <= self.value)
 
+    def __contains__(self, item:Any)->bool:
+        return (self._other_value(item) in self.value)
     
+    def __len__(self)->int:
+        return len(self.value)
+    
+    def __getitem__(self, name:Any)->Any:
+        return self.value[self._other_value(name)]
+    
+    def __setitem__(self, name:Any, value:Any)->None:
+        self.value[self._other_value(name)] = self._other_value(value)

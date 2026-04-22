@@ -3,7 +3,6 @@ from .prim import Prim
 from .property import Property
 from .attribute import Attribute
 from .relationship import Relationship
-from .utils import infer_type_hint
 
 __all__ = [
     "Stage",

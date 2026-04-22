@@ -4,6 +4,7 @@ from typeguard import typechecked
 
 from .property import Property
 from .metadata import Metadata
+from .utils import infer_type
 
 if TYPE_CHECKING:
     from .stage import Stage
@@ -226,6 +227,7 @@ class Prim:
         while True:
             if prim._parent is not None:
                 path = prim._parent.name + "/" + path
+                prim = prim._parent
             else:
                 if self.stage is not None:
                     path = "/" + path
@@ -282,6 +284,9 @@ class Prim:
         for child in self._children.values():
             children_str_list.append(child.to_str(indents + 1))
 
+        if props_str_list and children_str_list:
+            result += "\n"
+
         if children_str_list:
             result += "\n".join(children_str_list)
 
@@ -290,7 +295,7 @@ class Prim:
     
     def __getattr__(self, name:str)->Property:
         if name not in self._props:
-            self._props[name] = Property(name, is_leaf=False)
+            self._props[name] = Property(self, None, name, is_leaf=False)
 
         return self._props[name]
 
@@ -318,9 +323,9 @@ class Prim:
 
         if name not in self._props:
             if not isinstance(value, Prim):
-                self._props[name] = Attribute(type(value), self._name + ":" + name, uniform=False, custom=True, is_leaf=False)
+                self._props[name] = Attribute(self, None, infer_type(value), self._name + ":" + name, uniform=False, custom=True, is_leaf=False, fix_type=False)
             else:
-                self._props[name] = Relationship(self._name + ":" + name, is_leaf=False)
+                self._props[name] = Relationship(self, None, self._name + ":" + name, is_leaf=False)
 
         prop = self._props[name]
         if isinstance(prop, Attribute):

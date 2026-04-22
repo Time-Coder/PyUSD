@@ -1,4 +1,4 @@
-from typing import List, Any, Set, get_origin, get_args
+from typing import List, Any, Set, get_origin, get_args, Optional
 
 import numpy as np
 
@@ -6,7 +6,7 @@ from .gf import double2, double3, double4, float2, float3, float4, int2, int3, i
 from .dtypes import double, half, int64, string, token, timecode, uchar, uint, uint64, namespace
 
 
-usd_scalar_types = [
+usd_scalar_types = {
     bool,
     double,
     float,
@@ -19,9 +19,9 @@ usd_scalar_types = [
     uchar,
     uint,
     uint64
-]
+}
 
-usd_vector_types = [
+usd_vector_types = {
     double2,
     double3,
     double4,
@@ -31,26 +31,26 @@ usd_vector_types = [
     int2,
     int3,
     int4
-]
+}
 
-usd_matrix_types = [
+usd_matrix_types = {
     matrix2d,
     matrix3d,
     matrix4d
-]
+}
 
-usd_quat_types = [
+usd_quat_types = {
     quatf,
     quatd
-]
+}
 
-usd_basic_types = [
+usd_dtypes = {
     namespace,
     *usd_scalar_types,
     *usd_vector_types,
     *usd_matrix_types,
     *usd_quat_types
-]
+}
 
 def usd_value_str(value:Any, indents:int=0, degenerate_list:bool=False):
     from .gf import genType
@@ -68,7 +68,7 @@ def usd_value_str(value:Any, indents:int=0, degenerate_list:bool=False):
         for key, subvalue in value.items():
             subvalue_str = usd_value_str(subvalue, indents + 1)
             if isinstance(key, str):
-                result += f"{next_tabs}{usd_type_str(type(subvalue))} {key} = {subvalue_str}\n"
+                result += f"{next_tabs}{usd_type_str(infer_type(subvalue))} {key} = {subvalue_str}\n"
             else:
                 result += f"{next_tabs}{key}: {subvalue_str}\n"
         result += f"{tabs}}}"
@@ -148,7 +148,10 @@ def analyze_list_type(type_hint):
 
     return current_type, depth
 
-def infer_type_hint(data: Any, allowed_types: Set[type]) -> str:
+def infer_type(data: Any, allowed_types: Optional[Set[type]] = None) -> str:
+    if allowed_types is None:
+        allowed_types = usd_dtypes | { tuple }
+
     TYPE_PRIORITY = { int: 1, float: 2 }
     NUMPY_TO_PY_TYPE_MAP = {
         np.int8: int, np.int16: int, np.int32: int, np.int64: int,
@@ -217,3 +220,16 @@ def infer_type_hint(data: Any, allowed_types: Set[type]) -> str:
         current_type = List[current_type]
         
     return current_type
+
+def nest_map(nested_list, func):
+    if not isinstance(nested_list, list):
+        return func(nested_list)
+
+    result = []
+    for item in nested_list:
+        if isinstance(item, list):
+            result.append(nest_map(item, func))
+        else:
+            result.append(func(item))
+
+    return result
