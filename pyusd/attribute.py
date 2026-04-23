@@ -1,14 +1,11 @@
 from __future__ import annotations
-from typing import Dict, Any, TypeVar, Generic, Optional, TYPE_CHECKING
+from typing import Dict, Any, TypeVar, Generic, Optional
 from collections.abc import Iterable
 from typeguard import typechecked
 
 from .property import Property
 from .dtypes import namespace
 from .utils import nest_map, usd_type_str, usd_value_str, analyze_list_type, infer_type, usd_scalar_types, usd_vector_types, usd_quat_types, usd_matrix_types
-
-if TYPE_CHECKING:
-    from .prim import Prim
 
 
 T = TypeVar('T')
@@ -29,19 +26,21 @@ class Attribute(Property, Generic[T]):
     }
 
     @typechecked
-    def __init__(self, parent_prim:Optional[Prim], parent_property:Optional[Property], value_type:type, name:str, is_leaf:bool=True, uniform:bool=False, custom:bool=False, fix_type:bool=True)->None:
-        Property.__init__(self, parent_prim, parent_property, name, is_leaf)
+    def __init__(self, value_type:type, name:str, value:Optional[T]=None, is_leaf:bool=True, uniform:bool=False, custom:bool=False, fix_type:bool=True)->None:
+        Property.__init__(self, name, is_leaf)
+        self._init(value_type, value, uniform, custom, fix_type)
+    
+    def _init(self, value_type:type, value:Optional[T]=None, uniform:bool=False, custom:bool=False, fix_type:bool=True)->None:
         dtype, array_dim = analyze_list_type(value_type)
-
         self._type:type = value_type
         self._dtype:type = dtype
         self._array_dim:int = array_dim
+        self._value:Optional[T] = self._convert_from(value)
         self._time_samples:Dict[float, T] = {}
-        self._value:Optional[T] = None
         self._uniform:bool = uniform
         self._custom:bool = custom
         self._fix_type:bool = fix_type
-    
+
     @property
     def timeSamples(self)->Dict[float, T]:
         return self._time_samples
@@ -67,6 +66,13 @@ class Attribute(Property, Generic[T]):
 
     def set(self, value:Any)->None:
         self.value = value
+
+    @property
+    def value_state(self)->Attribute.ValueState:
+        if self._value_state != Attribute.ValueState.Authored and isinstance(self._value, list) and self._value:
+            return Attribute.ValueState.Authored
+
+        return self._value_state
 
     @property
     def uniform(self)->bool:
@@ -99,7 +105,8 @@ class Attribute(Property, Generic[T]):
 
     def to_str(self, indents:int=0)->str:
         result_list = []
-        if self._value_state != Property.ValueState.Fallback:
+        full_name = self.full_name
+        if self.value_state != Property.ValueState.Fallback:
             tabs = "    " * indents
             prefix = ""
             if self._custom:
@@ -107,8 +114,8 @@ class Attribute(Property, Generic[T]):
             if self._uniform:
                 prefix += "uniform "
 
-            line = f"{tabs}{prefix}{self.type_name} {self._name}"
-            if self._value_state != Property.ValueState.NotAuthored:
+            line = f"{tabs}{prefix}{self.type_name} {full_name}"
+            if self.value_state != Property.ValueState.NotAuthored:
                 line += f" = {self.value_str(indents)}"
 
             metadata_str = self._metadata.to_str(indents)
@@ -118,7 +125,7 @@ class Attribute(Property, Generic[T]):
             result_list.append(line)
 
             if self._time_samples:
-                line = f"{tabs}{prefix}{self.type_name} {self._name}.timeSamples = " + usd_value_str(self._time_samples, indents)
+                line = f"{tabs}{prefix}{self.type_name} {full_name}.timeSamples = " + usd_value_str(self._time_samples, indents)
                 result_list.append(line)
 
         for child in self._children.values():
@@ -186,6 +193,28 @@ class Attribute(Property, Generic[T]):
             return other.value
 
         return other
+
+    def __getattr__(self, name:str)->Any:
+        if "_children" not in self.__dict__ or "_value" not in self.__dict__:
+            return Property.__getattr__(self, name)
+
+        if name in self._children:
+            return self._children[name]
+        elif hasattr(self._value, name):
+            return getattr(self._value, name)
+        else:
+            return Property.__getattr__(self, name)
+        
+    def __setattr__(self, name:str, value:Any)->None:
+        if "_children" not in self.__dict__ or "_value" not in self.__dict__:
+            return Property.__setattr__(self, name, value)
+
+        if name in self._children:
+            return Property.__setattr__(self, name, value)
+        elif hasattr(self._value, name):
+            return setattr(self._value, name, value)
+        else:
+            return Property.__setattr__(self, name, value)
 
     def __str__(self)->str:
         return str(self.value)

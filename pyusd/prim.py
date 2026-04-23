@@ -38,6 +38,11 @@ class Prim:
         self._props:Dict[str, Property] = {}
         self._metadata:Metadata = Metadata()
 
+    def _add_prop(self, prop:Property)->None:        
+        self._props[prop.name] = prop
+        prop._parent_prim = self
+        prop._parent_prop = None
+
     def _getitem(self, path_items:List[str])->Prim:
         prim = self
         for path_item in path_items:            
@@ -106,12 +111,20 @@ class Prim:
 
     @typechecked
     def prop(self, name:str)->Property:
-        prop_items = name.split(":")
-        target = self
-        for prop_item in prop_items:
-            target = getattr(target, prop_item)
+        prop_names = name.split(":")
+        prop_name = prop_names[0]
+        if prop_name not in self._props:
+            self._add_prop(Property(prop_name, is_leaf=False))
 
-        return target
+        prop = self._props[prop_name]
+
+        for prop_name in prop_names:
+            if prop_name not in prop._children:
+                prop._add_prop(Property(prop_name, is_leaf=False))
+
+            prop = prop._children[prop_name]
+
+        return prop
 
     @typechecked
     def child(self, name:str)->Prim:
@@ -295,7 +308,7 @@ class Prim:
     
     def __getattr__(self, name:str)->Property:
         if name not in self._props:
-            self._props[name] = Property(self, None, name, is_leaf=False)
+            self._add_prop(Property(name, is_leaf=False))
 
         return self._props[name]
 
@@ -323,9 +336,9 @@ class Prim:
 
         if name not in self._props:
             if not isinstance(value, Prim):
-                self._props[name] = Attribute(self, None, infer_type(value), self._name + ":" + name, uniform=False, custom=True, is_leaf=False, fix_type=False)
+                self._add_prop(Attribute(infer_type(value), name, uniform=False, custom=True, is_leaf=False, fix_type=False))
             else:
-                self._props[name] = Relationship(self, None, self._name + ":" + name, is_leaf=False)
+                self._add_prop(Relationship(name, is_leaf=False))
 
         prop = self._props[name]
         if isinstance(prop, Attribute):

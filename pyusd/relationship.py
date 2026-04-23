@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, TYPE_CHECKING, Optional
+from typing import List, TYPE_CHECKING
 from typeguard import typechecked
 
 from .property import Property
@@ -16,8 +16,8 @@ class Relationship(Property):
     }
 
     @typechecked
-    def __init__(self, parent_prim:Optional[Prim], parent_property:Optional[Property], name:str, is_leaf:bool=True)->None:
-        Property.__init__(self, parent_prim, parent_property, name, is_leaf)
+    def __init__(self, name:str, is_leaf:bool=True)->None:
+        Property.__init__(self, name, is_leaf)
         self._targets:List[Prim] = []
 
     @property
@@ -48,7 +48,7 @@ class Relationship(Property):
         result_list = []
         if self._value_state != Property.ValueState.Fallback:
             tabs = "    " * indents
-            line = f"{tabs}rel {self._name}"
+            line = f"{tabs}rel {self.full_name}"
             if self._value_state != Property.ValueState.NotAuthored:
                 line += f" = {usd_value_str(self._targets, indents, True)}"
 

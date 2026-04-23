@@ -8,6 +8,8 @@ from .utils import infer_type
 
 if TYPE_CHECKING:
     from .prim import Prim
+    from .attribute import Attribute
+    from .relationship import Relationship
 
 
 class Property:
@@ -20,7 +22,7 @@ class Property:
 
     _basic_attrs = {
         "_parent_prim",
-        "_parent_property",
+        "_parent_prop",
         "_name",
         "_metadata",
         "_children",
@@ -29,9 +31,9 @@ class Property:
     }
 
     @typechecked
-    def __init__(self, parent_prim:Optional[Prim], parent_property:Optional[Property], name:str, is_leaf:bool=True)->None:
-        self._parent_prim:Prim = parent_prim
-        self._parent_property:Property = parent_property
+    def __init__(self, name:str, is_leaf:bool=True)->None:
+        self._parent_prim:Optional[Prim] = None
+        self._parent_prop:Optional[Property] = None
         self._name:str = name
         self._metadata:Metadata = Metadata()
         self._children:Dict[str, Property] = {}
@@ -43,8 +45,8 @@ class Property:
         return self._parent_prim
     
     @property
-    def parent_property(self)->Property:
-        return self._parent_property
+    def parent_prop(self)->Property:
+        return self._parent_prop
 
     @property
     def is_leaf(self)->bool:
@@ -55,22 +57,54 @@ class Property:
         return self._name
     
     @property
+    def full_name(self)->str:
+        if self._parent_prop is None:
+            return self._name
+        
+        return self._parent_prop.full_name + ":" + self._name
+    
+    @property
+    def path(self)->str:
+        if self._parent_prim is None:
+            return self.full_name
+        
+        return self._parent_prim.path + "." + self.full_name
+    
+    @property
     def metadata(self)->Metadata:
         return self._metadata
+    
+    @property
+    def value_state(self)->Property.ValueState:
+        return self._value_state
 
-    def rel(self, prim:Prim)->None:
+    def rel(self, prim:Prim)->Relationship:
+        if self.__class__.__name__ != "Property":
+            raise AttributeError(f"'{self.__class__.__name__}' object has not attribute 'rel'")
+
         from .relationship import Relationship
         self.__class__ = Relationship
         self._targets = [prim]
         self._value_state = Property.ValueState.Authored
+        return self
 
-    def create(self, attr_type:type)->None:
+    def create(self, value_type:type, value:Optional[Any]=None, uniform:bool=False, custom:bool=False, fix_type:bool=True)->Attribute:
+        if self.__class__.__name__ != "Property":
+            raise AttributeError(f"'{self.__class__.__name__}' object has not attribute 'create'")
+        
         from .attribute import Attribute
         self.__class__ = Attribute
+        Attribute._init(self, value_type, value, uniform, custom, fix_type)
+        return self
+
+    def _add_prop(self, prop:Property)->None:
+        self._children[prop.name] = prop
+        prop._parent_prim = self._parent_prim
+        prop._parent_prop = self
 
     def __getattr__(self, name:str)->Property:
         if name not in self._children:
-            self._children[name] = Property(self._parent_prim, self._parent_property, name, is_leaf=False)
+            self._add_prop(Property(name, is_leaf=False))
 
         return self._children[name]
 
@@ -113,9 +147,9 @@ class Property:
                     target_custom = True
                     target_fix_type = False
 
-                self._children[name] = Attribute(self._parent_prim, self, target_type, self._name + ":" + name, uniform=target_uniform, custom=target_custom, is_leaf=(not target_custom), fix_type=target_fix_type)
+                self._add_prop(Attribute(target_type, name, uniform=target_uniform, custom=target_custom, is_leaf=(not target_custom), fix_type=target_fix_type))
             else:
-                self._children[name] = Relationship(self._parent_prim, self, self._name + ":" + name, is_leaf=False)
+                self._add_prop(Relationship(name, is_leaf=False))
 
         prop = self._children[name]
         if isinstance(prop, Attribute):

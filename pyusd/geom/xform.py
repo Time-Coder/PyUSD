@@ -9,7 +9,5 @@ class Xform(Prim):
 
     def __init__(self, name:str="")->None:
         Prim.__init__(self, name)
-        self._props["xformOp"] = XformOp(self)
-        self._props["xformOpOrder"] = Attribute(self, None, List[token], "xformOpOrder", uniform=True)
-        self._props["xformOpOrder"].value = []
-        self._props["xformOpOrder"]._value_state = Attribute.ValueState.Fallback
+        self._add_prop(XformOp())
+        self._add_prop(Attribute(List[token], "xformOpOrder", value=[], uniform=True))

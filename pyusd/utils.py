@@ -93,15 +93,21 @@ def usd_value_str(value:Any, indents:int=0, degenerate_list:bool=False):
                 return f"{left_bracket}{usd_value_str(value[0], indents + 1)}{right_bracket}"
         else:
             result = f"{left_bracket}\n"
-            for subvalue in value:
+            for i, subvalue in enumerate(value):
                 subvalue_str = usd_value_str(subvalue, indents + 1)
-                result += f"{next_tabs}{subvalue_str}\n"
+                result += f"{next_tabs}{subvalue_str}"
+                result += (",\n" if i < len(value) - 1 else "\n")
             result += f"{tabs}{right_bracket}"
         return result
     elif isinstance(value, str):
         return f'"{value}"'
     elif isinstance(value, Prim):
         return f"<{value.path}>"
+    elif isinstance(value, float):
+        if value.is_integer():
+            return str(int(value))
+        else:
+            return str(value)
     else:
         return str(value)
     

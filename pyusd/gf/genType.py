@@ -70,7 +70,8 @@ class genType(ABC):
         return self.__class__(*self._data)
 
     def __str__(self)->str:
-        return f"{self.__class__.__name__}({', '.join([str(value) for value in self])})"
+        from ..utils import usd_value_str
+        return f"{self.__class__.__name__}({', '.join([usd_value_str(value) for value in self])})"
 
     def value_str(self, indent:int=0)->str:
         tabs = "    " * indent

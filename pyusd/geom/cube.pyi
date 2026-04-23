@@ -3,12 +3,12 @@ from ..attribute import Attribute
 from ..dtypes import double
 
 
-class Sphere(Mesh):
+class Cube(Mesh):
     
     def __init__(self, name:str="")->None: ...
 
     @property
-    def radius(self) -> Attribute[double]: ...
+    def size(self) -> Attribute[double]: ...
 
-    @radius.setter
-    def radius(self, value:float) -> None: ...
+    @size.setter
+    def size(self, value:float) -> None: ...
