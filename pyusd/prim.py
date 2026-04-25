@@ -3,11 +3,12 @@ from typing import Dict, Union, Optional, List, Any, TYPE_CHECKING
 from typeguard import typechecked
 
 from .property import Property
-from .metadata import Metadata
+from .prim_metadata import PrimMetadata
 from .utils import infer_type
+from .sdf import Specifier
 
 if TYPE_CHECKING:
-    from .stage import Stage
+    from .layer import Layer
 
 
 class Prim:
@@ -17,7 +18,7 @@ class Prim:
     _basic_attrs = {
         "_name",
         "name",
-        "_stage",
+        "_layer",
         "_metadata",
         "_children",
         "_parent",
@@ -31,14 +32,17 @@ class Prim:
         if not name.isidentifier():
             raise ValueError(f'"{name}" is not a valid name')
         
-        self._stage:Stage = None
+        self._layer:Optional[Layer] = None
         self._name:str = name
-        self._parent:Prim = None
+        self._parent:Optional[Prim] = None
         self._children:Dict[str, Prim] = {}
         self._props:Dict[str, Property] = {}
-        self._metadata:Metadata = Metadata()
+        self._metadata:PrimMetadata = PrimMetadata(
+            specifier=Specifier.Def,
+            typeName=self.__class__.__name__
+        )
 
-    def _add_prop(self, prop:Property)->None:        
+    def def_prop(self, prop:Property)->None:
         self._props[prop.name] = prop
         prop._parent_prim = self
         prop._parent_prop = None
@@ -68,17 +72,17 @@ class Prim:
         for path_item in path_items:
             if path_item not in parent_prim._children:
                 new_prim = Prim(path_item)
-                new_prim._set_stage(self._stage)
+                new_prim._set_layer(self._layer)
                 new_prim._parent = parent_prim
                 parent_prim._children[path_item] = new_prim
             parent_prim = parent_prim._children[path_item]
 
         prim.detach_from_parent()
-        prim.detach_from_stage()
+        prim.detach_from_layer()
 
         prim._parent = parent_prim
         prim._name = name
-        prim._set_stage(self._stage)
+        prim._set_layer(self._layer)
         parent_prim._children[name] = prim
 
     @typechecked
@@ -98,7 +102,7 @@ class Prim:
         
         prim:Prim = parent_prim._children[name]
         prim._parent = None
-        prim._set_stage(None)
+        prim._set_layer(None)
         del parent_prim._children[name]
 
     @typechecked
@@ -114,13 +118,13 @@ class Prim:
         prop_names = name.split(":")
         prop_name = prop_names[0]
         if prop_name not in self._props:
-            self._add_prop(Property(prop_name, is_leaf=False))
+            self.def_prop(Property(prop_name, custom=True, is_leaf=False))
 
         prop = self._props[prop_name]
 
         for prop_name in prop_names:
             if prop_name not in prop._children:
-                prop._add_prop(Property(prop_name, is_leaf=False))
+                prop.def_prop(Property(prop_name, custom=True, is_leaf=False))
 
             prop = prop._children[prop_name]
 
@@ -136,11 +140,11 @@ class Prim:
             return
         
         prim.detach_from_parent()
-        prim.detach_from_stage()
+        prim.detach_from_layer()
 
         self._children[prim.name] = prim
         prim._parent = self
-        prim._set_stage(self._stage)
+        prim._set_layer(self._layer)
 
     @typechecked
     def def_(self, prim_type:type, path:str)->Prim:
@@ -160,7 +164,7 @@ class Prim:
                 raise ValueError(f"{prim} is not a child of current prim")
             
         prim._parent = None
-        prim._set_stage(None)
+        prim._set_layer(None)
         del self._children[prim.name]
         return prim
 
@@ -170,23 +174,19 @@ class Prim:
         
         self._parent.remove_child(self)
 
-    def detach_from_stage(self)->None:
-        if self._stage is None or self._parent is not None:
+    def detach_from_layer(self)->None:
+        if self._layer is None or self._parent is not None:
             return
         
-        self._stage.remove_root_prim(self)
+        self._layer.remove_root_prim(self)
 
     @property
-    def metadata(self)->Metadata:
+    def metadata(self)->PrimMetadata:
         return self._metadata
 
     @property
     def name(self)->str:
         return self._name
-    
-    @property
-    def type_name(self)->str:
-        return self.__class__.__name__
 
     @name.setter
     @typechecked
@@ -198,40 +198,40 @@ class Prim:
             raise ValueError(f'"{name}" is not a valid name')
 
         old_parent = self._parent
-        old_stage = self._stage
-        if old_parent is None and old_stage is None:
+        old_layer = self._layer
+        if old_parent is None and old_layer is None:
             self._name = name          
             return
         
         if old_parent is not None:
             if name in old_parent._children:
                 raise ValueError(f'Prim with name "{name}" already exists in parent\'s children')
-        elif old_stage is not None:
-            if name in old_stage._root_prims:
-                raise ValueError(f'Prim with name "{name}" already exists in stage\'s root prims')
+        elif old_layer is not None:
+            if name in old_layer._root_prims:
+                raise ValueError(f'Prim with name "{name}" already exists in layer\'s root prims')
 
         self.detach_from_parent()
-        self.detach_from_stage()
+        self.detach_from_layer()
         self._name = name
 
         if old_parent is not None:
             old_parent.add_child(self)
-        elif old_stage is not None:
-            old_stage.add_root_prim(self)
+        elif old_layer is not None:
+            old_layer.add_root_prim(self)
 
     @property
     def parent(self)->Prim:
         return self._parent
     
     @property
-    def stage(self)->Stage:
-        return self._stage
+    def layer(self)->Layer:
+        return self._layer
     
     @typechecked
-    def _set_stage(self, stage:Optional[Stage])->None:
-        self._stage = stage
+    def _set_layer(self, layer:Optional[Layer])->None:
+        self._layer = layer
         for child in self._children.values():
-            child._set_stage(stage)
+            child._set_layer(layer)
 
     @property
     def path(self)->str:
@@ -242,7 +242,7 @@ class Prim:
                 path = prim._parent.name + "/" + path
                 prim = prim._parent
             else:
-                if self.stage is not None:
+                if self.layer is not None:
                     path = "/" + path
                     
                 return path
@@ -291,7 +291,7 @@ class Prim:
                 props_str_list.append(prop_str)
 
         if props_str_list:
-            result += "\n".join(props_str_list) + "\n"
+            result += "\n".join(reversed(props_str_list)) + "\n"
 
         children_str_list = []
         for child in self._children.values():
@@ -308,7 +308,7 @@ class Prim:
     
     def __getattr__(self, name:str)->Property:
         if name not in self._props:
-            self._add_prop(Property(name, is_leaf=False))
+            self.def_prop(Property(name, custom=True, is_leaf=False))
 
         return self._props[name]
 
@@ -336,9 +336,9 @@ class Prim:
 
         if name not in self._props:
             if not isinstance(value, Prim):
-                self._add_prop(Attribute(infer_type(value), name, uniform=False, custom=True, is_leaf=False, fix_type=False))
+                self.def_prop(Attribute(infer_type(value), name, uniform=False, custom=True, is_leaf=False, fix_type=False))
             else:
-                self._add_prop(Relationship(name, is_leaf=False))
+                self.def_prop(Relationship(name, custom=True, is_leaf=False))
 
         prop = self._props[name]
         if isinstance(prop, Attribute):

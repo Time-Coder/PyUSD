@@ -70,28 +70,10 @@ class genType(ABC):
         return self.__class__(*self._data)
 
     def __str__(self)->str:
-        from ..utils import usd_value_str
-        return f"{self.__class__.__name__}({', '.join([usd_value_str(value) for value in self])})"
-
-    def value_str(self, indent:int=0)->str:
-        tabs = "    " * indent
-        next_tabs = "    " * (indent + 1)
-        if self.math_form == MathForm.Mat:
-            result = f"(\n"
-            for i in range(self.shape[0]):
-                result += f"{next_tabs}("
-                for j in range(self.shape[1]):
-                    result += str(self[i, j])
-                    if j != self.shape[1] - 1:
-                        result += ", "
-                result += f")"
-                if i != self.shape[0] - 1:
-                    result += ",\n"
-                else:
-                    result += "\n"
-            result += f"{tabs})"
-        else:
-            return f"({', '.join([str(value) for value in self])})"
+        return f"{self.__class__.__name__}({', '.join([str(value) for value in self])})"
+    
+    def __repr__(self)->str:
+        return f"{self.__class__.__name__}({', '.join([str(value) for value in self])})"
 
     @property
     def on_changed(self)->Optional[Callable[[], None]]:

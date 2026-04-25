@@ -8,3 +8,7 @@ class double4(genVec4):
     @property
     def dtype(self)->type:
         return ctypes.c_double
+    
+    
+class color4d(double4):
+    pass

@@ -8,3 +8,7 @@ class float4(genVec4):
     @property
     def dtype(self)->type:
         return ctypes.c_float
+    
+    
+class color4f(float4):
+    pass

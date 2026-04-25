@@ -27,16 +27,19 @@ class Property:
         "_metadata",
         "_children",
         "_is_leaf",
-        "_value_state"
+        "_custom",
+        "_value_state",
+        "__class__"
     }
 
     @typechecked
-    def __init__(self, name:str, is_leaf:bool=True)->None:
+    def __init__(self, name:str, metadata:Dict[str, Any]={}, custom:bool=False, is_leaf:bool=True)->None:
         self._parent_prim:Optional[Prim] = None
         self._parent_prop:Optional[Property] = None
         self._name:str = name
-        self._metadata:Metadata = Metadata()
+        self._metadata:Metadata = Metadata(**metadata)
         self._children:Dict[str, Property] = {}
+        self._custom:bool = custom
         self._is_leaf:bool = is_leaf
         self._value_state:Property.ValueState = Property.ValueState.Fallback
 
@@ -78,6 +81,10 @@ class Property:
     def value_state(self)->Property.ValueState:
         return self._value_state
 
+    @property
+    def custom(self)->bool:
+        return self._custom
+
     def rel(self, prim:Prim)->Relationship:
         if self.__class__.__name__ != "Property":
             raise AttributeError(f"'{self.__class__.__name__}' object has not attribute 'rel'")
@@ -95,16 +102,17 @@ class Property:
         from .attribute import Attribute
         self.__class__ = Attribute
         Attribute._init(self, value_type, value, uniform, custom, fix_type)
+        self._value_state = Property.ValueState.NotAuthored
         return self
 
-    def _add_prop(self, prop:Property)->None:
+    def def_prop(self, prop:Property)->None:
         self._children[prop.name] = prop
         prop._parent_prim = self._parent_prim
         prop._parent_prop = self
 
     def __getattr__(self, name:str)->Property:
         if name not in self._children:
-            self._add_prop(Property(name, is_leaf=False))
+            self.def_prop(Property(name, custom=True, is_leaf=False))
 
         return self._children[name]
 
@@ -147,9 +155,9 @@ class Property:
                     target_custom = True
                     target_fix_type = False
 
-                self._add_prop(Attribute(target_type, name, uniform=target_uniform, custom=target_custom, is_leaf=(not target_custom), fix_type=target_fix_type))
+                self.def_prop(Attribute(target_type, name, uniform=target_uniform, custom=target_custom, is_leaf=(not target_custom), fix_type=target_fix_type))
             else:
-                self._add_prop(Relationship(name, is_leaf=False))
+                self.def_prop(Relationship(name, custom=target_custom, is_leaf=False))
 
         prop = self._children[name]
         if isinstance(prop, Attribute):

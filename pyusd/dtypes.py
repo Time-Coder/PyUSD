@@ -7,6 +7,9 @@ class half(float):
 class int64(int):
     pass
 
+class asset(str):
+    pass
+
 class string(str):
     pass
 
@@ -26,4 +29,13 @@ class uint64(int):
     pass
 
 class namespace(object):
+    pass
+
+class opaque(object):
+    pass
+
+class group(opaque):
+    pass
+
+class dictionary(dict):
     pass

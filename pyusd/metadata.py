@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import Tuple, List, Dict, Any, Set
 from typeguard import typechecked
 
 from .utils import usd_value_str
@@ -8,16 +8,30 @@ class Metadata:
 
     _basic_attrs = {
         "_builtin_data",
-        "_custom_data"
+        "_custom_data",
+        "_ignored_data"
     }
 
-    @typechecked
-    def __init__(self, *builtin_keys:List[str])->None:
+    def __init__(self, *args:Tuple[str], **kwargs:Dict[str, Any])->None:
         self._builtin_data:Dict[str, Any] = {}
-        for key in builtin_keys:
+
+        for key in args:
             self._builtin_data[key] = None
 
+        for key, value in kwargs.items():
+            if key == "customData":
+                continue
+
+            self._builtin_data[key] = value
+
         self._custom_data:Dict[str, Any] = {}
+        if "customData" in kwargs:
+            self._custom_data = kwargs["customData"]
+
+        self._builtin_data["doc"] = None
+        self._ignored_data:Set[str] = {
+            "specifier", "typeName", "doc"
+        }
 
     @typechecked
     def __getattr__(self, name:str)->Any:
@@ -52,7 +66,7 @@ class Metadata:
         
         result_list:List[str] = []
         for key, value in self._builtin_data.items():
-            if value is None:
+            if value is None or key in self._ignored_data:
                 continue
             
             result_list.append(f"{next_tabs}{key} = {usd_value_str(value)}")
@@ -61,9 +75,9 @@ class Metadata:
             result += "\n".join(result_list) + "\n"
 
         if len(self._custom_data) > 0:
-            result += f"{next_tabs}customData = " + usd_value_str(self._custom_data, indents+1)
+            result += f"{next_tabs}customData = " + usd_value_str(self._custom_data, indents+1) + "\n"
 
-        result += f"\n{tabs})"
+        result += f"{tabs})"
 
         if len(result_list) == 0 and len(self._custom_data) == 0:
             return ""

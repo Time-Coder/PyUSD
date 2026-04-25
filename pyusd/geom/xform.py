@@ -1,13 +1,9 @@
-from ..prim import Prim
-from .xformop import XformOp
-from ..attribute import Attribute
-from ..dtypes import token
-from typing import List
+from .xformable import Xformable
 
 
-class Xform(Prim):
+class Xform(Xformable):
 
     def __init__(self, name:str="")->None:
-        Prim.__init__(self, name)
-        self._add_prop(XformOp())
-        self._add_prop(Attribute(List[token], "xformOpOrder", value=[], uniform=True))
+        Xformable.__init__(self, name)
+        
+        self.metadata.doc = """Concrete prim schema for a transform, which implements Xformable """

@@ -21,16 +21,15 @@ class Attribute(Property, Generic[T]):
         "_children",
         "value",
         "uniform",
-        "_custom",
         "_fix_type"
     }
 
     @typechecked
-    def __init__(self, value_type:type, name:str, value:Optional[T]=None, is_leaf:bool=True, uniform:bool=False, custom:bool=False, fix_type:bool=True)->None:
-        Property.__init__(self, name, is_leaf)
-        self._init(value_type, value, uniform, custom, fix_type)
+    def __init__(self, value_type:type, name:str, value:Optional[T]=None, metadata:Dict[str, Any]={}, is_leaf:bool=True, uniform:bool=False, custom:bool=False, fix_type:bool=True)->None:
+        Property.__init__(self, name, metadata=metadata, custom=custom, is_leaf=is_leaf)
+        self._init(value_type, value, uniform, fix_type)
     
-    def _init(self, value_type:type, value:Optional[T]=None, uniform:bool=False, custom:bool=False, fix_type:bool=True)->None:
+    def _init(self, value_type:type, value:Optional[T]=None, uniform:bool=False, fix_type:bool=True)->None:
         dtype, array_dim = analyze_list_type(value_type)
         self._type:type = value_type
         self._dtype:type = dtype
@@ -38,7 +37,6 @@ class Attribute(Property, Generic[T]):
         self._value:Optional[T] = self._convert_from(value)
         self._time_samples:Dict[float, T] = {}
         self._uniform:bool = uniform
-        self._custom:bool = custom
         self._fix_type:bool = fix_type
 
     @property
@@ -82,10 +80,6 @@ class Attribute(Property, Generic[T]):
     @typechecked
     def uniform(self, flag:bool)->None:
         self._uniform = flag
-
-    @property
-    def custom(self)->bool:
-        return self._custom
 
     @property
     def is_namespace(self)->bool:

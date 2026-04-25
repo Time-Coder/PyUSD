@@ -11,13 +11,13 @@ class XformOp(Attribute):
     @typechecked
     def __init__(self)->None:
         Attribute.__init__(self, namespace, "xformOp", is_leaf=False)
-        self._add_prop(Attribute(double3, "translate", is_leaf=True))
-        self._add_prop(Attribute(double3, "rotateXYZ", is_leaf=True))
-        self._add_prop(Attribute(double, "rotateX", is_leaf=True))
-        self._add_prop(Attribute(double, "rotateY", is_leaf=True))
-        self._add_prop(Attribute(double, "rotateZ", is_leaf=True))
-        self._add_prop(Attribute(double3, "scale", is_leaf=True))
-        self._add_prop(Attribute(matrix4d, "transform", is_leaf=True))
+        self.def_prop(Attribute(double3, "translate", is_leaf=True))
+        self.def_prop(Attribute(double3, "rotateXYZ", is_leaf=True))
+        self.def_prop(Attribute(double, "rotateX", is_leaf=True))
+        self.def_prop(Attribute(double, "rotateY", is_leaf=True))
+        self.def_prop(Attribute(double, "rotateZ", is_leaf=True))
+        self.def_prop(Attribute(double3, "scale", is_leaf=True))
+        self.def_prop(Attribute(matrix4d, "transform", is_leaf=True))
 
     def __setattr__(self, name: str, value: Any) -> None:
         Attribute.__setattr__(self, name, value)

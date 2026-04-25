@@ -2,8 +2,20 @@ from typing import List, Any, Set, get_origin, get_args, Optional
 
 import numpy as np
 
-from .gf import double2, double3, double4, float2, float3, float4, int2, int3, int4, matrix2d, matrix3d, matrix4d, quatf, quatd
-from .dtypes import double, half, int64, string, token, timecode, uchar, uint, uint64, namespace
+from .gf import (
+    double2, double3, double4,
+    vector3d, color3d, color4d,
+    float2, float3, float4,
+    vector3f, color3f, color4f,
+    texCoord2d, texCoord3d,
+    texCoord2f, texCoord3f,
+    point3f, point3d, normal3d, normal3f,
+    int2, int3, int4,
+    matrix2d, matrix3d, matrix4d, frame4d,
+    quatf, quatd, MathForm
+)
+
+from .dtypes import double, half, int64, string, token, timecode, uchar, uint, uint64, namespace, asset, dictionary
 
 
 usd_scalar_types = {
@@ -13,6 +25,8 @@ usd_scalar_types = {
     half,
     int,
     int64,
+    asset,
+    str,
     string,
     token,
     timecode,
@@ -23,11 +37,11 @@ usd_scalar_types = {
 
 usd_vector_types = {
     double2,
-    double3,
-    double4,
-    float2,
-    float3,
-    float4,
+    double3, color3d, vector3d, point3d, normal3d, texCoord3d,
+    double4, color4d, 
+    float2, texCoord2f,
+    float3, vector3f, point3f, normal3f, texCoord3f, color3f,
+    float4, color4f,
     int2,
     int3,
     int4
@@ -36,7 +50,7 @@ usd_vector_types = {
 usd_matrix_types = {
     matrix2d,
     matrix3d,
-    matrix4d
+    matrix4d, frame4d
 }
 
 usd_quat_types = {
@@ -46,6 +60,8 @@ usd_quat_types = {
 
 usd_dtypes = {
     namespace,
+    dictionary,
+    dict,
     *usd_scalar_types,
     *usd_vector_types,
     *usd_matrix_types,
@@ -56,14 +72,30 @@ def usd_value_str(value:Any, indents:int=0, degenerate_list:bool=False):
     from .gf import genType
     from .prim import Prim
 
+    tabs = "    " * indents
+    next_tabs = "    " * (indents + 1)
+
     if isinstance(value, genType):
-        return value.value_str(indents)
+        if value.math_form == MathForm.Mat:
+            result = f"(\n"
+            for i in range(value.shape[0]):
+                result += f"{next_tabs}("
+                for j in range(value.shape[1]):
+                    result += str(value[i, j])
+                    if j != value.shape[1] - 1:
+                        result += ", "
+                result += f")"
+                if i != value.shape[0] - 1:
+                    result += ",\n"
+                else:
+                    result += "\n"
+            result += f"{tabs})"
+        else:
+            return f"({', '.join([usd_value_str(sub_value) for sub_value in value])})"
     elif isinstance(value, dict):
         if len(value) == 0:
             return "{}"
-        
-        tabs = "    " * indents
-        next_tabs = "    " * (indents + 1)
+
         result = "{\n"
         for key, subvalue in value.items():
             subvalue_str = usd_value_str(subvalue, indents + 1)
@@ -87,20 +119,28 @@ def usd_value_str(value:Any, indents:int=0, degenerate_list:bool=False):
         tabs = "    " * indents
         next_tabs = "    " * (indents + 1)
         if len(value) == 1:
+            result = usd_value_str(value[0], 0)
             if degenerate_list:
-                return usd_value_str(value[0], indents)
+                return result
             else:
-                return f"{left_bracket}{usd_value_str(value[0], indents + 1)}{right_bracket}"
+                if "\n" not in result and len(result) < 100:
+                    return f"{left_bracket}{result}{right_bracket}"
+                else:
+                    return f"{left_bracket}\n{usd_value_str(value[0], indents+1)}\n{right_bracket}"
         else:
+            result = ", ".join([usd_value_str(subvalue, 0) for subvalue in value])
+            if "\n" not in result and len(result) < 100:
+                return f"{left_bracket}{result}{right_bracket}"
+             
             result = f"{left_bracket}\n"
-            for i, subvalue in enumerate(value):
-                subvalue_str = usd_value_str(subvalue, indents + 1)
-                result += f"{next_tabs}{subvalue_str}"
-                result += (",\n" if i < len(value) - 1 else "\n")
-            result += f"{tabs}{right_bracket}"
+            result += f",\n{next_tabs}".join([usd_value_str(subvalue, indents+1) for subvalue in value])
+            result += f"\n{tabs}{right_bracket}"
         return result
     elif isinstance(value, str):
-        return f'"{value}"'
+        if "\n" in value:
+            return f'"""{value}"""'
+        else:
+            return f'"{value}"'
     elif isinstance(value, Prim):
         return f"<{value.path}>"
     elif isinstance(value, float):
@@ -108,6 +148,8 @@ def usd_value_str(value:Any, indents:int=0, degenerate_list:bool=False):
             return str(int(value))
         else:
             return str(value)
+    elif isinstance(value, bool):
+        return ("true" if value else "false")
     else:
         return str(value)
     

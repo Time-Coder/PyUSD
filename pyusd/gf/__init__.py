@@ -13,13 +13,13 @@ from .int2 import int2
 from .int3 import int3
 from .int4 import int4
 
-from .float2 import float2
-from .float3 import float3
-from .float4 import float4
+from .float2 import float2, texCoord2f
+from .float3 import float3, color3f, normal3f, point3f, vector3f, texCoord3f
+from .float4 import float4, color4f
 
-from .double2 import double2
-from .double3 import double3
-from .double4 import double4
+from .double2 import double2, texCoord2d
+from .double3 import double3, color3d, normal3d, point3d, vector3d, texCoord3d
+from .double4 import double4, color4d
 
 from .matrix2f import matrix2f
 from .matrix3f import matrix3f
@@ -27,7 +27,7 @@ from .matrix4f import matrix4f
 
 from .matrix2d import matrix2d
 from .matrix3d import matrix3d
-from .matrix4d import matrix4d
+from .matrix4d import matrix4d, frame4d
 
 from .quatf import quatf
 from .quatd import quatd
@@ -73,6 +73,13 @@ __all__ = [
     "matrix4d",
     "quatf",
     "quatd",
+    "texCoord2f",
+    "color3f", "normal3f", "point3f", "vector3f", "texCoord3f",
+    "color4f",
+    "texCoord2d",
+    "color3d", "normal3d", "point3d", "vector3d", "texCoord3d",
+    "color4d",
+    "frame4d",
     "abs", "sign", "floor", "ceil", "trunc", "round", "roundEven", "fract", "mod",
     "min", "max", "clamp", "mix", "step", "smoothstep", "sqrt", "inversesqrt",
     "pow", "exp", "exp2", "exp10", "log", "log2", "log10",
