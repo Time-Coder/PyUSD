@@ -102,10 +102,11 @@ class Property:
         self._value_state = Property.ValueState.NotAuthored
         return self
 
-    def create_prop(self, prop:Property)->None:
+    def create_prop(self, prop:Property)->Property:
         self._children[prop.name] = prop
         prop._parent_prim = self._parent_prim
         prop._parent_prop = self
+        return prop
 
     def __getattr__(self, name:str)->Property:
         if name not in self._children:

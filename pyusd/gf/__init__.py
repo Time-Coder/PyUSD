@@ -31,6 +31,7 @@ from .matrix4d import matrix4d, frame4d
 
 from .quatf import quatf
 from .quatd import quatd
+from .quath import quath
 
 from .funcs import (
     abs, sign, floor, ceil, trunc, round, roundEven, fract, mod,
@@ -73,6 +74,7 @@ __all__ = [
     "matrix4d",
     "quatf",
     "quatd",
+    "quath",
     "texCoord2f",
     "color3f", "normal3f", "point3f", "vector3f", "texCoord3f",
     "color4f",

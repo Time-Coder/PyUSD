@@ -12,10 +12,10 @@ from .gf import (
     point3f, point3d, normal3d, normal3f,
     int2, int3, int4,
     matrix2d, matrix3d, matrix4d, frame4d,
-    quatf, quatd, MathForm
+    quath, quatf, quatd, MathForm
 )
 
-from .dtypes import double, half, int64, string, token, timecode, uchar, uint, uint64, namespace, asset, dictionary
+from .dtypes import double, half, int64, string, token, pathExpression, timecode, uchar, uint, uint64, namespace, asset, dictionary
 
 
 usd_scalar_types = {
@@ -29,6 +29,7 @@ usd_scalar_types = {
     str,
     string,
     token,
+    pathExpression,
     timecode,
     uchar,
     uint,
@@ -54,6 +55,7 @@ usd_matrix_types = {
 }
 
 usd_quat_types = {
+    quath,
     quatf,
     quatd
 }

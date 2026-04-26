@@ -19,6 +19,9 @@ class string(str):
 class token(str):
     pass
 
+class pathExpression(str):
+    pass
+
 class timecode(float):
     pass
 

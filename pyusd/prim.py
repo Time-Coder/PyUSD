@@ -45,10 +45,11 @@ class Prim:
             "apiSchemas": []
         })
 
-    def create_prop(self, prop:Property)->None:
+    def create_prop(self, prop:Property)->Property:
         self._props[prop.name] = prop
         prop._parent_prim = self
         prop._parent_prop = None
+        return prop
 
     def _getitem(self, path_items:List[str])->Prim:
         prim = self
