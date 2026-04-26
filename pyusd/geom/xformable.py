@@ -219,7 +219,7 @@ class Xformable(Imageable):
             }
         })
 
-        self.def_prop(Attribute(List[token], "xformOpOrder", value=[], uniform=True, metadata={
+        self.create_prop(Attribute(List[token], "xformOpOrder", value=[], uniform=True, metadata={
             "doc": """Encodes the sequence of transformation operations in the
         order in which they should be pushed onto a transform stack while
         visiting a UsdStage's prims in a graph traversal that will effect
@@ -231,4 +231,4 @@ class Xformable(Imageable):
         GetLocalTransformation()."""
         }))
 
-        self.def_prop(XformOp())
+        self.create_prop(XformOp())

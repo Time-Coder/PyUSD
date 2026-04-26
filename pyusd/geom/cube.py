@@ -22,7 +22,7 @@ class Cube(Gprim):
             }
         })
 
-        self.def_prop(Attribute(double, "size", value=2.0, metadata={
+        self.create_prop(Attribute(double, "size", value=2.0, metadata={
             "doc": """Indicates the length of each edge of the cube.  If you
         author \\em size you must also author \\em extent.
         

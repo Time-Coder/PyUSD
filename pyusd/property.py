@@ -102,14 +102,14 @@ class Property:
         self._value_state = Property.ValueState.NotAuthored
         return self
 
-    def def_prop(self, prop:Property)->None:
+    def create_prop(self, prop:Property)->None:
         self._children[prop.name] = prop
         prop._parent_prim = self._parent_prim
         prop._parent_prop = self
 
     def __getattr__(self, name:str)->Property:
         if name not in self._children:
-            self.def_prop(Property(name, custom=True, is_leaf=False))
+            self.create_prop(Property(name, custom=True, is_leaf=False))
 
         return self._children[name]
 
@@ -152,9 +152,9 @@ class Property:
                     target_custom = True
                     target_fix_type = False
 
-                self.def_prop(Attribute(target_type, name, uniform=target_uniform, custom=target_custom, is_leaf=(not target_custom), fix_type=target_fix_type))
+                self.create_prop(Attribute(target_type, name, uniform=target_uniform, custom=target_custom, is_leaf=(not target_custom), fix_type=target_fix_type))
             else:
-                self.def_prop(Relationship(name, custom=target_custom, is_leaf=False))
+                self.create_prop(Relationship(name, custom=target_custom, is_leaf=False))
 
         prop = self._children[name]
         if isinstance(prop, Attribute):

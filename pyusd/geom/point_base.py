@@ -22,11 +22,11 @@ class PointBase(Gprim):
             }
         })
 
-        self.def_prop(Attribute(List[point3f], "points", metadata={
+        self.create_prop(Attribute(List[point3f], "points", metadata={
             "doc": """The primary geometry attribute for all PointBased
         primitives, describes points in (local) space."""
         }))
-        self.def_prop(Attribute(List[vector3f], "velocities", metadata={
+        self.create_prop(Attribute(List[vector3f], "velocities", metadata={
             "doc": """If provided, 'velocities' should be used by renderers to 
 
         compute positions between samples for the 'points' attribute, rather
@@ -40,7 +40,7 @@ class PointBase(Gprim):
         
         See also \\ref UsdGeom_VelocityInterpolation .""" 
         }))
-        self.def_prop(Attribute(List[vector3f], "accelerations", metadata={
+        self.create_prop(Attribute(List[vector3f], "accelerations", metadata={
             "doc": """If provided, 'accelerations' should be used with
         velocities to compute positions between samples for the 'points'
         attribute rather than interpolating between neighboring 'points'
@@ -48,7 +48,7 @@ class PointBase(Gprim):
         To convert to position units per squared UsdTimeCode, divide by the
         square of UsdStage::GetTimeCodesPerSecond()."""
         }))
-        self.def_prop(Attribute(List[normal3f], "normals", metadata={
+        self.create_prop(Attribute(List[normal3f], "normals", metadata={
             "doc": """Provide an object-space orientation for individual points, 
         which, depending on subclass, may define a surface, curve, or free 
         points.  Note that 'normals' should not be authored on any Mesh that

@@ -22,7 +22,7 @@ class Sphere(Gprim):
             }
         })
 
-        self.def_prop(Attribute(double, "radius", value=1.0, metadata={
+        self.create_prop(Attribute(double, "radius", value=1.0, metadata={
             "doc": """Indicates the sphere's radius.  If you
         author \\em radius you must also author \\em extent.
         

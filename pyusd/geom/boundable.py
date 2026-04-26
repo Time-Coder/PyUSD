@@ -37,7 +37,7 @@ class Boundable(Xformable):
     def __init__(self, name:str="")->None:
         Xformable.__init__(self, name)
 
-        self.def_prop(Attribute(List[float3], "extent", metadata={
+        self.create_prop(Attribute(List[float3], "extent", metadata={
             "doc": """Extent is a three dimensional range measuring the geometric
         extent of the authored gprim in its own local space (i.e. its own
         transform not applied), \\em without accounting for any shader-induced

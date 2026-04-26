@@ -11,7 +11,7 @@ class PrimVars(Attribute):
     @typechecked
     def __init__(self)->None:
         Attribute.__init__(self, namespace, "primvars", is_leaf=False)
-        self.def_prop(Attribute(List[color3f], "displayColor", is_leaf=True, metadata={
+        self.create_prop(Attribute(List[color3f], "displayColor", is_leaf=True, metadata={
             "customData": {
                 "apiName": "displayColor"
             },
@@ -21,7 +21,7 @@ class PrimVars(Attribute):
         UsdGeomPrimvar, it can also be used as a gprim override for any shader
         that consumes a \\em displayColor parameter."""
         }))
-        self.def_prop(Attribute(List[float], "displayOpacity", is_leaf=True, metadata={
+        self.create_prop(Attribute(List[float], "displayOpacity", is_leaf=True, metadata={
             "customData": {
                 "apiName": "displayOpacity"
             },
@@ -30,4 +30,4 @@ class PrimVars(Attribute):
         each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
         }))
-        self.def_prop(Attribute(List[texCoord2f], "st", is_leaf=True))
+        self.create_prop(Attribute(List[texCoord2f], "st", is_leaf=True))

@@ -24,25 +24,25 @@ class ColorSpaceDefinitionAPI(APISchemaBase):
     @classmethod
     def apply(cls, prim:Prim)->Prim:
         prim.metadata.apiSchemas.append(cls.__name__)
-        prim.def_prop(Attribute(token, "name", value="custom", uniform=True, metadata={
+        prim.create_prop(Attribute(token, "name", value="custom", uniform=True, metadata={
             "doc": "The name of the color space defined on this prim."
         }))
-        prim.def_prop(Attribute(float2, "redChroma", value=(1, 0), metadata={
+        prim.create_prop(Attribute(float2, "redChroma", value=(1, 0), metadata={
             "doc": "Red chromaticity coordinates"
         }))
-        prim.def_prop(Attribute(float2, "greenChroma", value=(0, 1), metadata={
+        prim.create_prop(Attribute(float2, "greenChroma", value=(0, 1), metadata={
             "doc": "Green chromaticity coordinates"
         }))
-        prim.def_prop(Attribute(float2, "blueChroma", value=(0, 0), metadata={
+        prim.create_prop(Attribute(float2, "blueChroma", value=(0, 0), metadata={
             "doc": "Blue chromaticity coordinates"
         }))
-        prim.def_prop(Attribute(float2, "whitePoint", value=(0.33333333, 0.33333333), metadata={
+        prim.create_prop(Attribute(float2, "whitePoint", value=(0.33333333, 0.33333333), metadata={
             "doc": "Whitepoint chromaticity coordinates"
         }))
-        prim.def_prop(Attribute(float, "gamma", value=1.0, metadata={
+        prim.create_prop(Attribute(float, "gamma", value=1.0, metadata={
             "doc": "Gamma value of the log section"
         }))
-        prim.def_prop(Attribute(float, "linearBias", value=0.0, metadata={
+        prim.create_prop(Attribute(float, "linearBias", value=0.0, metadata={
             "doc": "Linear bias of the log section"
         }))
         return prim

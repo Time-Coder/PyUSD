@@ -16,8 +16,8 @@ class Gprim(Boundable):
     def __init__(self, name:str="")->None:
         Boundable.__init__(self, name)
 
-        self.def_prop(PrimVars())
-        self.def_prop(Attribute(bool, "doubleSided", value=False, uniform=True, metadata={
+        self.create_prop(PrimVars())
+        self.create_prop(Attribute(bool, "doubleSided", value=False, uniform=True, metadata={
             "doc": """Although some renderers treat all parametric or polygonal
         surfaces as if they were effectively laminae with outward-facing
         normals on both sides, some renderers derive significant optimizations
@@ -36,7 +36,7 @@ class Gprim(Boundable):
         forward-facing normals on each side of the surface for lighting
         calculations."""
         }))
-        self.def_prop(Attribute(token, "orientation", value="rightHanded", uniform=True, metadata={
+        self.create_prop(Attribute(token, "orientation", value="rightHanded", uniform=True, metadata={
             "allowedTokens": ["rightHanded", "leftHanded"],
             "doc": """Orientation specifies whether the gprim's surface normal 
         should be computed using the right hand rule, or the left hand rule.

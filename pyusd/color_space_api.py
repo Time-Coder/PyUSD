@@ -54,5 +54,5 @@ class ColorSpaceAPI(APISchemaBase):
     @classmethod
     def apply(cls, prim:Prim)->Prim:
         prim.metadata.apiSchemas.append(cls.__name__)
-        prim.def_prop(ColorSpace())
+        prim.create_prop(ColorSpace())
         return prim

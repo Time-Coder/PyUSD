@@ -45,7 +45,7 @@ class Prim:
             "apiSchemas": []
         })
 
-    def def_prop(self, prop:Property)->None:
+    def create_prop(self, prop:Property)->None:
         self._props[prop.name] = prop
         prop._parent_prim = self
         prop._parent_prop = None
@@ -121,13 +121,13 @@ class Prim:
         prop_names = name.split(":")
         prop_name = prop_names[0]
         if prop_name not in self._props:
-            self.def_prop(Property(prop_name, custom=True, is_leaf=False))
+            self.create_prop(Property(prop_name, custom=True, is_leaf=False))
 
         prop = self._props[prop_name]
 
         for prop_name in prop_names:
             if prop_name not in prop._children:
-                prop.def_prop(Property(prop_name, custom=True, is_leaf=False))
+                prop.create_prop(Property(prop_name, custom=True, is_leaf=False))
 
             prop = prop._children[prop_name]
 
@@ -311,7 +311,7 @@ class Prim:
     
     def __getattr__(self, name:str)->Property:
         if name not in self._props:
-            self.def_prop(Property(name, custom=True, is_leaf=False))
+            self.create_prop(Property(name, custom=True, is_leaf=False))
 
         return self._props[name]
 
@@ -339,9 +339,9 @@ class Prim:
 
         if name not in self._props:
             if not isinstance(value, Prim):
-                self.def_prop(Attribute(infer_type(value), name, uniform=False, custom=True, is_leaf=False, fix_type=False))
+                self.create_prop(Attribute(infer_type(value), name, uniform=False, custom=True, is_leaf=False, fix_type=False))
             else:
-                self.def_prop(Relationship(name, custom=True, is_leaf=False))
+                self.create_prop(Relationship(name, custom=True, is_leaf=False))
 
         prop = self._props[name]
         if isinstance(prop, Attribute):
