@@ -281,3 +281,12 @@ def nest_map(nested_list, func):
             result.append(func(item))
 
     return result
+
+
+def in_annotations(name:str, cls:type)->bool:
+    for klass in reversed(cls.__mro__):
+        if hasattr(klass, '__annotations__'):
+            if name in klass.__annotations__:
+                return True
+            
+    return False

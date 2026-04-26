@@ -3,8 +3,8 @@ from typing import Dict, Union, Optional, List, Any, TYPE_CHECKING
 from typeguard import typechecked
 
 from .property import Property
-from .prim_metadata import PrimMetadata
-from .utils import infer_type
+from .metadata import Metadata
+from .utils import infer_type, in_annotations
 from .sdf import Specifier
 
 if TYPE_CHECKING:
@@ -15,16 +15,13 @@ class Prim:
 
     __name_indices:Dict[type, int] = {}
 
-    _basic_attrs = {
-        "_name",
-        "name",
-        "_layer",
-        "_metadata",
-        "_children",
-        "_parent",
-        "_props"
-    }
-    
+    _name: str
+    _layer: Optional[Layer]
+    _metadata: Metadata
+    _children: Dict[str, Prim]
+    _parent: Optional[Prim]
+    _props: Dict[str, Property]
+
     def __init__(self, name:str="")->None:
         if name == "":
             name = self.__generate_name()
@@ -37,10 +34,11 @@ class Prim:
         self._parent:Optional[Prim] = None
         self._children:Dict[str, Prim] = {}
         self._props:Dict[str, Property] = {}
-        self._metadata:PrimMetadata = PrimMetadata(
-            specifier=Specifier.Def,
-            typeName=self.__class__.__name__
-        )
+        self._metadata:Metadata = Metadata({
+            "specifier": Specifier.Def,
+            "typeName": self.__class__.__name__,
+            "doc": self.__class__.__doc__
+        })
 
     def def_prop(self, prop:Property)->None:
         self._props[prop.name] = prop
@@ -181,7 +179,7 @@ class Prim:
         self._layer.remove_root_prim(self)
 
     @property
-    def metadata(self)->PrimMetadata:
+    def metadata(self)->Metadata:
         return self._metadata
 
     @property
@@ -313,7 +311,7 @@ class Prim:
         return self._props[name]
 
     def __setattr__(self, name: str, value: Any) -> None:
-        if name in self._basic_attrs:
+        if hasattr(self.__class__, name) or in_annotations(name, self.__class__):
             super().__setattr__(name, value)
             return
         

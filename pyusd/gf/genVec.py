@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import Set, List, Dict, Union, Any, Optional, Tuple, TYPE_CHECKING, TypeAlias
-from .helper import generate_getter_swizzles, generate_setter_swizzles, is_number
+from typing import Set, List, Dict, Union, Any, Optional, Tuple, TYPE_CHECKING, TypeAlias, Callable
+from .helper import generate_getter_swizzles, generate_setter_swizzles, is_number, in_annotations
 from .genType import genType, MathForm, Number
 from abc import abstractmethod
 
@@ -26,13 +26,15 @@ class genVec(genType):
         'q': 3
     }
 
-    _all_attrs:Set[str] = {
-        '_data', '_related_mat', '_mat_start_index', '_on_changed'
-    }
     _all_getter_swizzles:Set[str] = set()
     _all_setter_swizzles:Set[str] = set()
     __all_total_swizzles:Set[str] = set()
     __namespaces:List[str] = ['xyzw', 'rgba', 'stpq']
+
+    _data: Any
+    _related_mat: Optional[genMat]
+    _mat_start_index: int
+    _on_changed: Optional[Callable[[], None]]
 
     def __init__(self, *args):
         genType.__init__(self)
@@ -117,7 +119,7 @@ class genVec(genType):
         return vec_type(*(self._data[self._attr_index_map[ch]] for ch in name))
 
     def __setattr__(self, name:str, value:Union[float,bool,int,genVec]):
-        if name in self._all_attrs:
+        if hasattr(self.__class__, name) or in_annotations(name, self.__class__):
             super().__setattr__(name, value)
             return
         

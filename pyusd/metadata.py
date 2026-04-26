@@ -1,37 +1,53 @@
-from typing import Tuple, List, Dict, Any, Set
+from typing import List, Dict, Any
 from typeguard import typechecked
 
-from .utils import usd_value_str
+from .utils import usd_value_str, infer_type, usd_type_str, in_annotations
+from .dtypes import dictionary
 
 
 class Metadata:
 
-    _basic_attrs = {
-        "_builtin_data",
-        "_custom_data",
-        "_ignored_data"
-    }
+    _builtin_data: Dict[str, Any]
+    _custom_data: Dict[str, Any]
+    _builtin_is_set: Dict[str, bool]
+    _custom_is_set: Dict[str, bool]
 
-    def __init__(self, *args:Tuple[str], **kwargs:Dict[str, Any])->None:
-        self._builtin_data:Dict[str, Any] = {}
-
-        for key in args:
-            self._builtin_data[key] = None
+    def __init__(self, kwargs:Dict[str, Any]={})->None:
+        self._builtin_data: Dict[str, Any] = {}
+        self._builtin_is_set: Dict[str, bool] = {}
+        self._custom_is_set: Dict[str, bool] = {}
 
         for key, value in kwargs.items():
             if key == "customData":
+                if not isinstance(value, dictionary):
+                    value = dictionary(value)
+
+                self._custom_data = value
+                for sub_key in self._custom_data.keys():
+                    self._custom_is_set[sub_key] = False
+
                 continue
 
             self._builtin_data[key] = value
+            self._builtin_is_set[key] = False
 
-        self._custom_data:Dict[str, Any] = {}
-        if "customData" in kwargs:
-            self._custom_data = kwargs["customData"]
+        if "customData" not in kwargs:
+            self._custom_data = dictionary()
 
-        self._builtin_data["doc"] = None
-        self._ignored_data:Set[str] = {
-            "specifier", "typeName", "doc"
-        }
+    @typechecked
+    def update(self, kwargs:Dict[str, Any])->None:
+        for key, value in kwargs.items():
+            if key == "customData":
+                self._custom_data.update(value)
+                for sub_key in self._custom_data.keys():
+                    self._custom_is_set[sub_key] = False
+            else:
+                self._builtin_data[key] = value
+                self._builtin_is_set[key] = False
+
+    @property
+    def customData(self)->dictionary:
+        return self._custom_data
 
     @typechecked
     def __getattr__(self, name:str)->Any:
@@ -44,42 +60,49 @@ class Metadata:
     
     @typechecked
     def __setattr__(self, name:str, value:Any)->None:
-        if name in self._basic_attrs:
+        if hasattr(self.__class__, name) or in_annotations(name, self.__class__):
             super().__setattr__(name, value)
-        elif name in self._builtin_data:
+            return
+        
+        if name in self._builtin_data:
             self._builtin_data[name] = value
+            self._builtin_is_set[name] = True
         else:
             self._custom_data[name] = value
-
-    @property
-    def customData(self)->Dict[str, Any]:
-        return self._custom_data
+            self._custom_is_set[name] = True
 
     @typechecked
-    def to_str(self, indents:int=0)->str:
-        if len(self._builtin_data) == 0 and len(self._custom_data) == 0:
-            return ""
-        
+    def to_str(self, indents:int=0)->str:        
         tabs = "    " * indents
         next_tabs = "    " * (indents + 1)
+        next2_tabs = "    " * (indents + 2)
         result = "(\n"
         
-        result_list:List[str] = []
+        builtin_str_list:List[str] = []
         for key, value in self._builtin_data.items():
-            if value is None or key in self._ignored_data:
+            if not self._builtin_is_set[key]:
                 continue
             
-            result_list.append(f"{next_tabs}{key} = {usd_value_str(value)}")
+            builtin_str_list.append(f"{next_tabs}{key} = {usd_value_str(value, indents+1)}")
 
-        if len(result_list) > 0:
-            result += "\n".join(result_list) + "\n"
+        custom_str_list:List[str] = []
+        for key, value in self._custom_data.items():
+            if not self._custom_is_set[key]:
+                continue
 
-        if len(self._custom_data) > 0:
-            result += f"{next_tabs}customData = " + usd_value_str(self._custom_data, indents+1) + "\n"
+            custom_str_list.append(f"{next2_tabs}{usd_type_str(infer_type(value))} {key} = {usd_value_str(value, indents+2)}")
+
+        if len(builtin_str_list) == 0 and len(custom_str_list) == 0:
+            return ""
+
+        if builtin_str_list:
+            result += "\n".join(builtin_str_list) + "\n"
+
+        if custom_str_list:
+            result += f"{next_tabs}customData = {{\n"
+            result += "\n".join(custom_str_list)
+            result += f"\n{next_tabs}}}\n"
 
         result += f"{tabs})"
-
-        if len(result_list) == 0 and len(self._custom_data) == 0:
-            return ""
 
         return result

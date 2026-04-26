@@ -6,14 +6,7 @@ from typing import List
 
 
 class Xformable(Imageable):
-
-    def __init__(self, name:str="")->None:
-        Imageable.__init__(self, name)
-        self.metadata.customData["extraIncludes"] = """
-#include "pxr/usd/usdGeom/xformOp.h" 
-#include <vector> """
-
-        self.metadata.doc = """Base class for all transformable prims, which allows arbitrary
+    """Base class for all transformable prims, which allows arbitrary
     sequences of component affine transformations to be encoded.
 
     \\note 
@@ -212,6 +205,17 @@ class Xformable(Imageable):
     \\snippet examples_usdGeom.cpp CreateAnimatedTransform
     
 """
+
+    def __init__(self, name:str="")->None:
+        Imageable.__init__(self, name)
+        
+        self.metadata.update({
+            "customData": {
+                "extraIncludes": """
+#include "pxr/usd/usdGeom/xformOp.h" 
+#include <vector> """
+            }
+        })
 
         self.def_prop(Attribute(List[token], "xformOpOrder", value=[], uniform=True, metadata={
             "doc": """Encodes the sequence of transformation operations in the

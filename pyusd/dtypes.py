@@ -1,3 +1,6 @@
+from typing import Any
+
+
 class double(float):
     pass
 
@@ -38,4 +41,9 @@ class group(opaque):
     pass
 
 class dictionary(dict):
-    pass
+    
+    def __getattr__(self, name:str)->Any:
+        return self[name]
+    
+    def __setattr__(self, name:str, value:Any)->None:
+        self[name] = value

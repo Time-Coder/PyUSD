@@ -4,18 +4,21 @@ from ..dtypes import double
 
 
 class Cube(Gprim):
-    
-    def __init__(self, name:str="")->None:
-        Gprim.__init__(self, name)
-
-        self.metadata.doc = """Defines a primitive rectilinear cube centered at the origin.
+    """Defines a primitive rectilinear cube centered at the origin.
     
     The fallback values for Cube, Sphere, Cone, and Cylinder are set so that
     they all pack into the same volume/bounds."""
-        
-        self.metadata.customData["extraPlugInfo"] = {
-            "implementsComputeExtent": True
-        }
+
+    def __init__(self, name:str="")->None:
+        Gprim.__init__(self, name)
+
+        self.metadata.update({
+            "customData": {
+                "extraPlugInfo": {
+                    "implementsComputeExtent": True
+                }
+            }
+        })
 
         self.def_prop(Attribute(double, "size", value=2.0, metadata={
             "doc": """Indicates the length of each edge of the cube.  If you
@@ -25,5 +28,7 @@ class Cube(Gprim):
         }))
         
         self.extent = [(-1.0, -1.0, -1.0), (1.0, 1.0, 1.0)]
-        self.extent.metadata.doc = """Extent is re-defined on Cube only to provide a fallback value.
+        self.extent.metadata.update({
+            "doc": """Extent is re-defined on Cube only to provide a fallback value.
         \\sa UsdGeomGprim::GetExtentAttr()."""
+        })

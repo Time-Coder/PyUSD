@@ -5,11 +5,7 @@ from typing import List
 
 
 class Boundable(Xformable):
-
-    def __init__(self, name:str="")->None:
-        Xformable.__init__(self, name)
-
-        self.metadata.doc = """Boundable introduces the ability for a prim to persistently
+    """Boundable introduces the ability for a prim to persistently
     cache a rectilinear, local-space, extent.
     
     \\section UsdGeom_Boundable_Extent Why Extent and not Bounds ?
@@ -35,6 +31,9 @@ class Boundable(Xformable):
     When intermediate bounds are authored on Boundable parents, the child prims
     will be pruned from BBox computation; the authored extent is expected to
     incorporate all child bounds."""
+
+    def __init__(self, name:str="")->None:
+        Xformable.__init__(self, name)
 
         self.def_prop(Attribute(List[float3], "extent", metadata={
             "doc": """Extent is a three dimensional range measuring the geometric

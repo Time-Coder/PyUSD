@@ -4,7 +4,7 @@ from typeguard import typechecked
 from enum import Enum
 
 from .metadata import Metadata
-from .utils import infer_type
+from .utils import infer_type, in_annotations
 
 if TYPE_CHECKING:
     from .prim import Prim
@@ -20,24 +20,21 @@ class Property:
         Authored = 2
         Cleared = 3
 
-    _basic_attrs = {
-        "_parent_prim",
-        "_parent_prop",
-        "_name",
-        "_metadata",
-        "_children",
-        "_is_leaf",
-        "_custom",
-        "_value_state",
-        "__class__"
-    }
+    _parent_prim: Optional[Prim]
+    _parent_prop: Optional[Property]
+    _name: str
+    _metadata: Metadata
+    _children: Dict[str, Property]
+    _is_leaf: bool
+    _custom: bool
+    _value_state: Property.ValueState
 
     @typechecked
     def __init__(self, name:str, metadata:Dict[str, Any]={}, custom:bool=False, is_leaf:bool=True)->None:
         self._parent_prim:Optional[Prim] = None
         self._parent_prop:Optional[Property] = None
         self._name:str = name
-        self._metadata:Metadata = Metadata(**metadata)
+        self._metadata:Metadata = Metadata(metadata)
         self._children:Dict[str, Property] = {}
         self._custom:bool = custom
         self._is_leaf:bool = is_leaf
@@ -117,7 +114,7 @@ class Property:
         return self._children[name]
 
     def __setattr__(self, name: str, value: Any) -> None:
-        if name in self._basic_attrs:
+        if hasattr(self.__class__, name) or in_annotations(name, self.__class__):
             super().__setattr__(name, value)
             return
         

@@ -11,9 +11,7 @@ if TYPE_CHECKING:
 
 class Relationship(Property):
 
-    _basic_attrs = Property._basic_attrs | {
-        "_targets"
-    }
+    _targets: List[Prim]
 
     @typechecked
     def __init__(self, name:str, metadata:Dict[str, Any]={}, custom:bool=False, is_leaf:bool=True)->None:

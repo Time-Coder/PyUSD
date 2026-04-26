@@ -5,10 +5,7 @@ from ..dtypes import token
 
 
 class Imageable(Typed):
-
-    def __init__(self, name:str="")->None:
-        Typed.__init__(self, name)
-        self.metadata.doc = """Base class for all prims that may require rendering or 
+    """Base class for all prims that may require rendering or 
     visualization of some sort. The primary attributes of Imageable 
     are \\em visibility and \\em purpose, which each provide instructions for
     what geometry should be included for processing by rendering and other
@@ -18,9 +15,17 @@ class Imageable(Typed):
     has been moved to the UsdGeomPrimvarsAPI schema, because primvars can now
     be applied on non-Imageable prim types.  This API is planned
     to be removed, UsdGeomPrimvarsAPI should be used directly instead."""
-        self.metadata.customData["extraIncludes"] = """
+
+    def __init__(self, name:str="")->None:
+        Typed.__init__(self, name)
+
+        self.metadata.update({
+            "customData": {
+                "extraIncludes": """
 #include "pxr/base/gf/bbox3d.h"
 #include "pxr/usd/usdGeom/primvar.h" """
+            }
+        })
         
         self.def_prop(Attribute(token, "visibility", value="inherited", metadata={
             "allowedTokens": ["inherited", "invisible"],

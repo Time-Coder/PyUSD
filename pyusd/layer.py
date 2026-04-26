@@ -110,7 +110,6 @@ class Layer:
     def def_(self, prim_type:type, path:str)->Prim:
         prim = prim_type()
         self[path] = prim
-        prim.metadata.specifier = Specifier.Def
         return prim
     
     @typechecked

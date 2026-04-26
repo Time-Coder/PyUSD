@@ -5,15 +5,14 @@ from .primvars import PrimVars
 
 
 class Gprim(Boundable):
-    
-    def __init__(self, name:str="")->None:
-        Boundable.__init__(self, name)
-
-        self.metadata.doc = """Base class for all geometric primitives.  
+    """Base class for all geometric primitives.  
     
     Gprim encodes basic graphical properties such as \\em doubleSided and
     \\em orientation, and provides primvars for "display color" and "display
     opacity" that travel with geometry to be used as shader overrides.  """
+
+    def __init__(self, name:str="")->None:
+        Boundable.__init__(self, name)
 
         self.def_prop(PrimVars())
         self.def_prop(Attribute(bool, "doubleSided", value=False, uniform=True, metadata={

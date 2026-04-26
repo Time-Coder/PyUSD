@@ -11,18 +11,13 @@ from .utils import nest_map, usd_type_str, usd_value_str, analyze_list_type, inf
 T = TypeVar('T')
 class Attribute(Property, Generic[T]):
 
-    _basic_attrs = Property._basic_attrs | {
-        "_type",
-        "_dtype",
-        "_array_dim",
-        "_time_samples",
-        "_value",
-        "_uniform",
-        "_children",
-        "value",
-        "uniform",
-        "_fix_type"
-    }
+    _type: type
+    _dtype: type
+    _array_dim: int
+    _time_samples: Dict[float, T]
+    _value: Optional[T]
+    _uniform: bool
+    _fix_type: bool
 
     @typechecked
     def __init__(self, value_type:type, name:str, value:Optional[T]=None, metadata:Dict[str, Any]={}, is_leaf:bool=True, uniform:bool=False, custom:bool=False, fix_type:bool=True)->None:

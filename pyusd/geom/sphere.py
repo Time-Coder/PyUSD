@@ -4,18 +4,21 @@ from ..dtypes import double
 
 
 class Sphere(Gprim):
-    
-    def __init__(self, name:str="")->None:
-        Gprim.__init__(self, name)
-
-        self.metadata.doc = """Defines a primitive sphere centered at the origin.
+    """Defines a primitive sphere centered at the origin.
     
     The fallback values for Cube, Sphere, Cone, and Cylinder are set so that
     they all pack into the same volume/bounds."""
 
-        self.metadata.customData["extraPlugInfo"] = {
-            "implementsComputeExtent": True
-        }
+    def __init__(self, name:str="")->None:
+        Gprim.__init__(self, name)
+
+        self.metadata.update({
+            "customData": {
+                "extraPlugInfo": {
+                    "implementsComputeExtent": True
+                }
+            }
+        })
 
         self.def_prop(Attribute(double, "radius", value=1.0, metadata={
             "doc": """Indicates the sphere's radius.  If you
@@ -25,5 +28,7 @@ class Sphere(Gprim):
         }))
 
         self.extent = [(-1.0, -1.0, -1.0), (1.0, 1.0, 1.0)]
-        self.extent.metadata.doc = """Extent is re-defined on Sphere only to provide a fallback
+        self.extent.metadata.update({
+            "doc": """Extent is re-defined on Sphere only to provide a fallback
         value. \\sa UsdGeomGprim::GetExtentAttr()."""
+        })
