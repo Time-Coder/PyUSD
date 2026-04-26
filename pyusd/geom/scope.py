@@ -7,5 +7,7 @@ class Scope(Imageable):
     through a Scope successfully - it is just a guaranteed no-op from a
     transformability perspective."""
 
+    abstract: bool = False
+
     def __init__(self, name:str="")->None:
         Imageable.__init__(self, name)

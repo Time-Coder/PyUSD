@@ -21,8 +21,12 @@ class Prim:
     _children: Dict[str, Prim]
     _parent: Optional[Prim]
     _props: Dict[str, Property]
+    abstract: bool = False
 
     def __init__(self, name:str="")->None:
+        if self.abstract:
+            raise TypeError(f"cannot instantiate abstract class {self.__class__.__name__}")
+
         if name == "":
             name = self.__generate_name()
 
@@ -37,7 +41,8 @@ class Prim:
         self._metadata:Metadata = Metadata({
             "specifier": Specifier.Def,
             "typeName": self.__class__.__name__,
-            "doc": self.__class__.__doc__
+            "doc": self.__class__.__doc__,
+            "apiSchemas": []
         })
 
     def def_prop(self, prop:Property)->None:
@@ -271,7 +276,7 @@ class Prim:
     def to_str(self, indents:int=0)->str:
         tabs = "    " * indents
         prim_type_name = self.__class__.__name__
-        if prim_type_name == "Prim":
+        if prim_type_name in ["Prim", "Typed"]:
             result = f'{tabs}def "{self.name}"'
         else:
             result = f'{tabs}def {prim_type_name} "{self.name}"'

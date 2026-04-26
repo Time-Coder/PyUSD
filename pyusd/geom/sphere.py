@@ -9,6 +9,8 @@ class Sphere(Gprim):
     The fallback values for Cube, Sphere, Cone, and Cylinder are set so that
     they all pack into the same volume/bounds."""
 
+    abstract: bool = False
+
     def __init__(self, name:str="")->None:
         Gprim.__init__(self, name)
 

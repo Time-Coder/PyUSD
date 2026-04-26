@@ -9,5 +9,7 @@ class Typed(Prim):
     UsdTyped implements a typeName-based query for its override of
     UsdSchemaBase::_IsCompatible().  It provides no other behavior."""
 
+    abstract: bool = True
+
     def __init__(self, name:str="")->None:
         Prim.__init__(self, name)

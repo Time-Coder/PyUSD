@@ -206,6 +206,8 @@ class Xformable(Imageable):
     
 """
 
+    abstract: bool = True
+
     def __init__(self, name:str="")->None:
         Imageable.__init__(self, name)
         

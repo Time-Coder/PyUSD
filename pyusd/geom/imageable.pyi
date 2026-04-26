@@ -16,41 +16,35 @@ class Imageable(Typed):
     be applied on non-Imageable prim types.  This API is planned
     to be removed, UsdGeomPrimvarsAPI should be used directly instead."""
 
-    abstract: bool = True
+    def __init__(self, name:str="")->None: ...
 
-    def __init__(self, name:str="")->None:
-        Typed.__init__(self, name)
-
-        self.metadata.update({
-            "customData": {
-                "extraIncludes": """
-#include "pxr/base/gf/bbox3d.h"
-#include "pxr/usd/usdGeom/primvar.h" """
-            }
-        })
-        
-        self.def_prop(Attribute(token, "visibility", value="inherited", metadata={
-            "allowedTokens": ["inherited", "invisible"],
-            "doc": """Visibility is meant to be the simplest form of "pruning" 
+    @property
+    def visibility(self)->Attribute[token]:
+        """Visibility is meant to be the simplest form of "pruning" 
         visibility that is supported by most DCC apps.  Visibility is 
         animatable, allowing a sub-tree of geometry to be present for some 
         segment of a shot, and absent from others; unlike the action of 
         deactivating geometry prims, invisible geometry is still 
         available for inspection, for positioning, for defining volumes, etc."""
-        }))
 
-        self.def_prop(Attribute(token, "purpose", value="default", uniform=True, metadata={
-            "allowedTokens": ["default", "render", "proxy", "guide"],
-            "doc": """Purpose is a classification of geometry into categories that 
+    @visibility.setter
+    def visibility(self, value:token)->None: ...
+
+    @property
+    def purpose(self)->Attribute[token]:
+        """Purpose is a classification of geometry into categories that 
         can each be independently included or excluded from traversals of prims 
         on a stage, such as rendering or bounding-box computation traversals.
 
         See \\ref UsdGeom_ImageablePurpose for more detail about how 
         \\em purpose is computed and used.""" 
-        }))
 
-        self.def_prop(Relationship("proxyPrim", metadata={
-            "doc": """The \\em proxyPrim relationship allows us to link a
+    @purpose.setter
+    def purpose(self, value:token)->None: ...
+    
+    @property
+    def proxyPrim(self)->Relationship:
+        """The \\em proxyPrim relationship allows us to link a
         prim whose \\em purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
         useful in several scenarios:
@@ -70,4 +64,6 @@ class Imageable(Typed):
 
         \\note It is only valid to author the proxyPrim relationship on
         prims whose purpose is "render"."""
-        }))
+
+    @proxyPrim.setter
+    def proxyPrim(self, value:Relationship)->None: ...

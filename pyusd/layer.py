@@ -4,7 +4,6 @@ from typeguard import typechecked
 
 from .prim import Prim
 from .metadata import Metadata
-from .sdf import Specifier
 
 
 class Layer:

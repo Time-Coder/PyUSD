@@ -11,6 +11,8 @@ class Gprim(Boundable):
     \\em orientation, and provides primvars for "display color" and "display
     opacity" that travel with geometry to be used as shader overrides.  """
 
+    abstract: bool = True
+
     def __init__(self, name:str="")->None:
         Boundable.__init__(self, name)
 

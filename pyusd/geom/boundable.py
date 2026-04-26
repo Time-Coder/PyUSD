@@ -32,6 +32,8 @@ class Boundable(Xformable):
     will be pruned from BBox computation; the authored extent is expected to
     incorporate all child bounds."""
 
+    abstract: bool = True
+
     def __init__(self, name:str="")->None:
         Xformable.__init__(self, name)
 

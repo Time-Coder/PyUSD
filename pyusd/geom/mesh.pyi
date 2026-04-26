@@ -76,33 +76,31 @@ class Mesh(Gprim):
     and Loop, will likewise be smooth, but others, e.g. Bilinear, may be
     discontinuous between faces and/or within non-planar irregular faces."""
 
-    abstract: bool = False
+    def __init__(self, name = "")->None: ...
 
-    def __init__(self, name = "")->None:
-        Gprim.__init__(self, name)
-
-        self.metadata.update({
-            "customData": {
-                "extraIncludes": """
-#include "pxr/usd/usd/timeCode.h" """
-            }
-        })
-
-        self.def_prop(Attribute(List[int], "faceVertexIndices", metadata={
-            "doc": """Flat list of the index (into the _points_ attribute) of each
+    @property
+    def faceVertexIndices(self)->Attribute[List[int]]:
+        """Flat list of the index (into the _points_ attribute) of each
         vertex of each face in the mesh.  If this attribute has more than
         one timeSample, the mesh is considered to be topologically varying."""
-        }))
-        self.def_prop(Attribute(List[int], "faceVertexCounts", metadata={
-            "doc": """Provides the number of vertices in each face of the mesh, 
+
+    @faceVertexIndices.setter
+    def faceVertexIndices(self, value: List[int])->None: ...
+
+    @property
+    def faceVertexCounts(self)->Attribute[List[int]]:
+        """Provides the number of vertices in each face of the mesh, 
         which is also the number of consecutive indices in _faceVertexIndices_
         that define the face.  The length of this attribute is the number of
         faces in the mesh.  If this attribute has more than
         one timeSample, the mesh is considered to be topologically varying."""
-        }))
-        self.def_prop(Attribute(token, "subdivisionScheme", value="catmullClark", uniform=True, metadata={
-            "allowedTokens": ["catmullClark", "loop", "bilinear", "none"],
-            "doc": """The subdivision scheme to be applied to the surface.
+
+    @faceVertexCounts.setter
+    def faceVertexCounts(self, value: List[int])->None: ...
+
+    @property
+    def subdivisionScheme(self)->Attribute[token]:
+        """The subdivision scheme to be applied to the surface.
         Valid values are:
 
         - __catmullClark__: The default, Catmull-Clark subdivision; preferred
@@ -120,10 +118,13 @@ class Mesh(Gprim):
         a similar shape to a polygonal mesh and may offer additional guarantees
         of watertightness and additional subdivision features (e.g. holes) but
         may also not respect authored normals."""
-        }))
-        self.def_prop(Attribute(token, "interpolateBoundary", value="edgeAndCorner", metadata={
-            "allowedTokens": ["none", "edgeOnly", "edgeAndCorner"],
-            "doc": """Specifies how subdivision is applied for faces adjacent to
+
+    @subdivisionScheme.setter
+    def subdivisionScheme(self, value: token)->None: ...
+
+    @property
+    def interpolateBoundary(self)->Attribute[token]:
+        """Specifies how subdivision is applied for faces adjacent to
         boundary edges and boundary points. Valid values correspond to choices
         available in OpenSubdiv:
 
@@ -137,10 +138,13 @@ class Mesh(Gprim):
         These are illustrated and described in more detail in the OpenSubdiv
         documentation:
         https://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html#boundary-interpolation-rules"""
-        }))
-        self.def_prop(Attribute(token, "faceVaryingLinearInterpolation", value="cornersPlus1", metadata={
-            "allowedTokens": ["none", "cornersOnly", "cornersPlus1", "cornersPlus2", "boundaries", "all"],
-            "doc": """Specifies how elements of a primvar of interpolation type
+
+    @interpolateBoundary.setter
+    def interpolateBoundary(self, value: token)->None: ...
+
+    @property
+    def faceVaryingLinearInterpolation(self)->Attribute[token]:
+        """Specifies how elements of a primvar of interpolation type
         "faceVarying" are interpolated for subdivision surfaces. Interpolation
         can be as smooth as a "vertex" primvar or constrained to be linear at
         features specified by several options.  Valid values correspond to
@@ -162,47 +166,75 @@ class Mesh(Gprim):
         These are illustrated and described in more detail in the OpenSubdiv
         documentation:
         https://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html#face-varying-interpolation-rules"""
-        }))
-        self.def_prop(Attribute(token, "triangleSubdivisionRule", value="catmullClark", metadata={
-            "allowedTokens": ["catmullClark", "smooth"],
-            "doc": """Specifies an option to the subdivision rules for the
+
+    @faceVaryingLinearInterpolation.setter
+    def faceVaryingLinearInterpolation(self, value: token)->None: ...
+
+    @property
+    def triangleSubdivisionRule(self)->Attribute[token]:
+        """Specifies an option to the subdivision rules for the
         Catmull-Clark scheme to try and improve undesirable artifacts when
         subdividing triangles.  Valid values are "catmullClark" for the
         standard rules (the default) and "smooth" for the improvement.
 
         See https://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html#triangle-subdivision-rule"""
-        }))
-        self.def_prop(Attribute(List[int], "holeIndices", value=[], metadata={
-            "doc": """The indices of all faces that should be treated as holes,
+
+    @triangleSubdivisionRule.setter
+    def triangleSubdivisionRule(self, value: token)->None: ...
+
+    @property
+    def holeIndices(self)->Attribute[List[int]]:
+        """The indices of all faces that should be treated as holes,
         i.e. made invisible. This is traditionally a feature of subdivision
         surfaces and not generally applied to polygonal meshes."""
-        }))
-        self.def_prop(Attribute(List[int], "cornerIndices", value=[], metadata={
-            "doc": """The indices of points for which a corresponding sharpness
+
+    @holeIndices.setter
+    def holeIndices(self, value: List[int])->None: ...
+
+
+    @property
+    def cornerIndices(self)->Attribute[List[int]]:
+        """The indices of points for which a corresponding sharpness
         value is specified in _cornerSharpnesses_ (so the size of this array
         must match that of _cornerSharpnesses_)."""
-        }))
-        self.def_prop(Attribute(List[float], "cornerSharpnesses", value=[], metadata={
-            "doc": """The sharpness values associated with a corresponding set of
+
+    @cornerIndices.setter
+    def cornerIndices(self, value: List[int])->None: ...
+
+    @property
+    def cornerSharpnesses(self)->Attribute[List[float]]:
+        """The sharpness values associated with a corresponding set of
         points specified in _cornerIndices_ (so the size of this array must
         match that of _cornerIndices_). Use the constant `SHARPNESS_INFINITE`
         for a perfectly sharp corner."""
-        }))
-        self.def_prop(Attribute(List[int], "creaseIndices", value=[], metadata={
-            "doc": """The indices of points grouped into sets of successive pairs
+
+    @cornerSharpnesses.setter
+    def cornerSharpnesses(self, value: List[float])->None: ...
+
+    @property
+    def creaseIndices(self)->Attribute[List[int]]:
+        """The indices of points grouped into sets of successive pairs
         that identify edges to be creased. The size of this array must be
         equal to the sum of all elements of the _creaseLengths_ attribute."""
-        }))
-        self.def_prop(Attribute(List[int], "creaseLengths", value=[], metadata={
-            "doc": """The length of this array specifies the number of creases
+
+    @creaseIndices.setter
+    def creaseIndices(self, value: List[int])->None: ...
+
+    @property
+    def creaseLengths(self)->Attribute[List[int]]:
+        """The length of this array specifies the number of creases
         (sets of adjacent sharpened edges) on the mesh. Each element gives
         the number of points of each crease, whose indices are successively
         laid out in the _creaseIndices_ attribute. Since each crease must
         be at least one edge long, each element of this array must be at
         least two."""
-        }))
-        self.def_prop(Attribute(List[float], "creaseSharpnesses", value=[], metadata={
-            "doc": """The per-crease or per-edge sharpness values for all creases.
+
+    @creaseLengths.setter
+    def creaseLengths(self, value: List[int])->None: ...
+
+    @property
+    def creaseSharpnesses(self)->Attribute[List[float]]:
+        """The per-crease or per-edge sharpness values for all creases.
         Since _creaseLengths_ encodes the number of points in each crease,
         the number of elements in this array will be either len(creaseLengths)
         or the sum over all X of (creaseLengths[X] - 1). Note that while
@@ -211,4 +243,7 @@ class Mesh(Gprim):
         per crease on a mesh, or sharpnesses for all edges making up
         the creases on a mesh.  Use the constant `SHARPNESS_INFINITE` for a
         perfectly sharp crease."""
-        }))
+
+    @creaseSharpnesses.setter
+    def creaseSharpnesses(self, value: List[float])->None: ...
+    
