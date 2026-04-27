@@ -1,0 +1,162 @@
+@startuml
+' USD Geometry Classes Inheritance and Properties Diagram
+
+' Abstract base classes
+class Typed {
+    +name: str
+    +metadata: dict
+}
+
+class Imageable {
+    +visibility: token = "inherited"
+    +purpose: token = "default"
+    +proxyPrim: Relationship
+}
+
+class Xformable {
+    +xformOpOrder: List[token] = []
+    +XformOp: XformOp
+}
+
+class Boundable {
+    +extent: List[float3]
+}
+
+class Gprim {
+    +primvars: namespace
+    ++displayColor: List[color3f]
+    ++displayOpacity: List[float]
+    ++st: List[texCoord2f]
+    +doubleSided: bool = False
+    +orientation: token = "rightHanded"
+}
+
+class PointBased {
+    +points: List[point3f]
+    +velocities: List[vector3f]
+    +accelerations: List[vector3f]
+    +normals: List[normal3f]
+}
+
+class Curves {
+    +curveVertexCounts: List[int]
+    +widths: List[float]
+}
+
+' Concrete classes
+class Scope {
+}
+
+class Xform {
+}
+
+class Sphere {
+    +radius: double = 1.0
+    +extent: [(-1.0, -1.0, -1.0), (1.0, 1.0, 1.0)]
+}
+
+class Cube {
+    +size: double = 2.0
+    +extent: [(-1.0, -1.0, -1.0), (1.0, 1.0, 1.0)]
+}
+
+class Cylinder {
+    +height: double = 2.0
+    +radius: double = 1.0
+    +axis: token = "Z"
+    +extent: [(-1.0, -1.0, -1.0), (1.0, 1.0, 1.0)]
+}
+
+class Cone {
+    +height: double = 2.0
+    +radius: double = 1.0
+    +axis: token = "Z"
+    +extent: [(-1.0, -1.0, -1.0), (1.0, 1.0, 1.0)]
+}
+
+class Capsule {
+    +height: double = 1.0
+    +radius: double = 0.5
+    +axis: token = "Z"
+    +extent: [(-0.5, -0.5, -1.0), (0.5, 0.5, 1.0)]
+}
+
+class Mesh {
+    +faceVertexIndices: List[int]
+    +faceVertexCounts: List[int]
+    +subdivisionScheme: token = "catmullClark"
+    +interpolateBoundary: token = "edgeAndCorner"
+    +faceVaryingLinearInterpolation: token = "cornersPlus1"
+    +triangleSubdivisionRule: token = "catmullClark"
+    +holeIndices: List[int] = []
+    +cornerIndices: List[int] = []
+    +cornerSharpnesses: List[float] = []
+    +creaseIndices: List[int] = []
+    +creaseLengths: List[int] = []
+    +creaseSharpnesses: List[float] = []
+}
+
+class BasisCurves {
+    +type: token = "cubic"
+    +basis: token = "bezier"
+    +wrap: token = "nonperiodic"
+}
+
+class Camera {
+    +projection: token = "perspective"
+    +horizontalAperture: float = 20.9550
+    +verticalAperture: float = 15.2908
+    +horizontalApertureOffset: float = 0.0
+    +verticalApertureOffset: float = 0.0
+    +focalLength: float = 50.0
+    +clippingRange: float2 = (1, 1000000)
+    +clippingPlanes: List[float4] = []
+    +fStop: float = 0.0
+    +focusDistance: float = 0.0
+    +stereoRole: token = "mono"
+    +shutter: namespace
+    ++open: double = 0.0
+    ++close: double = 0.0
+    +exposure: namespace
+    ++iso: float = 100.0
+    ++time: float = 1.0
+    ++fStop: float = 1.0
+    ++responsivity: float = 1.0
+}
+
+class PointInstancer {
+    +prototypes: Relationship
+    +protoIndices: List[int]
+    +ids: List[int64]
+    +positions: List[point3f]
+    +orientations: List[quath]
+    +orientationsf: List[quatf]
+    +scales: List[float3]
+    +velocities: List[vector3f]
+    +accelerations: List[vector3f]
+    +angularVelocities: List[vector3f]
+    +invisibleIds: List[int64] = []
+}
+
+' Relationships
+Typed <|-- Imageable
+Imageable <|-- Xformable
+Xformable <|-- Boundable
+Boundable <|-- Gprim
+Gprim <|-- PointBased
+PointBased <|-- Curves
+PointBased <|-- Mesh
+Curves <|-- BasisCurves
+
+Imageable <|-- Scope
+Xformable <|-- Xform
+Xformable <|-- Camera
+Boundable <|-- PointInstancer
+
+Gprim <|-- Sphere
+Gprim <|-- Cube
+Gprim <|-- Cylinder
+Gprim <|-- Cone
+Gprim <|-- Capsule
+
+@enduml
