@@ -50,7 +50,7 @@ class NurbsCurves(Curves):
         be less than the maximum, and greater than or equal to the value of the 
         knots['i'th curve slice][order[i]-1]. The maxium must be less 
         than or equal to the last element's value in knots['i'th curve slice].
-	Range maps to (vmin, vmax) in the RenderMan spec."""
+	    Range maps to (vmin, vmax) in the RenderMan spec."""
         }))
         self.create_prop(Attribute(List[float], "pointWeights", metadata={
             "doc": """Optionally provides "w" components for each control point,

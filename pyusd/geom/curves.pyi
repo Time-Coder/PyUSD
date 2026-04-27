@@ -1,4 +1,4 @@
-from .point_base import PointBased
+from .point_based import PointBased
 from ..attribute import Attribute
 from typing import List
 

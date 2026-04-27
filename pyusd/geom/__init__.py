@@ -9,7 +9,7 @@ from .capsule_1 import Capsule_1
 from .plane import Plane
 from .scope import Scope
 from .gprim import Gprim
-from .point_base import PointBased, PointBase
+from .point_based import PointBased, PointBase
 from .mesh import Mesh
 from .tet_mesh import TetMesh
 from .geom_subset import GeomSubset

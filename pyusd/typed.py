@@ -10,6 +10,3 @@ class Typed(Prim):
     UsdSchemaBase::_IsCompatible().  It provides no other behavior."""
 
     abstract: bool = True
-
-    def __init__(self, name:str="")->None:
-        Prim.__init__(self, name)
