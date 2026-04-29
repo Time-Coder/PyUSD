@@ -1,6 +1,9 @@
 from .gprim import Gprim
 from ..attribute import Attribute
 from ..dtypes import double
+from ..common import SchemaKind
+from ..gf import float3
+from typing import List
 
 
 class Cube(Gprim):
@@ -9,28 +12,24 @@ class Cube(Gprim):
     The fallback values for Cube, Sphere, Cone, and Cylinder are set so that
     they all pack into the same volume/bounds."""
 
-    abstract: bool = False
+    schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
-    def __init__(self, name:str="")->None:
-        Gprim.__init__(self, name)
-
-        self.metadata.update({
-            "customData": {
-                "extraPlugInfo": {
-                    "implementsComputeExtent": True
-                }
+    meta = {
+        "customData": {
+            "extraPlugInfo": {
+                "implementsComputeExtent": True
             }
-        })
+        }
+    }
 
-        self.create_prop(Attribute(double, "size", value=2.0, metadata={
-            "doc": """Indicates the length of each edge of the cube.  If you
+    size: Attribute[double] = Attribute(double, "size", value=2.0, doc=
+        """Indicates the length of each edge of the cube.  If you
         author \\em size you must also author \\em extent.
         
         \\sa GetExtentAttr()"""
-        }))
-        
-        self.extent = [(-1.0, -1.0, -1.0), (1.0, 1.0, 1.0)]
-        self.extent.metadata.update({
-            "doc": """Extent is re-defined on Cube only to provide a fallback value.
+    )
+
+    extent: Attribute[List[float3]] = Attribute(List[float3], value=[(-1.0, -1.0, -1.0), (1.0, 1.0, 1.0)], doc=
+        """Extent is re-defined on Cube only to provide a fallback value.
         \\sa UsdGeomGprim::GetExtentAttr()."""
-        })
+    )

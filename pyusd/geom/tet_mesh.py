@@ -1,6 +1,7 @@
 from .point_based import PointBased
 from ..attribute import Attribute
 from ..gf import int3, int4
+from ..common import SchemaKind
 from typing import List
 
 
@@ -15,7 +16,7 @@ class TetMesh(PointBased):
     indices into the TetMesh's <b>points</b> attribute, inherited from 
     UsdGeomPointBased."""
     
-    abstract: bool = False
+    schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     def __init__(self, name:str="")->None:
         PointBased.__init__(self, name)

@@ -3,6 +3,7 @@ from ..attribute import Attribute
 from ..relationship import Relationship
 from ..dtypes import int64
 from ..gf import float3, point3f, quath, quatf, vector3f
+from ..common import SchemaKind
 from typing import List
 
 
@@ -234,7 +235,7 @@ class PointInstancer(Boundable):
     \\endcode
     """
     
-    abstract: bool = False
+    schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     def __init__(self, name:str="")->None:
         Boundable.__init__(self, name)

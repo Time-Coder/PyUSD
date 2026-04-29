@@ -1,6 +1,7 @@
 from .point_based import PointBased
 from ..attribute import Attribute
 from ..dtypes import token
+from ..common import SchemaKind
 from typing import List
 
 
@@ -76,7 +77,7 @@ class Mesh(PointBased):
     and Loop, will likewise be smooth, but others, e.g. Bilinear, may be
     discontinuous between faces and/or within non-planar irregular faces."""
     
-    abstract: bool = False
+    schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     def __init__(self, name = "")->None:
         PointBased.__init__(self, name)

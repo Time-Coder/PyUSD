@@ -1,6 +1,7 @@
 from .gprim import Gprim
 from ..attribute import Attribute
 from ..dtypes import double
+from ..common import SchemaKind
 
 
 class Sphere(Gprim):
@@ -9,7 +10,7 @@ class Sphere(Gprim):
     The fallback values for Cube, Sphere, Cone, and Cylinder are set so that
     they all pack into the same volume/bounds."""
 
-    abstract: bool = False
+    schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     def __init__(self, name:str="")->None:
         Gprim.__init__(self, name)

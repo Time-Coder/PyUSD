@@ -2,6 +2,7 @@ from ..attribute import Attribute
 from ..dtypes import token, namespace
 from ..gf import color3f, texCoord2f
 from .boundable import Boundable
+from ..common import SchemaKind
 from typing import List
 
 
@@ -12,7 +13,7 @@ class Gprim(Boundable):
     \\em orientation, and provides primvars for "display color" and "display
     opacity" that travel with geometry to be used as shader overrides.  """
 
-    abstract: bool = True
+    schema_kind: SchemaKind = SchemaKind.AbstractTyped
 
     def __init__(self, name:str="")->None:
         Boundable.__init__(self, name)

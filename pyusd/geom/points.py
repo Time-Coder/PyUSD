@@ -1,6 +1,7 @@
 from .point_based import PointBased
 from ..attribute import Attribute
 from ..dtypes import int64
+from ..common import SchemaKind
 from typing import List
 
 
@@ -16,7 +17,7 @@ class Points(PointBased):
     have interpolation metadata.  It's common for authored widths and normals
     to have constant or varying interpolation."""
     
-    abstract: bool = False
+    schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     def __init__(self, name:str="")->None:
         PointBased.__init__(self, name)

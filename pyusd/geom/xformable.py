@@ -2,6 +2,7 @@ from .imageable import Imageable
 from ..attribute import Attribute
 from ..dtypes import token
 from .xformop import XformOp
+from ..common import SchemaKind
 from typing import List
 
 
@@ -206,7 +207,7 @@ class Xformable(Imageable):
     
 """
 
-    abstract: bool = True
+    schema_kind: SchemaKind = SchemaKind.AbstractTyped
 
     def __init__(self, name:str="")->None:
         Imageable.__init__(self, name)

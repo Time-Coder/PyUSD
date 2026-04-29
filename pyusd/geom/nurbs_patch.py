@@ -2,6 +2,7 @@ from .point_based import PointBased
 from ..attribute import Attribute
 from ..dtypes import namespace, token
 from ..gf import double2, double3
+from ..common import SchemaKind
 from typing import List
 
 
@@ -55,7 +56,7 @@ class NurbsPatch(PointBased):
     often considered a more flexible modeling primitive.
     """
     
-    abstract: bool = False
+    schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     def __init__(self, name:str="")->None:
         PointBased.__init__(self, name)

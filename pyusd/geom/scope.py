@@ -1,4 +1,5 @@
 from .imageable import Imageable
+from ..common import SchemaKind
 
 
 class Scope(Imageable):
@@ -7,7 +8,7 @@ class Scope(Imageable):
     through a Scope successfully - it is just a guaranteed no-op from a
     transformability perspective."""
 
-    abstract: bool = False
+    schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     def __init__(self, name:str="")->None:
         Imageable.__init__(self, name)

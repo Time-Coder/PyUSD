@@ -1,5 +1,6 @@
 from .point_based import PointBased
 from ..attribute import Attribute
+from ..common import SchemaKind
 from typing import List
 
 
@@ -24,31 +25,29 @@ class Curves(PointBased):
     abstract type.
     """
     
-    abstract: bool = True
+    schema_kind: SchemaKind = SchemaKind.AbstractTyped
 
-    def __init__(self, name:str="")->None:
-        PointBased.__init__(self, name)
-
-        self.metadata.update({
-            "customData": {
-                "extraPlugInfo": {
-                    "implementsComputeExtent": True
-                }
+    meta = {
+        "customData": {
+            "extraPlugInfo": {
+                "implementsComputeExtent": True
             }
-        })
+        }
+    }
 
-        self.create_prop(Attribute(List[int], "curveVertexCounts", metadata={
-            "doc": """Curves-derived primitives can represent multiple distinct,
+    curveVertexCounts: Attribute[List[int]] = Attribute(List[int], "curveVertexCounts", doc=
+        """Curves-derived primitives can represent multiple distinct,
         potentially disconnected curves.  The length of 'curveVertexCounts'
         gives the number of such curves, and each element describes the
         number of vertices in the corresponding curve"""
-        }))
-        self.create_prop(Attribute(List[float], "widths", metadata={
-            "doc": """Provides width specification for the curves, whose application
+    )
+
+    widths: Attribute[List[float]] = Attribute(List[float], "widths", doc=
+        """Provides width specification for the curves, whose application
         will depend on whether the curve is oriented (normals are defined for
         it), in which case widths are "ribbon width", or unoriented, in which
         case widths are cylinder width.  'widths' is not a generic Primvar,
         but the number of elements in this attribute will be determined by
         its 'interpolation'.  See \\ref SetWidthsInterpolation() .  If 'widths'
         and 'primvars:widths' are both specified, the latter has precedence."""
-        }))
+    )

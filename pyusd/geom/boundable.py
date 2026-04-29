@@ -1,6 +1,7 @@
 from .xformable import Xformable
 from ..attribute import Attribute
 from ..gf import float3
+from ..common import SchemaKind
 from typing import List
 
 
@@ -32,13 +33,10 @@ class Boundable(Xformable):
     will be pruned from BBox computation; the authored extent is expected to
     incorporate all child bounds."""
 
-    abstract: bool = True
+    schema_kind: SchemaKind = SchemaKind.AbstractTyped
 
-    def __init__(self, name:str="")->None:
-        Xformable.__init__(self, name)
-
-        self.create_prop(Attribute(List[float3], "extent", metadata={
-            "doc": """Extent is a three dimensional range measuring the geometric
+    extent: Attribute[List[float3]] = Attribute(List[float3], doc=
+        """Extent is a three dimensional range measuring the geometric
         extent of the authored gprim in its own local space (i.e. its own
         transform not applied), \\em without accounting for any shader-induced
         displacement. If __any__ extent value has been authored for a given 
@@ -54,4 +52,4 @@ class Boundable(Xformable):
         An authored extent on a prim which has children is expected to include
         the extent of all children, as they will be pruned from BBox computation
         during traversal."""
-        }))
+    )

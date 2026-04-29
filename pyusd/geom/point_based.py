@@ -1,6 +1,7 @@
 from .gprim import Gprim
 from ..attribute import Attribute
 from ..gf import point3f, vector3f, normal3f
+from ..common import SchemaKind
 from typing import List
 
 
@@ -8,7 +9,7 @@ class PointBased(Gprim):
     """Base class for all UsdGeomGprims that possess points,
     providing common attributes such as normals and velocities."""
     
-    abstract: bool = True
+    schema_kind: SchemaKind = SchemaKind.AbstractTyped
 
     def __init__(self, name:str="")->None:
         Gprim.__init__(self, name)

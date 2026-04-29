@@ -2,6 +2,7 @@ from .xformable import Xformable
 from ..attribute import Attribute
 from ..dtypes import token, namespace, double
 from ..gf import float2, float4
+from ..common import SchemaKind
 from typing import List
 
 
@@ -90,109 +91,118 @@ class Camera(Xformable):
     \\sa \\ref UsdGeom_LinAlgBasics
      """
     
-    abstract: bool = False
+    schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
-    def __init__(self, name:str="")->None:
-        Xformable.__init__(self, name)
-
-        self.metadata.update({
-            "customData": {
-                "extraIncludes": """
+    meta = {
+        "customData": {
+            "extraIncludes": """
 #include "pxr/base/gf/camera.h" """
-            }
-        })
+        }
+    }
 
-        self.create_prop(Attribute(token, "projection", value="perspective", metadata={
-            "allowedTokens": ["perspective", "orthographic"]
-        }))
-        self.create_prop(Attribute(float, "horizontalAperture", value=20.9550, metadata={
-            "doc": """Horizontal aperture in tenths of a scene unit; see 
-                 \\ref UsdGeom_CameraUnits . Default is the equivalent of 
-                 the standard 35mm spherical projector aperture."""
-        }))
-        self.create_prop(Attribute(float, "verticalAperture", value=15.2908, metadata={
-            "doc": """Vertical aperture in tenths of a scene unit; see 
-                 \\ref UsdGeom_CameraUnits . Default is the equivalent of 
-                 the standard 35mm spherical projector aperture."""
-        }))
-        self.create_prop(Attribute(float, "horizontalApertureOffset", value=0.0, metadata={
-            "doc": """Horizontal aperture offset in the same units as
-                 horizontalAperture. Defaults to 0."""
-        }))
-        self.create_prop(Attribute(float, "verticalApertureOffset", value=0.0, metadata={
-            "doc": """Vertical aperture offset in the same units as
-                 verticalAperture. Defaults to 0."""
-        }))
-        self.create_prop(Attribute(float, "focalLength", value=50.0, metadata={
-            "doc": """Perspective focal length in tenths of a scene unit; see 
-                 \\ref UsdGeom_CameraUnits ."""
-        }))
-        self.create_prop(Attribute(float2, "clippingRange", value=(1, 1000000), metadata={
-            "doc": """Near and far clipping distances in scene units; see 
-                 \\ref UsdGeom_CameraUnits ."""
-        }))
-        self.create_prop(Attribute(List[float4], "clippingPlanes", value=[], metadata={
-            "doc": """Additional, arbitrarily oriented clipping planes.
-                 A vector (a,b,c,d) encodes a clipping plane that cuts off
-                 (x,y,z) with a * x + b * y + c * z + d * 1 < 0 where (x,y,z)
-                 are the coordinates in the camera's space."""
-        }))
-        self.create_prop(Attribute(float, "fStop", value=0.0, metadata={
-            "doc": """Lens aperture. Defaults to 0.0, which turns off depth of field effects."""
-        }))
-        self.create_prop(Attribute(float, "focusDistance", value=0.0, metadata={
-            "doc": """Distance from the camera to the focus plane in scene units; see 
-                 \\ref UsdGeom_CameraUnits ."""
-        }))
-        self.create_prop(Attribute(token, "stereoRole", value="mono", uniform=True, metadata={
-            "allowedTokens": ["mono", "left", "right"],
-            "doc": """If different from mono, the camera is intended to be the left
-                 or right camera of a stereo setup."""
-        }))
+    projection: Attribute[token] = Attribute(token, value="perspective", metadata={
+        "allowedTokens": ["perspective", "orthographic"]
+    })
 
-        shutter = self.create_prop(Attribute(namespace, "shutter", is_leaf=False))
-        shutter.create_prop(Attribute(double, "open", value=0.0, metadata={
-            "doc": """Frame relative shutter open time in UsdTimeCode units (negative
-                 value indicates that the shutter opens before the current
-                 frame time). Used for motion blur."""
-        }))
-        shutter.create_prop(Attribute(double, "close", value=0.0, metadata={
-            "doc": """Frame relative shutter close time, analogous comments from
-                 shutter:open apply. A value greater or equal to shutter:open
-                 should be authored, otherwise there is no exposure and a
-                 renderer should produce a black image. Used for motion blur."""
-        }))
+    horizontalAperture: Attribute[float] = Attribute(float, value=20.9550, doc=
+        """Horizontal aperture in tenths of a scene unit; see 
+        \\ref UsdGeom_CameraUnits . Default is the equivalent of 
+        the standard 35mm spherical projector aperture."""
+    )
 
-        exposure = self.create_prop(Attribute(float, "exposure", value=0.0, is_leaf=False, metadata={
-            "doc": """Exposure compensation, as a log base-2 value.  The default
-                    of 0.0 has no effect.  A value of 1.0 will double the
-                    image-plane intensities in a rendered image; a value of
-                    -1.0 will halve them."""
-        }))
-        exposure.create_prop(Attribute(float, "iso", value=100.0, metadata={
-            "doc": """The speed rating of the sensor or film when calculating exposure.
-                 Higher numbers give a brighter image, lower numbers darker."""
-        }))
-        exposure.create_prop(Attribute(float, "time", value=1.0, metadata={
-            "doc": """Time in seconds that the sensor is exposed to light when calculating exposure.
-                 Longer exposure times create a brighter image, shorter times darker.
-                 Note that shutter:open and shutter:close model essentially the 
-                 same property of a physical camera, but are for specifying the 
-                 size of the motion blur streak which is for practical purposes
-                 useful to keep separate."""
-        }))
-        exposure.create_prop(Attribute(float, "fStop", value=1.0, metadata={
-            "doc": """f-stop of the aperture when calculating exposure. Smaller numbers
-                 create a brighter image, larger numbers darker.
-                 Note that the `fStop` attribute also models the diameter of the camera
-                 aperture, but for specifying depth of field.  For practical 
-                 purposes it is useful to keep the exposure and the depth of field
-                 controls separate.
-                 """
-        }))
-        exposure.create_prop(Attribute(float, "responsivity", value=1.0, metadata={
-            "doc": """Scalar multiplier representing overall responsivity of the 
-                 sensor system to light when calculating exposure. Intended to be
-                 used as a per camera/lens system measured scaling value."""
-        }))
+    verticalAperture: Attribute[float] = Attribute(float, value=15.2908, doc=
+        """Vertical aperture in tenths of a scene unit; see 
+        \\ref UsdGeom_CameraUnits . Default is the equivalent of 
+        the standard 35mm spherical projector aperture."""
+    )
+
+    horizontalApertureOffset: Attribute[float] = Attribute(float, value=0.0, doc=
+        """Horizontal aperture offset in the same units as
+        horizontalAperture. Defaults to 0."""
+    )
+
+    verticalApertureOffset: Attribute[float] = Attribute(float, value=0.0, doc=
+        """Vertical aperture offset in the same units as
+        verticalAperture. Defaults to 0."""
+    )
+
+    focalLength: Attribute[float] = Attribute(float, value=50.0, doc=
+        """Perspective focal length in tenths of a scene unit; see 
+        \\ref UsdGeom_CameraUnits ."""
+    )
+
+    clippingRange: Attribute[float2] = Attribute(float2, value=(1, 1000000), doc=
+        """Near and far clipping distances in scene units; see 
+        \\ref UsdGeom_CameraUnits ."""
+    )
+
+    clippingPlanes: Attribute[List[float4]] = Attribute(List[float4], value=[], doc=
+        """Additional, arbitrarily oriented clipping planes.
+        A vector (a,b,c,d) encodes a clipping plane that cuts off
+        (x,y,z) with a * x + b * y + c * z + d * 1 < 0 where (x,y,z)
+        are the coordinates in the camera's space."""
+    )
+
+    fStop: Attribute[float] = Attribute(float, value=0.0, doc=
+        "Lens aperture. Defaults to 0.0, which turns off depth of field effects."
+    )
+
+    focusDistance: Attribute[float] = Attribute(float, value=0.0, doc=
+        """Distance from the camera to the focus plane in scene units; see 
+        \\ref UsdGeom_CameraUnits ."""
+    )
+
+    stereoRole: Attribute[token] = Attribute(token, value="mono", uniform=True,
+        metadata={
+            "allowedTokens": ["mono", "left", "right"]
+        },
+        doc = """If different from mono, the camera is intended to be the left
+        or right camera of a stereo setup."""
+    )
+
+    shutter: Attribute[namespace] = Attribute(namespace, is_leaf=False)
+    shutter.open = Attribute(double, "open", value=0.0, doc=
+        """Frame relative shutter open time in UsdTimeCode units (negative
+        value indicates that the shutter opens before the current
+        frame time). Used for motion blur."""
+    )
+    shutter.close = Attribute(double, value=0.0, doc=
+        """Frame relative shutter close time, analogous comments from
+        shutter:open apply. A value greater or equal to shutter:open
+        should be authored, otherwise there is no exposure and a
+        renderer should produce a black image. Used for motion blur."""
+    )
+
+    exposure: Attribute[float] = Attribute(float, value=0.0, is_leaf=False, doc=
+        """Exposure compensation, as a log base-2 value.  The default
+        of 0.0 has no effect.  A value of 1.0 will double the
+        image-plane intensities in a rendered image; a value of
+        -1.0 will halve them."""
+    )
+    exposure.iso = Attribute(float, value=100.0, doc=
+        """The speed rating of the sensor or film when calculating exposure.
+        Higher numbers give a brighter image, lower numbers darker."""
+    )
+    exposure.time = Attribute(float, value=1.0, doc=
+        """Time in seconds that the sensor is exposed to light when calculating exposure.
+        Longer exposure times create a brighter image, shorter times darker.
+        Note that shutter:open and shutter:close model essentially the 
+        same property of a physical camera, but are for specifying the 
+        size of the motion blur streak which is for practical purposes
+        useful to keep separate."""
+    )
+    exposure.fStop = Attribute(float, value=1.0, doc=
+        """f-stop of the aperture when calculating exposure. Smaller numbers
+        create a brighter image, larger numbers darker.
+        Note that the `fStop` attribute also models the diameter of the camera
+        aperture, but for specifying depth of field.  For practical 
+        purposes it is useful to keep the exposure and the depth of field
+        controls separate.
+        """
+    )
+    exposure.responsivity = Attribute(float, value=1.0, doc=
+        """Scalar multiplier representing overall responsivity of the 
+        sensor system to light when calculating exposure. Intended to be
+        used as a per camera/lens system measured scaling value."""
+    )
         

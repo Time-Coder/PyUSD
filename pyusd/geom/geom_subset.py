@@ -1,6 +1,7 @@
 from ..typed import Typed
 from ..attribute import Attribute
 from ..dtypes import token
+from ..common import SchemaKind
 from typing import List
 
 
@@ -25,7 +26,7 @@ class GeomSubset(Typed):
     geometry using API available in UsdShade (UsdShadeMaterial::Bind).
 """
 
-    abstract: bool = False
+    schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     def __init__(self, name:str="")->None:
         Typed.__init__(self, name)

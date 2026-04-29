@@ -1,6 +1,7 @@
 from .curves import Curves
 from ..attribute import Attribute
 from ..gf import double2
+from ..common import SchemaKind
 from typing import List
 
 
@@ -27,7 +28,7 @@ class NurbsCurves(Curves):
     authored one value per curve.  \\em knots should be the concatentation of
     all batched curves."""
 
-    abstract: bool = False
+    schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     def __init__(self, name:str="")->None:
         Curves.__init__(self, name)

@@ -1,4 +1,5 @@
 from .prim import Prim
+from .common import SchemaKind
 
 
 class Typed(Prim):
@@ -9,4 +10,4 @@ class Typed(Prim):
     UsdTyped implements a typeName-based query for its override of
     UsdSchemaBase::_IsCompatible().  It provides no other behavior."""
 
-    abstract: bool = True
+    schema_kind: SchemaKind = SchemaKind.AbstractTyped

@@ -6,6 +6,7 @@ from .property import Property
 from .metadata import Metadata
 from .utils import infer_type, in_annotations
 from .sdf import Specifier
+from .common import SchemaKind
 
 if TYPE_CHECKING:
     from .layer import Layer
@@ -21,10 +22,12 @@ class Prim:
     _children: Dict[str, Prim]
     _parent: Optional[Prim]
     _props: Dict[str, Property]
-    abstract: bool = False
+
+    schema_kind: SchemaKind = SchemaKind.ConcreteTyped
+    meta: Dict[str, Any] = {}
 
     def __init__(self, name:str="")->None:
-        if self.abstract:
+        if self.schema_kind in [SchemaKind.Invalid, SchemaKind.AbstractBase, SchemaKind.AbstractTyped]:
             raise TypeError(f"cannot instantiate abstract class {self.__class__.__name__}")
 
         if name == "":
@@ -42,8 +45,10 @@ class Prim:
             "specifier": Specifier.Def,
             "typeName": self.__class__.__name__,
             "doc": self.__class__.__doc__,
-            "apiSchemas": []
+            "apiSchemas": [],
         })
+        if issubclass(self.__class__.__mro__[1], Prim):
+            self._metadata.update({"inherits": f"</{self.__class__.__mro__[1].__name__}>"})
 
         for klass in self.__class__.__mro__:
             if klass is object:
@@ -55,6 +60,8 @@ class Prim:
                     prop._parent_prim = self
                     prop._name = name
                     self._props[name] = prop
+
+        self._metadata.update(self.meta)
                     
     def create_prop(self, prop:Property)->Property:
         self._props[prop.name] = prop

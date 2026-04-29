@@ -37,7 +37,7 @@ usd_scalar_types = {
 }
 
 usd_vector_types = {
-    double2,
+    double2, texCoord2d,
     double3, color3d, vector3d, point3d, normal3d, texCoord3d,
     double4, color4d, 
     float2, texCoord2f,

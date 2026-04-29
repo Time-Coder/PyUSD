@@ -2,6 +2,7 @@ from ..typed import Typed
 from ..attribute import Attribute
 from ..relationship import Relationship
 from ..dtypes import token
+from ..common import SchemaKind
 
 
 class Imageable(Typed):
@@ -16,7 +17,7 @@ class Imageable(Typed):
     be applied on non-Imageable prim types.  This API is planned
     to be removed, UsdGeomPrimvarsAPI should be used directly instead."""
 
-    abstract: bool = True
+    schema_kind: SchemaKind = SchemaKind.AbstractTyped
 
     def __init__(self, name:str="")->None:
         Typed.__init__(self, name)

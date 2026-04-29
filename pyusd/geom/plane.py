@@ -1,6 +1,7 @@
 from .gprim import Gprim
 from ..attribute import Attribute
 from ..dtypes import double, token
+from ..common import SchemaKind
 
 
 class Plane(Gprim):
@@ -17,7 +18,7 @@ class Plane(Gprim):
 
     """
     
-    abstract: bool = False
+    schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     def __init__(self, name:str="")->None:
         Gprim.__init__(self, name)
