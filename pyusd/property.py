@@ -1,7 +1,8 @@
 from __future__ import annotations
-from typing import Dict, Any, TYPE_CHECKING, Optional
+from typing import Dict, Any, TYPE_CHECKING, Optional, Union
 from typeguard import typechecked
 from enum import Enum
+import copy
 
 from .metadata import Metadata
 from .utils import infer_type, in_annotations
@@ -30,7 +31,16 @@ class Property:
     _value_state: Property.ValueState
 
     @typechecked
-    def __init__(self, name:str, metadata:Dict[str, Any]={}, custom:bool=False, is_leaf:bool=True)->None:
+    def __init__(self, name:str="", doc:str="", metadata:Dict[str, Any]={}, custom:bool=False, is_leaf:bool=True)->None:
+        if "doc" in metadata:
+            doc = metadata["doc"]
+
+        if doc == "":
+            doc = self.__class__.__doc__
+
+        if "doc" not in metadata:
+            metadata["doc"] = doc
+
         self._parent_prim:Optional[Prim] = None
         self._parent_prop:Optional[Property] = None
         self._name:str = name
@@ -39,6 +49,23 @@ class Property:
         self._custom:bool = custom
         self._is_leaf:bool = is_leaf
         self._value_state:Property.ValueState = Property.ValueState.Fallback
+
+    def clone(self)->Property:
+        result = object()
+        result.__class__ = self.__class__
+        result._parent_prim = None
+        result._parent_prop = None
+        result._name = self._name
+        result._metadata = copy.deepcopy(self._metadata)
+        result._children = {}
+        result._custom = self._custom
+        result._is_leaf = self._is_leaf
+        result._value_state = self._value_state
+        for name, child in self._children.items():
+            result._children[name] = child.clone()
+            result._children[name]._parent_prop = result
+
+        return result
 
     @property
     def parent_prim(self)->Prim:
@@ -108,6 +135,22 @@ class Property:
         prop._parent_prop = self
         return prop
 
+    def __get__(self, instance:Union[Prim, Property], owner)->Property:
+        from .prim import Prim
+
+        if isinstance(instance, Prim):
+            return instance._props[self._name]
+        elif isinstance(instance, Property):
+            return instance._children[self._name]
+        
+    def __set__(self, instance, prims:Prim):
+        from .prim import Prim
+
+        if isinstance(instance, Prim):
+            instance._props[self._name].set(prims)
+        elif isinstance(instance, Property):
+            instance._children[self._name].set(prims)
+
     def __getattr__(self, name:str)->Property:
         if name not in self._children:
             self.create_prop(Property(name, custom=True, is_leaf=False))
@@ -123,17 +166,25 @@ class Property:
         from .attribute import Attribute
         from .relationship import Relationship
 
+        is_rel:bool = (isinstance(value, Prim) or (isinstance(value, list) and all(isinstance(item, Prim) for item in value)) or isinstance(value, Relationship))
         if name in self._children:
             prop = self._children[name]
-            if isinstance(prop, Attribute) and isinstance(value, Prim):
+            if isinstance(prop, Attribute) and is_rel:
                 if not prop._custom:
-                    raise TypeError(f"cannot assign Prim to Attribute")
+                    if isinstance(value, Prim):
+                        error_message = "cannot assign Prim to Attribute"
+                    elif isinstance(value, list):
+                        error_message = "cannot assign List[Prim] to Attribute"
+                    elif isinstance(value, Relationship):
+                        error_message = "cannot assign Relationship to Attribute"
+
+                    raise TypeError(error_message)
                 
                 del self._children[name]
 
-            if isinstance(prop, Relationship) and not isinstance(value, Prim):
+            if isinstance(prop, Relationship) and not is_rel:
                 if not prop._custom:
-                    raise TypeError(f"cannot assign none Prim object to Relationship")
+                    raise TypeError(f"cannot assign {value.__class__} object to Relationship")
                 
                 del self._children[name]
 
@@ -141,6 +192,18 @@ class Property:
             if self._is_leaf:
                 raise AttributeError(f"leaf Property cannot create child Property")
 
+        if name not in self._children and isinstance(value, Property):
+            if value._parent_prim is None and value._parent_prop is None:
+                value._name = name
+                self.create_prop(value)
+            else:
+                cloned_value = value.clone()
+                cloned_value._name = name
+                self.create_prop(cloned_value)
+
+            return
+
+        if name not in self._children:
             if not isinstance(value, Prim):
                 if isinstance(self, Attribute):
                     target_type = self._type
@@ -157,11 +220,7 @@ class Property:
             else:
                 self.create_prop(Relationship(name, custom=target_custom, is_leaf=False))
 
-        prop = self._children[name]
-        if isinstance(prop, Attribute):
-            prop.value = value
-        elif isinstance(prop, Relationship):
-            prop.rel(value)
+        self._children[name].set(value)
 
     def to_str(self, indents:int=0)->str:
         result_list = []

@@ -209,26 +209,26 @@ class BasisCurves(Curves):
     
     abstract: bool = False
 
+    type: Attribute[token] = Attribute(token, value="cubic", uniform=True, metadata={
+        "allowedTokens": ["linear", "cubic"],
+        "doc": """Linear curves interpolate linearly between two vertices.  
+    Cubic curves use a basis matrix with four vertices to interpolate a segment."""
+    })
+    basis: Attribute[token] = Attribute(token, value="bezier", uniform=True, metadata={
+        "allowedTokens": ["bezier", "bspline", "catmullRom"],
+        "doc": """The basis specifies the vstep and matrix used for cubic 
+    interpolation.  \\note The 'hermite' and 'power' tokens have been
+    removed. We've provided UsdGeomHermiteCurves
+    as an alternative for the 'hermite' basis."""
+    })
+    token: Attribute[token] = Attribute(token, "wrap", value="nonperiodic", uniform=True, metadata={
+        "allowedTokens": ["nonperiodic", "periodic", "pinned"],
+        "doc": """If wrap is set to periodic, the curve when rendered will 
+    repeat the initial vertices (dependent on the vstep) to close the
+    curve. If wrap is set to 'pinned', phantom points may be created
+    to ensure that the curve interpolation starts at P[0] and ends at P[n-1].
+    """
+    })
+
     def __init__(self, name:str="")->None:
         Curves.__init__(self, name)
-
-        self.create_prop(Attribute(token, "type", value="cubic", uniform=True, metadata={
-            "allowedTokens": ["linear", "cubic"],
-            "doc": """Linear curves interpolate linearly between two vertices.  
-        Cubic curves use a basis matrix with four vertices to interpolate a segment."""
-        }))
-        self.create_prop(Attribute(token, "basis", value="bezier", uniform=True, metadata={
-            "allowedTokens": ["bezier", "bspline", "catmullRom"],
-            "doc": """The basis specifies the vstep and matrix used for cubic 
-        interpolation.  \\note The 'hermite' and 'power' tokens have been
-        removed. We've provided UsdGeomHermiteCurves
-        as an alternative for the 'hermite' basis."""
-        }))
-        self.create_prop(Attribute(token, "wrap", value="nonperiodic", uniform=True, metadata={
-            "allowedTokens": ["nonperiodic", "periodic", "pinned"],
-            "doc": """If wrap is set to periodic, the curve when rendered will 
-        repeat the initial vertices (dependent on the vstep) to close the
-        curve. If wrap is set to 'pinned', phantom points may be created
-        to ensure that the curve interpolation starts at P[0] and ends at P[n-1].
-        """
-        }))

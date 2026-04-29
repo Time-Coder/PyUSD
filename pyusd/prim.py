@@ -45,6 +45,17 @@ class Prim:
             "apiSchemas": []
         })
 
+        for klass in self.__class__.__mro__:
+            if klass is object:
+                continue
+
+            for name, value in klass.__dict__.items():
+                if name not in self._props and isinstance(value, Property):
+                    prop = value.clone()
+                    prop._parent_prim = self
+                    prop._name = name
+                    self._props[name] = prop
+                    
     def create_prop(self, prop:Property)->Property:
         self._props[prop.name] = prop
         prop._parent_prim = self
@@ -324,28 +335,43 @@ class Prim:
         from .attribute import Attribute
         from .relationship import Relationship
 
+        is_rel:bool = (isinstance(value, Prim) or (isinstance(value, list) and all(isinstance(item, Prim) for item in value)) or isinstance(value, Relationship))
         if name in self._props:
             prop = self._props[name]
-            if isinstance(prop, Attribute) and isinstance(value, Prim):
+            if isinstance(prop, Attribute) and is_rel:
                 if not prop._custom:
-                    raise TypeError(f"cannot assign Prim to Attribute")
+                    if isinstance(value, Prim):
+                        error_message = "cannot assign Prim to Attribute"
+                    elif isinstance(value, list):
+                        error_message = "cannot assign List[Prim] to Attribute"
+                    elif isinstance(value, Relationship):
+                        error_message = "cannot assign Relationship to Attribute"
+
+                    raise TypeError(error_message)
                 
                 del self._props[name]
 
-            if isinstance(prop, Relationship) and not isinstance(value, Prim):
+            if isinstance(prop, Relationship) and not is_rel:
                 if not prop._custom:
-                    raise TypeError(f"cannot assign none Prim object to Relationship")
+                    raise TypeError(f"cannot assign {value.__class__} object to Relationship")
                 
                 del self._props[name]
+
+        if name not in self._props and isinstance(value, Property):
+            if value._parent_prim is None and value._parent_prop is None:
+                value._name = name
+                self.create_prop(value)
+            else:
+                cloned_value = value.clone()
+                cloned_value._name = name
+                self.create_prop(cloned_value)
+
+            return
 
         if name not in self._props:
-            if not isinstance(value, Prim):
-                self.create_prop(Attribute(infer_type(value), name, uniform=False, custom=True, is_leaf=False, fix_type=False))
-            else:
+            if is_rel:
                 self.create_prop(Relationship(name, custom=True, is_leaf=False))
+            else:
+                self.create_prop(Attribute(infer_type(value), name, uniform=False, custom=True, is_leaf=False, fix_type=False))
 
-        prop = self._props[name]
-        if isinstance(prop, Attribute):
-            prop.value = value
-        elif isinstance(prop, Relationship):
-            prop.rel(value)
+        self._props[name].set(value)

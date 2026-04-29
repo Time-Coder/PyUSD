@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Dict, Any, TypeVar, Generic, Optional
 from collections.abc import Iterable
 from typeguard import typechecked
+import copy
 
 from .property import Property
 from .dtypes import namespace
@@ -20,8 +21,8 @@ class Attribute(Property, Generic[T]):
     _fix_type: bool
 
     @typechecked
-    def __init__(self, value_type:type, name:str, value:Optional[T]=None, metadata:Dict[str, Any]={}, is_leaf:bool=True, uniform:bool=False, custom:bool=False, fix_type:bool=True)->None:
-        Property.__init__(self, name, metadata=metadata, custom=custom, is_leaf=is_leaf)
+    def __init__(self, value_type:type, name:str="", value:Optional[T]=None, doc:str="", metadata:Dict[str, Any]={}, is_leaf:bool=True, uniform:bool=False, custom:bool=False, fix_type:bool=True)->None:
+        Property.__init__(self, name, doc=doc, metadata=metadata, custom=custom, is_leaf=is_leaf)
         self._init(value_type, value, uniform, fix_type)
     
     def _init(self, value_type:type, value:Optional[T]=None, uniform:bool=False, fix_type:bool=True)->None:
@@ -33,6 +34,17 @@ class Attribute(Property, Generic[T]):
         self._time_samples:Dict[float, T] = {}
         self._uniform:bool = uniform
         self._fix_type:bool = fix_type
+
+    def clone(self)->Attribute[T]:
+        result = Property.clone(self)
+        result._type = self._type
+        result._dtype = self._dtype
+        result._array_dim = self._array_dim
+        result._value = self._convert_from(self._value)
+        result._time_samples = copy.deepcopy(self._time_samples)
+        result._uniform = self._uniform
+        result._fix_type = self._fix_type
+        return result
 
     @property
     def timeSamples(self)->Dict[float, T]:
