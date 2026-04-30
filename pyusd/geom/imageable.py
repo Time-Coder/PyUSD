@@ -19,39 +19,40 @@ class Imageable(Typed):
 
     schema_kind: SchemaKind = SchemaKind.AbstractTyped
 
-    def __init__(self, name:str="")->None:
-        Typed.__init__(self, name)
-
-        self.metadata.update({
-            "customData": {
-                "extraIncludes": """
+    meta = {
+        "customData": {
+            "extraIncludes": """
 #include "pxr/base/gf/bbox3d.h"
 #include "pxr/usd/usdGeom/primvar.h" """
-            }
-        })
-        
-        self.create_prop(Attribute(token, "visibility", value="inherited", metadata={
-            "allowedTokens": ["inherited", "invisible"],
-            "doc": """Visibility is meant to be the simplest form of "pruning" 
+        }
+    }
+
+    visibility: Attribute[token] = Attribute(token, "visibility", value="inherited",
+        metadata={
+            "allowedTokens": ["inherited", "invisible"]
+        },
+        doc = """Visibility is meant to be the simplest form of "pruning" 
         visibility that is supported by most DCC apps.  Visibility is 
         animatable, allowing a sub-tree of geometry to be present for some 
         segment of a shot, and absent from others; unlike the action of 
         deactivating geometry prims, invisible geometry is still 
         available for inspection, for positioning, for defining volumes, etc."""
-        }))
+    )
 
-        self.create_prop(Attribute(token, "purpose", value="default", uniform=True, metadata={
-            "allowedTokens": ["default", "render", "proxy", "guide"],
-            "doc": """Purpose is a classification of geometry into categories that 
+    purpose: Attribute[token] = Attribute(token, "purpose", value="default", uniform=True,
+        metadata={
+            "allowedTokens": ["default", "render", "proxy", "guide"]
+        },
+        doc = """Purpose is a classification of geometry into categories that 
         can each be independently included or excluded from traversals of prims 
         on a stage, such as rendering or bounding-box computation traversals.
 
         See \\ref UsdGeom_ImageablePurpose for more detail about how 
         \\em purpose is computed and used.""" 
-        }))
+    )
 
-        self.create_prop(Relationship("proxyPrim", metadata={
-            "doc": """The \\em proxyPrim relationship allows us to link a
+    proxyPrim: Relationship = Relationship(doc=
+        """The \\em proxyPrim relationship allows us to link a
         prim whose \\em purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
         useful in several scenarios:
@@ -71,4 +72,4 @@ class Imageable(Typed):
 
         \\note It is only valid to author the proxyPrim relationship on
         prims whose purpose is "render"."""
-        }))
+    )

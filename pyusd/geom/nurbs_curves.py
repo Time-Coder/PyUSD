@@ -30,34 +30,34 @@ class NurbsCurves(Curves):
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
-    def __init__(self, name:str="")->None:
-        Curves.__init__(self, name)
-
-        self.create_prop(Attribute(List[int], "order", value=[], metadata={
-            "doc": """Order of the curve.  Order must be positive and is
+    order: Attribute[List[int]] = Attribute(List[int], value=[], doc=
+        """Order of the curve.  Order must be positive and is
         equal to the degree of the polynomial basis to be evaluated, plus 1.
         Its value for the 'i'th curve must be less than or equal to
         curveVertexCount[i]"""
-        }))
-        self.create_prop(Attribute(List[float], "knots", metadata={
-            "doc": """Knot vector providing curve parameterization.
+    )
+
+    knots: Attribute[List[float]] = Attribute(List[float], "knots", doc=
+        """Knot vector providing curve parameterization.
         The length of the slice of the array for the ith curve 
         must be ( curveVertexCount[i] + order[i] ), and its
         entries must take on monotonically increasing values."""
-        }))
-        self.create_prop(Attribute(List[double2], "ranges", metadata={
-            "doc": """Provides the minimum and maximum parametric values (as defined
+    )
+
+    ranges: Attribute[List[double2]] = Attribute(List[double2], "ranges", doc=
+        """Provides the minimum and maximum parametric values (as defined
         by knots) over which the curve is actually defined.  The minimum must 
         be less than the maximum, and greater than or equal to the value of the 
         knots['i'th curve slice][order[i]-1]. The maxium must be less 
         than or equal to the last element's value in knots['i'th curve slice].
-	    Range maps to (vmin, vmax) in the RenderMan spec."""
-        }))
-        self.create_prop(Attribute(List[float], "pointWeights", metadata={
-            "doc": """Optionally provides "w" components for each control point,
+        Range maps to (vmin, vmax) in the RenderMan spec."""
+    )
+
+    pointWeights: Attribute[List[float]] = Attribute(List[float], "pointWeights", doc=
+        """Optionally provides "w" components for each control point,
         thus must be the same length as the points attribute.  If authored,
         the curve will be rational.  If unauthored, the curve will be
         polynomial, i.e. weight for all points is 1.0.
         \\note Some DCC's pre-weight the \\em points, but in this schema, 
         \\em points are not pre-weighted."""
-        }))
+    )

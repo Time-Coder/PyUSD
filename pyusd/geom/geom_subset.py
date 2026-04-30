@@ -24,29 +24,28 @@ class GeomSubset(Typed):
 
     Materials are bound to GeomSubsets just as they are for regular 
     geometry using API available in UsdShade (UsdShadeMaterial::Bind).
-"""
+    """
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
-    def __init__(self, name:str="")->None:
-        Typed.__init__(self, name)
-
-        self.metadata.update({
-            "customData": {
-                "className": "Subset",
-                "extraIncludes": """
+    meta = {
+        "customData": {
+            "className": "Subset",
+            "extraIncludes": """
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdGeom/tetMesh.h"
 #include "pxr/usd/usdGeom/basisCurves.h"
 """
-            }
-        })
+        }
+    }
 
-        self.create_prop(Attribute(token, "elementType", value="face", uniform=True, metadata={
-            "allowedTokens": ["face", "point", "edge", "segment", "tetrahedron"],
-            "doc": """The type of element that the indices target. "elementType" can
+    elementType: Attribute[token] = Attribute(token, value="face", uniform=True,
+        metadata={
+            "allowedTokens": ["face", "point", "edge", "segment", "tetrahedron"]
+        },
+        doc = """The type of element that the indices target. "elementType" can
         have one of the following values:
         <ul><li><b>face</b>: Identifies faces on a Gprim's surface. For a 
         UsdGeomMesh, each element of the _indices_ attribute would refer to 
@@ -73,16 +72,18 @@ class GeomSubset(Typed):
         _indices_ attribute would refer to an element of the TetMesh's 
         _tetVertexIndices_ attribute.
         </li></ul>"""
-        }))
-        self.create_prop(Attribute(List[int], "indices", value=[], metadata={
-            "doc": """The set of indices identifying elements included in this
+    )
+
+    indices: Attribute[List[int]] = Attribute(List[int], value=[], doc=
+        """The set of indices identifying elements included in this
         subset. The indices need not be sorted, but the same element should not
         be identfied more than once. Indices sampled at a given time are
         invalid if outside the range [0, elementCount) for the elements
         sampled from the parent geometric prim at the same time."""
-        }))
-        self.create_prop(Attribute(token, "familyName", value="", uniform=True, metadata={
-            "doc": """The name of the family of subsets that this subset belongs to. 
+    )
+
+    familyName: Attribute[token] = Attribute(token, value="", uniform=True, doc=
+        """The name of the family of subsets that this subset belongs to. 
         This is optional and is primarily useful when there are multiple 
         families of subsets under a geometric prim. In some cases, this could 
         also be used for achieving proper roundtripping of subset data between 
@@ -106,4 +107,4 @@ class GeomSubset(Typed):
         \\note The validity of subset data is not enforced by the authoring 
         APIs, however they can be checked using UsdGeomSubset::ValidateFamily().
         """
-        }))
+    )

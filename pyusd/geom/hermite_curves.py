@@ -39,10 +39,7 @@ class HermiteCurves(Curves):
     
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
-    def __init__(self, name:str="")->None:
-        Curves.__init__(self, name)
-
-        self.create_prop(Attribute(List[vector3f], "tangents", value=[], metadata={
-            "doc": """Defines the outgoing trajectory tangent for each point. 
-                 Tangents should be the same size as the points attribute."""
-        }))
+    tangents: Attribute[List[vector3f]] = Attribute(List[vector3f], "tangents", value=[], doc=
+        """Defines the outgoing trajectory tangent for each point. 
+        Tangents should be the same size as the points attribute."""
+    )

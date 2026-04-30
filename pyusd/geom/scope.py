@@ -9,6 +9,3 @@ class Scope(Imageable):
     transformability perspective."""
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
-
-    def __init__(self, name:str="")->None:
-        Imageable.__init__(self, name)

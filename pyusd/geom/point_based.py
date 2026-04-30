@@ -11,23 +11,21 @@ class PointBased(Gprim):
     
     schema_kind: SchemaKind = SchemaKind.AbstractTyped
 
-    def __init__(self, name:str="")->None:
-        Gprim.__init__(self, name)
-
-        self.metadata.update({
-            "customData": {
-                "extraPlugInfo": {
-                    "implementsComputeExtent": True
-                }
+    meta = {
+        "customData": {
+            "extraPlugInfo": {
+                "implementsComputeExtent": True
             }
-        })
+        }
+    }
 
-        self.create_prop(Attribute(List[point3f], "points", metadata={
-            "doc": """The primary geometry attribute for all PointBased
+    points: Attribute[List[point3f]] = Attribute(List[point3f], "points", doc=
+        """The primary geometry attribute for all PointBased
         primitives, describes points in (local) space."""
-        }))
-        self.create_prop(Attribute(List[vector3f], "velocities", metadata={
-            "doc": """If provided, 'velocities' should be used by renderers to 
+    )
+
+    velocities: Attribute[List[vector3f]] = Attribute(List[vector3f], "velocities", doc=
+        """If provided, 'velocities' should be used by renderers to 
 
         compute positions between samples for the 'points' attribute, rather
         than interpolating between neighboring 'points' samples.  This is the
@@ -39,17 +37,19 @@ class PointBased(Gprim):
         UsdTimeCode, divide by UsdStage::GetTimeCodesPerSecond().
         
         See also \\ref UsdGeom_VelocityInterpolation .""" 
-        }))
-        self.create_prop(Attribute(List[vector3f], "accelerations", metadata={
-            "doc": """If provided, 'accelerations' should be used with
+    )
+
+    accelerations: Attribute[List[vector3f]] = Attribute(List[vector3f], "accelerations", doc=
+        """If provided, 'accelerations' should be used with
         velocities to compute positions between samples for the 'points'
         attribute rather than interpolating between neighboring 'points'
         samples. Acceleration is measured in position units per second-squared.
         To convert to position units per squared UsdTimeCode, divide by the
         square of UsdStage::GetTimeCodesPerSecond()."""
-        }))
-        self.create_prop(Attribute(List[normal3f], "normals", metadata={
-            "doc": """Provide an object-space orientation for individual points, 
+    )
+
+    normals: Attribute[List[normal3f]] = Attribute(List[normal3f], "normals", doc=
+        """Provide an object-space orientation for individual points, 
         which, depending on subclass, may define a surface, curve, or free 
         points.  Note that 'normals' should not be authored on any Mesh that
         is subdivided, since the subdivision algorithm will define its own
@@ -57,4 +57,4 @@ class PointBased(Gprim):
         in this attribute will be determined by its 'interpolation'.  See
         \\ref SetNormalsInterpolation() . If 'normals' and 'primvars:normals'
         are both specified, the latter has precedence."""
-        }))
+    )
