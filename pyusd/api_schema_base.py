@@ -1,6 +1,3 @@
-from .prim import Prim
-
-
 class APISchemaBase:
     """The base class for all \\em API schemas.
 
@@ -59,6 +56,8 @@ class APISchemaBase:
     
     """
 
-    @classmethod
-    def apply(cls, prim:Prim)->Prim:
-        return prim
+    meta = {
+        "customData": {
+            "fileName": "apiSchemaBase"
+        }
+    }
