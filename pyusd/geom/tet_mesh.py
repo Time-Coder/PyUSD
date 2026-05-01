@@ -18,18 +18,15 @@ class TetMesh(PointBased):
     
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
-    def __init__(self, name:str="")->None:
-        PointBased.__init__(self, name)
-
-        self.metadata.update({
-            "customData": {
-                "extraIncludes": """
+    meta = {
+        "customData": {
+            "extraIncludes": """
 #include "pxr/usd/usd/timeCode.h" """
-            }
-        })
+        }
+    }
 
-        self.create_prop(Attribute(List[int4], "tetVertexIndices", metadata={
-            "doc": """Flat list of the index (into the <b>points</b> attribute) of 
+    tetVertexIndices: Attribute[List[int4]] = Attribute(List[int4], "tetVertexIndices", doc=
+        """Flat list of the index (into the <b>points</b> attribute) of 
         each vertex of each tetrahedron in the mesh. Each int4 corresponds to the
         indices of a single tetrahedron. Users should set the <b>orientation</b>
         attribute of UsdGeomPrim accordingly. That is if the <b>orientation</b> 
@@ -52,11 +49,12 @@ class TetMesh(PointBased):
         Setting the <b>orientation</b> attribute to align with the 
         ordering of the int4 for the tetrahedrons is the responsibility of the 
         user."""
-        }))
-        self.create_prop(Attribute(List[int3], "surfaceFaceVertexIndices", metadata={
-            "doc": """<b>surfaceFaceVertexIndices</b> defines the triangle
+    )
+
+    surfaceFaceVertexIndices: Attribute[List[int3]] = Attribute(List[int3], "surfaceFaceVertexIndices", doc=
+        """<b>surfaceFaceVertexIndices</b> defines the triangle
         surface faces indices wrt. <b>points</b> of the tetmesh surface. Again 
         the <b>orientation</b> attribute inherited from UsdGeomPrim should be 
         set accordingly. The <b>orientation</b> for faces of tetrahedra and  
         surface faces must match."""
-        }))
+    )

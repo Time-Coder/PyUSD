@@ -209,19 +209,16 @@ class Xformable(Imageable):
 
     schema_kind: SchemaKind = SchemaKind.AbstractTyped
 
-    def __init__(self, name:str="")->None:
-        Imageable.__init__(self, name)
-        
-        self.metadata.update({
-            "customData": {
-                "extraIncludes": """
+    meta = {
+        "customData": {
+            "extraIncludes": """
 #include "pxr/usd/usdGeom/xformOp.h" 
 #include <vector> """
-            }
-        })
+        }
+    }
 
-        self.create_prop(Attribute(List[token], "xformOpOrder", value=[], uniform=True, metadata={
-            "doc": """Encodes the sequence of transformation operations in the
+    xformOpOrder: Attribute[List[token]] = Attribute(List[token], "xformOpOrder", value=[], uniform=True, doc=
+        """Encodes the sequence of transformation operations in the
         order in which they should be pushed onto a transform stack while
         visiting a UsdStage's prims in a graph traversal that will effect
         the desired positioning for this prim and its descendant prims.
@@ -230,6 +227,5 @@ class Xformable(Imageable):
         It is managed by the AddXformOp(), SetResetXformStack(), and
         SetXformOpOrder(), and consulted by GetOrderedXformOps() and
         GetLocalTransformation()."""
-        }))
-
-        self.create_prop(XformOp())
+    )
+    xformOp: XformOp = XformOp()

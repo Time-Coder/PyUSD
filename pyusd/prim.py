@@ -62,7 +62,7 @@ class Prim:
                     self._props[name] = prop
 
         self._metadata.update(self.meta)
-                    
+    
     def create_prop(self, prop:Property)->Property:
         self._props[prop.name] = prop
         prop._parent_prim = self

@@ -2,6 +2,8 @@ from .gprim import Gprim
 from ..attribute import Attribute
 from ..dtypes import double
 from ..common import SchemaKind
+from ..gf import float3
+from typing import List
 
 
 class Sphere(Gprim):
@@ -12,26 +14,22 @@ class Sphere(Gprim):
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
-    def __init__(self, name:str="")->None:
-        Gprim.__init__(self, name)
-
-        self.metadata.update({
-            "customData": {
-                "extraPlugInfo": {
-                    "implementsComputeExtent": True
-                }
+    meta = {
+        "customData": {
+            "extraPlugInfo": {
+                "implementsComputeExtent": True
             }
-        })
+        }
+    }
 
-        self.create_prop(Attribute(double, "radius", value=1.0, metadata={
-            "doc": """Indicates the sphere's radius.  If you
+    radius: Attribute[double] = Attribute(double, "radius", value=1.0, doc=
+        """Indicates the sphere's radius.  If you
         author \\em radius you must also author \\em extent.
         
         \\sa GetExtentAttr()"""
-        }))
+    )
 
-        self.extent = [(-1.0, -1.0, -1.0), (1.0, 1.0, 1.0)]
-        self.extent.metadata.update({
-            "doc": """Extent is re-defined on Sphere only to provide a fallback
+    extent: Attribute[List[float3]] = Attribute(List[float3], value=[(-1.0, -1.0, -1.0), (1.0, 1.0, 1.0)], doc=
+        """Extent is re-defined on Sphere only to provide a fallback
         value. \\sa UsdGeomGprim::GetExtentAttr()."""
-        })
+    )

@@ -30,6 +30,8 @@ class Property:
     _custom: bool
     _value_state: Property.ValueState
 
+    meta: Dict[str, Any] = {}
+
     @typechecked
     def __init__(self, name:str="", doc:str="", metadata:Dict[str, Any]={}, custom:bool=False, is_leaf:bool=True)->None:
         if "doc" in metadata:
@@ -49,6 +51,19 @@ class Property:
         self._custom:bool = custom
         self._is_leaf:bool = is_leaf
         self._value_state:Property.ValueState = Property.ValueState.Fallback
+
+        for klass in self.__class__.__mro__:
+            if klass is object:
+                continue
+
+            for name, value in klass.__dict__.items():
+                if name not in self._children and isinstance(value, Property):
+                    prop = value.clone()
+                    prop._parent_prim = self
+                    prop._name = name
+                    self._children[name] = prop
+
+        self._metadata.update(self.meta)
 
     def clone(self)->Property:
         result = object()

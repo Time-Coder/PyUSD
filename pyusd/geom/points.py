@@ -19,30 +19,28 @@ class Points(PointBased):
     
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
-    def __init__(self, name:str="")->None:
-        PointBased.__init__(self, name)
-
-        self.metadata.update({
-            "customData": {
-                "extraPlugInfo": {
-                    "implementsComputeExtent": True
-                }
+    meta = {
+        "customData": {
+            "extraPlugInfo": {
+                "implementsComputeExtent": True
             }
-        })
+        }
+    }
 
-        self.create_prop(Attribute(List[float], "widths", metadata={
-            "doc": """Widths are defined as the \\em diameter of the points, in 
-                 object space.  'widths' is not a generic Primvar, but
-                 the number of elements in this attribute will be determined by
-                 its 'interpolation'.  See \\ref SetWidthsInterpolation() .  If
-                 'widths' and 'primvars:widths' are both specified, the latter
-                 has precedence."""
-        }))
-        self.create_prop(Attribute(List[int64], "ids", metadata={
-            "doc": """Ids are optional; if authored, the ids array should be the same
-                 length as the points array, specifying (at each timesample if
-                 point identities are changing) the id of each point. The
-                 type is signed intentionally, so that clients can encode some
-                 binary state on Id'd points without adding a separate 
-                 primvar."""
-        }))
+    widths: Attribute[List[float]] = Attribute(List[float], "widths", doc=
+        """Widths are defined as the \\em diameter of the points, in 
+        object space.  'widths' is not a generic Primvar, but
+        the number of elements in this attribute will be determined by
+        its 'interpolation'.  See \\ref SetWidthsInterpolation() .  If
+        'widths' and 'primvars:widths' are both specified, the latter
+        has precedence."""
+    )
+
+    ids: Attribute[List[int64]] = Attribute(List[int64], "ids", doc=
+        """Ids are optional; if authored, the ids array should be the same
+        length as the points array, specifying (at each timesample if
+        point identities are changing) the id of each point. The
+        type is signed intentionally, so that clients can encode some
+        binary state on Id'd points without adding a separate 
+        primvar."""
+    )

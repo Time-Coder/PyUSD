@@ -237,119 +237,126 @@ class PointInstancer(Boundable):
     
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
-    def __init__(self, name:str="")->None:
-        Boundable.__init__(self, name)
-
-        self.metadata.update({
-            "customData": {
-                "extraPlugInfo": {
-                    "implementsComputeExtent": True
-                },
-                "schemaTokens": {
-                    "inactiveIds": {
-                        "doc": """int64listop prim metadata that specifies
-                the PointInstancer ids that should be masked (unrenderable)
-                over all time."""
-                    }
+    meta = {
+        "customData": {
+            "extraPlugInfo": {
+                "implementsComputeExtent": True
+            },
+            "schemaTokens": {
+                "inactiveIds": {
+                    "doc": """int64listop prim metadata that specifies
+                    the PointInstancer ids that should be masked (unrenderable)
+                    over all time."""
                 }
             }
-        })
+        }
+    }
 
-        self.create_prop(Relationship("prototypes", metadata={
-            "doc": """<b>Required property</b>. Orders and targets the prototype root 
-      prims, which can be located anywhere in the scenegraph that is convenient,
-      although we promote organizing prototypes as children of the 
-      PointInstancer.  The position of a prototype in this relationship defines
-      the value an instance would specify in the \\em protoIndices attribute to 
-      instance that prototype. Since relationships are uniform, this property
-      cannot be animated."""
-        }))
-        self.create_prop(Attribute(List[int], "protoIndices", metadata={
-            "doc": """<b>Required property</b>. Per-instance index into 
-      \\em prototypes relationship that identifies what geometry should be 
-      drawn for each instance.  <b>Topology attribute</b> - can be animated, 
-      but at a potential performance impact for streaming."""
-        }))
-        self.create_prop(Attribute(List[int64], "ids", metadata={
-            "doc": """Ids are optional; if authored, the ids array should be the same
-      length as the \\em protoIndices array, specifying (at each timeSample if
-      instance identities are changing) the id of each instance. The
-      type is signed intentionally, so that clients can encode some
-      binary state on Id'd instances without adding a separate primvar.
-      See also \\ref UsdGeomPointInstancer_varyingTopo"""
-        }))
-        self.create_prop(Attribute(List[point3f], "positions", metadata={
-            "doc": """<b>Required property</b>. Per-instance position.  See also 
-      \\ref UsdGeomPointInstancer_transform ."""
-        }))
-        self.create_prop(Attribute(List[quath], "orientations", metadata={
-            "doc": """If authored, per-instance orientation of each instance about its 
-      prototype's origin, represented as a unit length quaternion, which
-      allows us to encode it with sufficient precision in a compact GfQuath.
-      
-      It is client's responsibility to ensure that authored quaternions are
-      unit length; the convenience API below for authoring orientations from
-      rotation matrices will ensure that quaternions are unit length, though
-      it will not make any attempt to select the "better (for interpolation
-      with respect to neighboring samples)" of the two possible quaternions
-      that encode the rotation. 
-      
-      See also \\ref UsdGeomPointInstancer_transform ."""
-        }))
-        self.create_prop(Attribute(List[quatf], "orientationsf", metadata={
-            "doc": """If authored, per-instance orientation of each instance about its 
-      prototype's origin, represented as a unit length quaternion, encoded
-      as a GfQuatf to support higher precision computations.
-      
-      It is client's responsibility to ensure that authored quaternions are
-      unit length; the convenience API below for authoring orientations from
-      rotation matrices will ensure that quaternions are unit length, though
-      it will not make any attempt to select the "better (for interpolation
-      with respect to neighboring samples)" of the two possible quaternions
-      that encode the rotation. Note that if the earliest time sample (or
-      default value if there are no time samples) of orientationsf is not empty
-      orientationsf will be preferred over orientations if both are authored.
-      
-      See also \\ref UsdGeomPointInstancer_transform ."""
-        }))
-        self.create_prop(Attribute(List[float3], "scales", metadata={
-            "doc": """If authored, per-instance scale to be applied to 
-      each instance, before any rotation is applied.
-      
-      See also \\ref UsdGeomPointInstancer_transform ."""
-        }))
-        self.create_prop(Attribute(List[vector3f], "velocities", metadata={
-            "doc": """If provided, per-instance 'velocities' will be used to 
-       compute positions between samples for the 'positions' attribute,
-       rather than interpolating between neighboring 'positions' samples.
-       Velocities should be considered mandatory if both \\em protoIndices
-       and \\em positions are animated.  Velocity is measured in position
-       units per second, as per most simulation software. To convert to
-       position units per UsdTimeCode, divide by
-       UsdStage::GetTimeCodesPerSecond().
+    prototypes: Relationship = Relationship(doc=
+        """<b>Required property</b>. Orders and targets the prototype root 
+        prims, which can be located anywhere in the scenegraph that is convenient,
+        although we promote organizing prototypes as children of the 
+        PointInstancer.  The position of a prototype in this relationship defines
+        the value an instance would specify in the \\em protoIndices attribute to 
+        instance that prototype. Since relationships are uniform, this property
+        cannot be animated."""
+    )
 
-       See also \\ref UsdGeomPointInstancer_transform, 
-       \\ref UsdGeom_VelocityInterpolation ."""
-        }))
-        self.create_prop(Attribute(List[vector3f], "accelerations", metadata={
-            "doc": """If authored, per-instance 'accelerations' will be used with
+    protoIndices: Attribute[List[int]] = Attribute(List[int], doc=
+        """<b>Required property</b>. Per-instance index into 
+        \\em prototypes relationship that identifies what geometry should be 
+        drawn for each instance.  <b>Topology attribute</b> - can be animated, 
+        but at a potential performance impact for streaming."""
+    )
+
+    ids: Attribute[List[int64]] = Attribute(List[int64], doc=
+        """Ids are optional; if authored, the ids array should be the same
+        length as the \\em protoIndices array, specifying (at each timeSample if
+        instance identities are changing) the id of each instance. The
+        type is signed intentionally, so that clients can encode some
+        binary state on Id'd instances without adding a separate primvar.
+        See also \\ref UsdGeomPointInstancer_varyingTopo"""
+    )
+
+    positions: Attribute[List[point3f]] = Attribute(List[point3f], doc=
+        """<b>Required property</b>. Per-instance position.  See also 
+        \\ref UsdGeomPointInstancer_transform ."""
+    )
+
+    orientations: Attribute[List[quath]] = Attribute(List[quath], doc=
+        """If authored, per-instance orientation of each instance about its 
+        prototype's origin, represented as a unit length quaternion, which
+        allows us to encode it with sufficient precision in a compact GfQuath.
+        
+        It is client's responsibility to ensure that authored quaternions are
+        unit length; the convenience API below for authoring orientations from
+        rotation matrices will ensure that quaternions are unit length, though
+        it will not make any attempt to select the "better (for interpolation
+        with respect to neighboring samples)" of the two possible quaternions
+        that encode the rotation. 
+        
+        See also \\ref UsdGeomPointInstancer_transform ."""
+    )
+
+    orientationsf: Attribute[List[quatf]] = Attribute(List[quatf], doc=
+        """If authored, per-instance orientation of each instance about its 
+        prototype's origin, represented as a unit length quaternion, encoded
+        as a GfQuatf to support higher precision computations.
+        
+        It is client's responsibility to ensure that authored quaternions are
+        unit length; the convenience API below for authoring orientations from
+        rotation matrices will ensure that quaternions are unit length, though
+        it will not make any attempt to select the "better (for interpolation
+        with respect to neighboring samples)" of the two possible quaternions
+        that encode the rotation. Note that if the earliest time sample (or
+        default value if there are no time samples) of orientationsf is not empty
+        orientationsf will be preferred over orientations if both are authored.
+        
+        See also \\ref UsdGeomPointInstancer_transform ."""
+    )
+
+    scales: Attribute[List[float3]] = Attribute(List[float3], doc=
+        """If authored, per-instance scale to be applied to 
+        each instance, before any rotation is applied.
+        
+        See also \\ref UsdGeomPointInstancer_transform ."""
+    )
+
+    velocities: Attribute[List[vector3f]] = Attribute(List[vector3f], doc=
+        """If provided, per-instance 'velocities' will be used to 
+        compute positions between samples for the 'positions' attribute,
+        rather than interpolating between neighboring 'positions' samples.
+        Velocities should be considered mandatory if both \\em protoIndices
+        and \\em positions are animated.  Velocity is measured in position
+        units per second, as per most simulation software. To convert to
+        position units per UsdTimeCode, divide by
+        UsdStage::GetTimeCodesPerSecond().
+
+        See also \\ref UsdGeomPointInstancer_transform, 
+        \\ref UsdGeom_VelocityInterpolation ."""
+    )
+
+    accelerations: Attribute[List[vector3f]] = Attribute(List[vector3f], doc=
+        """If authored, per-instance 'accelerations' will be used with
         velocities to compute positions between samples for the 'positions'
         attribute rather than interpolating between neighboring 'positions'
         samples. Acceleration is measured in position units per second-squared.
         To convert to position units per squared UsdTimeCode, divide by the
         square of UsdStage::GetTimeCodesPerSecond()."""
-        }))
-        self.create_prop(Attribute(List[vector3f], "angularVelocities", metadata={
-            "doc": """If authored, per-instance angular velocity vector to be used for
-      interoplating orientations.  Angular velocities should be considered
-      mandatory if both \\em protoIndices and \\em orientations are animated.
-      Angular velocity is measured in <b>degrees</b> per second. To convert
-      to degrees per UsdTimeCode, divide by
-      UsdStage::GetTimeCodesPerSecond().
-      
-      See also \\ref UsdGeomPointInstancer_transform ."""
-        }))
-        self.create_prop(Attribute(List[int64], "invisibleIds", value=[], metadata={
-            "doc": """A list of id's to make invisible at the evaluation time.
-      See \\ref UsdGeomPointInstancer_invisibleIds ."""
-        }))
+    )
+
+    angularVelocities: Attribute[List[vector3f]] = Attribute(List[vector3f], doc=
+        """If authored, per-instance angular velocity vector to be used for
+        interoplating orientations.  Angular velocities should be considered
+        mandatory if both \\em protoIndices and \\em orientations are animated.
+        Angular velocity is measured in <b>degrees</b> per second. To convert
+        to degrees per UsdTimeCode, divide by
+        UsdStage::GetTimeCodesPerSecond().
+        
+        See also \\ref UsdGeomPointInstancer_transform ."""
+    )
+
+    invisibleIds: Attribute[List[int64]] = Attribute(List[int64], value=[], doc=
+        """A list of id's to make invisible at the evaluation time.
+        See \\ref UsdGeomPointInstancer_invisibleIds ."""
+    )
