@@ -61,3 +61,7 @@ class APISchemaBase:
             "fileName": "apiSchemaBase"
         }
     }
+
+    def __init__(self)->None:
+        self.metadata.apiSchemas.append(self.__class__.__name__)
+    

@@ -46,6 +46,12 @@ class Prim:
             "typeName": self.__class__.__name__,
             "doc": self.__class__.__doc__,
             "apiSchemas": [],
+            "assetInfo": {
+                "identifier": None,
+                "name": None,
+                "payloadAssetDependencies": None,
+                "version": None
+            }
         })
         if issubclass(self.__class__.__mro__[1], Prim):
             self._metadata.update({"inherits": f"</{self.__class__.__mro__[1].__name__}>"})

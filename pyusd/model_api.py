@@ -1,6 +1,8 @@
 from .api_schema_base import APISchemaBase
 from .common import Kind, SchemaKind
+from .dtypes import asset
 from enum import Enum
+from typing import Optional, Union, List, Dict, Any
 from typeguard import typechecked
 
 
@@ -74,103 +76,107 @@ class ModelAPI(APISchemaBase):
         """Return true if this prim represents a model group, based on its kind
         metadata."""
         return self.metadata.kind == Kind.Group
-
-    # /// @}
-
-    # /// \anchor Usd_Model_AssetInfo
-    # /// \name Model Asset Info API
-    # /// @{
     
-    # /// Returns the model's asset identifier as authored in the composed 
-    # /// assetInfo dictionary.
-    # /// 
-    # /// The asset identifier can be used to resolve the model's root layer via 
-    # /// the asset resolver plugin.
-    # /// 
-    # USD_API
-    # bool GetAssetIdentifier(SdfAssetPath *identifier) const;
+    @property
+    def asset_identifier(self)->Optional[asset]:
+        """Returns the model's asset identifier as authored in the composed 
+        assetInfo dictionary.
+        
+        The asset identifier can be used to resolve the model's root layer via 
+        the asset resolver plugin."""
 
-    # /// Sets the model's asset identifier to the given asset path, \p identifier.
-    # /// 
-    # /// \sa GetAssetIdentifier()
-    # ///
-    # USD_API
-    # void SetAssetIdentifier(const SdfAssetPath &identifier) const;
+        return self.metadata.assetInfo.identifier
     
-    # /// Returns the model's asset name from the composed assetInfo dictionary.
-    # /// 
-    # /// The asset name is the name of the asset, as would be used in a database 
-    # /// query.
-    # ///
-    # USD_API
-    # bool GetAssetName(std::string *assetName) const;
+    @asset_identifier.setter
+    @typechecked
+    def asset_identifier(self, identifier:Union[asset, str])->None:
+        """Sets the model's asset identifier to the given asset path, \p identifier.
+        
+        \sa GetAssetIdentifier()"""
 
-    # /// Sets the model's asset name to \p assetName.
-    # /// 
-    # /// \sa GetAssetName()
-    # ///
-    # USD_API
-    # void SetAssetName(const std::string &assetName) const;
+        if not isinstance(identifier, asset):
+            identifier = asset(identifier)
+
+        self.metadata.assetInfo.identifier = identifier
     
-    # /// Returns the model's resolved asset version.  
-    # /// 
-    # /// If you publish assets with an embedded version, then you may receive 
-    # /// that version string.  You may, however, cause your authoring tools to 
-    # /// record the resolved version <em>at the time at which a reference to the 
-    # /// asset was added to an aggregate</em>, at the referencing site.  In 
-    # /// such a pipeline, this API will always return that stronger opinion, 
-    # /// even if the asset is republished with a newer version, and even though 
-    # /// that newer version may be the one that is resolved when the UsdStage is 
-    # /// opened.
-    # /// 
-    # USD_API
-    # bool GetAssetVersion(std::string *version) const;
-
-    # /// Sets the model's asset version string. 
-    # /// 
-    # /// \sa GetAssetVersion()
-    # ///
-    # USD_API
-    # void SetAssetVersion(const std::string &version) const;
-
-    # /// Returns the list of asset dependencies referenced inside the 
-    # /// payload of the model.
-    # /// 
-    # /// This typically contains identifiers of external assets that are 
-    # /// referenced inside the model's payload. When the model is created, this 
-    # /// list is compiled and set at the root of the model. This enables 
-    # /// efficient dependency analysis without the need to include the model's 
-    # /// payload.
-    # /// 
-    # USD_API
-    # bool GetPayloadAssetDependencies(VtArray<SdfAssetPath> *assetDeps) 
-    #     const;
+    @property
+    def asset_name(self)->Optional[str]:
+        """Returns the model's asset name from the composed assetInfo dictionary.
+        
+        The asset name is the name of the asset, as would be used in a database 
+        query."""
+        return self.metadata.assetInfo.name
     
-    # /// Sets the list of external asset dependencies referenced inside the 
-    # /// payload of a model.
-    # /// 
-    # /// \sa GetPayloadAssetDependencies()
-    # ///
-    # USD_API
-    # void SetPayloadAssetDependencies(const VtArray<SdfAssetPath> &assetDeps) 
-    #     const;
+    @asset_name.setter
+    @typechecked
+    def asset_name(self, asset_name:str)->None:
+        """Sets the model's asset name to \p assetName.
+        
+        \sa GetAssetName()"""
 
-    # /// Returns the model's composed assetInfo dictionary.
-    # /// 
-    # /// The asset info dictionary is used to annotate models with various 
-    # /// data related to asset management. For example, asset name,
-    # /// identifier, version etc.
-    # /// 
-    # /// The elements of this dictionary are composed element-wise, and are 
-    # /// nestable.
-    # ///
-    # USD_API
-    # bool GetAssetInfo(VtDictionary *info) const;
+        self.metadata.assetInfo.name = asset_name
+    
+    @property
+    def asset_version(self)->Optional[str]:
+        """Returns the model's resolved asset version.  
+        
+        If you publish assets with an embedded version, then you may receive 
+        that version string.  You may, however, cause your authoring tools to 
+        record the resolved version <em>at the time at which a reference to the 
+        asset was added to an aggregate</em>, at the referencing site.  In 
+        such a pipeline, this API will always return that stronger opinion, 
+        even if the asset is republished with a newer version, and even though 
+        that newer version may be the one that is resolved when the UsdStage is 
+        opened."""
 
-    # /// Sets the model's assetInfo dictionary to \p info in the current edit 
-    # /// target.
-    # /// 
-    # USD_API
-    # void SetAssetInfo(const VtDictionary &info) const;
+        return self.metadata.assetInfo.version
+    
+    @asset_version.setter
+    def asset_version(self, asset_version:str)->None:
+        """Sets the model's asset version string. 
+        
+        \sa GetAssetVersion()"""
 
-    # /// @}
+        self.metadata.assetInfo.version = asset_version
+    
+    @property
+    def payload_asset_dependencies(self)->Optional[List[asset]]:
+        """Returns the list of asset dependencies referenced inside the 
+        payload of the model.
+        
+        This typically contains identifiers of external assets that are 
+        referenced inside the model's payload. When the model is created, this 
+        list is compiled and set at the root of the model. This enables 
+        efficient dependency analysis without the need to include the model's 
+        payload."""
+        return self.metadata.assetInfo.payloadAssetDependencies
+    
+    @payload_asset_dependencies.setter
+    def payload_asset_dependencies(self, asset_dependencies:List[asset])->None:
+        """Sets the list of external asset dependencies referenced inside the 
+        payload of a model.
+        
+        \sa GetPayloadAssetDependencies()"""
+
+        self.metadata.assetInfo.payloadAssetDependencies = asset_dependencies
+    
+    @property
+    def asset_info(self)->Dict[str, Any]:
+        """Returns the model's composed assetInfo dictionary.
+        
+        The asset info dictionary is used to annotate models with various 
+        data related to asset management. For example, asset name,
+        identifier, version etc.
+        
+        The elements of this dictionary are composed element-wise, and are 
+        nestable."""
+
+        return self.metadata.assetInfo
+    
+    @asset_info.setter
+    @typechecked
+    def asset_info(self, info:Dict[str, Any])->None:
+        """Sets the model's assetInfo dictionary to \p info in the current edit 
+        target."""
+
+        self.metadata.assetInfo = info

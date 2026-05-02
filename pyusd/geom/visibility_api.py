@@ -1,7 +1,7 @@
-from ..prim import Prim
 from ..attribute import Attribute
 from ..dtypes import token
 from ..api_schema_base import APISchemaBase
+from ..common import SchemaKind
 
 
 class VisibilityAPI(APISchemaBase):
@@ -38,12 +38,21 @@ class VisibilityAPI(APISchemaBase):
     values that result from the attributes introduced by this schema.
     """
     
-    @classmethod
-    def apply(cls, prim:Prim)->Prim:
-        prim.metadata.apiSchemas.append(cls.__name__)
-        prim.create_prop(Attribute(token, "guideVisibility", value="invisible", uniform=True, metadata={
-            "allowedTokens": ["inherited", "invisible", "visible"],
-            "doc": """
+    schema_kind = SchemaKind.MultipleApplyAPI
+
+    meta = {
+        "customData": {
+            "apiSchemaCanOnlyApplyTo": [
+                "Imageable"
+            ]
+        }
+    }
+
+    guideVisibility: Attribute[token] = Attribute(token, "guideVisibility", value="invisible", uniform=True,
+        metadata={
+            "allowedTokens": ["inherited", "invisible", "visible"]
+        },
+        doc = """
         This attribute controls visibility for geometry with purpose "guide".
 
         Unlike overall _visibility_, _guideVisibility_ is uniform, and
@@ -61,10 +70,13 @@ class VisibilityAPI(APISchemaBase):
         "inherited" and _guideVisibility_ evaluates to "visible", then the
         prim is visible. __Otherwise, it is invisible.__
         """
-        }))
-        prim.create_prop(Attribute(token, "proxyVisibility", value="inherited", uniform=True, metadata={
-            "allowedTokens": ["inherited", "invisible", "visible"],
-            "doc": """
+    )
+
+    proxyVisibility: Attribute[token] = Attribute(token, value="inherited", uniform=True,
+        metadata={
+            "allowedTokens": ["inherited", "invisible", "visible"]
+        },
+        doc = """
         This attribute controls visibility for geometry with purpose "proxy".
 
         Unlike overall _visibility_, _proxyVisibility_ is uniform, and
@@ -85,10 +97,13 @@ class VisibilityAPI(APISchemaBase):
         "inherited", then the prim may either be visible or invisible,
         depending on a fallback value determined by the calling context.
         """
-        }))
-        prim.create_prop(Attribute(token, "renderVisibility", value="inherited", uniform=True, metadata={
-            "allowedTokens": ["inherited", "invisible", "visible"],
-            "doc": """
+    )
+
+    renderVisibility: Attribute[token] = Attribute(token, value="inherited", uniform=True,
+        metadata={
+            "allowedTokens": ["inherited", "invisible", "visible"]
+        },
+        doc = """
         This attribute controls visibility for geometry with purpose
         "render".
 
@@ -110,6 +125,4 @@ class VisibilityAPI(APISchemaBase):
         "inherited", then the prim may either be visible or invisible,
         depending on a fallback value determined by the calling context.
         """
-        }))
-
-        return prim
+    )

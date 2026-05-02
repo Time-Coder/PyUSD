@@ -1,8 +1,8 @@
-from .prim import Prim
 from .attribute import Attribute
 from .relationship import Relationship
 from .dtypes import token, opaque, pathExpression
 from .api_schema_base import APISchemaBase
+from .common import SchemaKind
 
 
 class CollectionAPI(APISchemaBase):
@@ -145,29 +145,53 @@ class CollectionAPI(APISchemaBase):
     \\snippet examples_usd.cpp ApplyCollections
     """
     
-    @classmethod
-    def apply(cls, prim:Prim)->Prim:
-        prim.metadata.apiSchemas.append(cls.__name__)
-        prim.create_prop(Attribute(token, "expansionRule", value="expandPrims", uniform=True, metadata={
-            "allowedTokens": ["explicitOnly", "expandPrims", "expandPrimsAndProperties"],
-            "doc": """Specifies how the paths that are included in
+    schema_kind: SchemaKind = SchemaKind.MultipleApplyAPI
+
+    meta = {
+        "customData": {
+            "extraIncludes": """
+#include "pxr/usd/usd/collectionMembershipQuery.h"
+#include "pxr/usd/usd/primFlags.h"
+#include "pxr/usd/usd/tokens.h"
+#include "pxr/usd/sdf/pathExpression.h"
+""",
+            "apiSchemaType": "multipleApply",
+            "propertyNamespacePrefix": "collection",
+            "schemaTokens": {
+                "exclude": {
+                    "doc": """
+                    This is the token used to exclude a path from a collection. 
+                    Although it is not a possible value for the "expansionRule"
+                    attribute, it is used as the expansionRule for excluded paths 
+                    in UsdCollectionAPI::MembershipQuery::IsPathIncluded.
+                    """
+                }
+            }
+        }
+    }
+
+    expansionRule: Attribute[token] = Attribute(token, value="expandPrims", uniform=True,
+        metadata={
+            "allowedTokens": ["explicitOnly", "expandPrims", "expandPrimsAndProperties"]
+        },
+        doc="""Specifies how the paths that are included in
         the collection must be expanded to determine its members."""
-        }))
-        prim.create_prop(Attribute(bool, "includeRoot", uniform=True, metadata={
-            "doc": """Boolean attribute indicating whether the pseudo-root
+    )
+    includeRoot: Attribute[bool] = Attribute(bool, uniform=True, doc=
+        """Boolean attribute indicating whether the pseudo-root
         path `</>` should be counted as one of the included target
         paths.  The fallback is false.  This separate attribute is
         required because relationships cannot directly target the root."""
-        }))
-        prim.create_prop(Relationship("includes", metadata={
-            "doc": """Specifies a list of targets that are included in the collection.
+    )
+    includes: Relationship = Relationship(doc=
+        """Specifies a list of targets that are included in the collection.
         This can target prims or properties directly. A collection can insert
         the rules of another collection by making its <i>includes</i>
         relationship target the <b>collection:{collectionName}</b> property on
         the owning prim of the collection to be included"""
-        }))
-        prim.create_prop(Relationship("excludes", metadata={
-            "doc": """Specifies a list of targets that are excluded below
+    )
+    excludes: Relationship = Relationship("excludes", doc=
+        """Specifies a list of targets that are excluded below
         the included paths in this collection. This can target prims or
         properties directly, but cannot target another collection. This is to
         keep the membership determining logic simple, efficient and easier to
@@ -179,14 +203,16 @@ class CollectionAPI(APISchemaBase):
         UsdCollectionAPI::MembershipQuery::IsPathIncluded) 
         or of enumerating the objects belonging to the collection (see 
         UsdCollectionAPI::GetIncludedObjects)."""
-        }))
-        prim.create_prop(Attribute(pathExpression, "membershipExpression", uniform=True, metadata={
-            "doc": """Specifies a path expression that determines membership in this
+    )
+    membershipExpression: Attribute[pathExpression] = Attribute(pathExpression, uniform=True, doc=
+        """Specifies a path expression that determines membership in this
         collection."""
-        }))
-        prim.create_prop(Attribute(token, "mode", value="automatic", uniform=True, metadata={
-            "allowedTokens": ["automatic", "relationship", "expression"],
-            "doc": """Specifies which mode the collection uses to determine
+    )
+    mode: Attribute[token] = Attribute(token, value="automatic", uniform=True,
+        metadata={
+            "allowedTokens": ["automatic", "relationship", "expression"]
+        },
+        doc="""Specifies which mode the collection uses to determine
         membership: `automatic`, `relationship`, or `expression`.
         <ul>
         <li>`automatic` - the collection's mode is inferred from its authored
@@ -206,17 +232,17 @@ class CollectionAPI(APISchemaBase):
         `includes`, `excludes`, and `includeRoot` are ignored.</li>
         </ul>
         The fallback value is `automatic`."""
-        }))
-        prim.create_prop(Attribute(opaque, "__INSTANCE_NAME__", uniform=True, metadata={
+    )
+    __INSTANCE_NAME__: Attribute[opaque] = Attribute(opaque, uniform=True,
+        metadata={
             "customData": {
                 "apiName": "Collection"
-            },
-            "doc": """This property represents the collection for the purpose of 
+            }
+        },
+        doc="""This property represents the collection for the purpose of 
         allowing another collection to include it. When this property is 
         targeted by another collection's <i>includes</i> relationship, the rules
         of this collection will be inserted into the rules of the collection
         that includes it.
         """
-        }))
-
-        return prim
+    )

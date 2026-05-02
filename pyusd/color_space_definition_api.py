@@ -3,6 +3,7 @@ from .attribute import Attribute
 from .dtypes import token
 from .gf import float2
 from .api_schema_base import APISchemaBase
+from .common import SchemaKind
 
 
 class ColorSpaceDefinitionAPI(APISchemaBase):
@@ -20,30 +21,37 @@ class ColorSpaceDefinitionAPI(APISchemaBase):
     on a prim resolving to a defaulted color definition will return a color
     space equivalent to the identity transform.
     """
-    
-    @classmethod
-    def apply(cls, prim:Prim)->Prim:
-        prim.metadata.apiSchemas.append(cls.__name__)
-        prim.create_prop(Attribute(token, "name", value="custom", uniform=True, metadata={
-            "doc": "The name of the color space defined on this prim."
-        }))
-        prim.create_prop(Attribute(float2, "redChroma", value=(1, 0), metadata={
-            "doc": "Red chromaticity coordinates"
-        }))
-        prim.create_prop(Attribute(float2, "greenChroma", value=(0, 1), metadata={
-            "doc": "Green chromaticity coordinates"
-        }))
-        prim.create_prop(Attribute(float2, "blueChroma", value=(0, 0), metadata={
-            "doc": "Blue chromaticity coordinates"
-        }))
-        prim.create_prop(Attribute(float2, "whitePoint", value=(0.33333333, 0.33333333), metadata={
-            "doc": "Whitepoint chromaticity coordinates"
-        }))
-        prim.create_prop(Attribute(float, "gamma", value=1.0, metadata={
-            "doc": "Gamma value of the log section"
-        }))
-        prim.create_prop(Attribute(float, "linearBias", value=0.0, metadata={
-            "doc": "Linear bias of the log section"
-        }))
 
-        return prim
+    schema_kind = SchemaKind.MultipleApplyAPI
+    
+    meta = {
+        "customData": {
+            "apiSchemaType": "multipleApply",
+            "propertyNamespacePrefix": "colorSpaceDefinition",
+            "extraIncludes": """
+#include "pxr/base/gf/colorSpace.h"
+"""
+        }
+    }
+
+    name: Attribute[token] = Attribute(token, value="custom", uniform=True, doc=
+        "The name of the color space defined on this prim."
+    )
+    redChroma: Attribute[float2] = Attribute(float2, value=(1, 0), doc=
+        "Red chromaticity coordinates"
+    )
+    greenChroma: Attribute[float2] = Attribute(float2, value=(0, 1), doc=
+        "Green chromaticity coordinates"
+    )
+    blueChroma: Attribute[float2] = Attribute(float2, value=(0, 0), doc=
+        "Blue chromaticity coordinates"
+    )
+    whitePoint: Attribute[float2] = Attribute(float2, value=(0.33333333, 0.33333333), doc=
+        "Whitepoint chromaticity coordinates"
+    )
+    gamma: Attribute[float] = Attribute(float, value=1.0, doc=
+        "Gamma value of the log section"
+    )
+    linearBias: Attribute[float] = Attribute(float, value=0.0, doc=
+        "Linear bias of the log section"
+    )

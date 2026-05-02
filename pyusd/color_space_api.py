@@ -2,6 +2,7 @@ from .prim import Prim
 from .attribute import Attribute
 from .dtypes import token, namespace
 from .api_schema_base import APISchemaBase
+from .common import SchemaKind
 
 
 class ColorSpaceAPI(APISchemaBase):
@@ -50,15 +51,23 @@ class ColorSpaceAPI(APISchemaBase):
     wherever possible.
     
     """
-    
-    @classmethod
-    def apply(cls, prim:Prim)->Prim:
-        prim.metadata.apiSchemas.append(cls.__name__)
-        colorSpace = prim.create_prop(Attribute(namespace, "colorSpace", is_leaf=False))
-        colorSpace.create_prop(Attribute(token, "name", uniform=True, is_leaf=True, metadata={
-            "doc": """The color space that applies to attributes with
+
+    schema_kind = SchemaKind.SingleApplyAPI
+
+    meta = {
+        "customData": {
+            "apiSchemaType": "singleApply",
+            "extraIncludes": """
+#include "pxr/base/gf/colorSpace.h"
+#include "pxr/base/tf/bigRWMutex.h"
+"""
+        }
+    }
+
+    colorSpace: Attribute[namespace] = Attribute(namespace, is_leaf=False)
+    colorSpace.name = Attribute(token, uniform=True, doc=
+        """The color space that applies to attributes with
         unauthored color spaces on this prim and its descendents.
         """
-        }))
-
-        return prim
+    )
+    
