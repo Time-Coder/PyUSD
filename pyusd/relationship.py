@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, TYPE_CHECKING, Dict, Any, Union
+from typing import List, TYPE_CHECKING, Dict, Any, Union, Optional
 from typeguard import typechecked
 import copy
 
@@ -15,9 +15,16 @@ class Relationship(Property):
     _targets: List[Prim]
 
     @typechecked
-    def __init__(self, name:str="", doc:str="", metadata:Dict[str, Any]={}, custom:bool=False, is_leaf:bool=True)->None:
+    def __init__(self, name:str="", doc:str="", metadata:Optional[Dict[str, Any]]=None, custom:bool=False, is_leaf:bool=True)->None:
         Property.__init__(self, name, doc=doc, metadata=metadata, custom=custom, is_leaf=is_leaf)
         self._targets:List[Prim] = []
+
+    @property
+    def value_state(self)->Property.ValueState:
+        if self._value_state != Property.ValueState.Authored and self._targets:
+            return Property.ValueState.Authored
+
+        return self._value_state
 
     def clone(self)->Relationship:
         result = Property.clone(self)
@@ -60,26 +67,26 @@ class Relationship(Property):
         else:
             return str(self._targets)
     
-    def to_str(self, indents:int=0)->str:
+    def to_str(self, indents:int=0, full:bool=False)->str:
         result_list = []
-        if self._value_state != Property.ValueState.Fallback:
+        if full or self._value_state != Property.ValueState.Fallback:
             tabs = "    " * indents
             prefix = ""
             if self._custom:
                 prefix += "custom "
 
             line = f"{tabs}{prefix}rel {self.full_name}"
-            if self._value_state != Property.ValueState.NotAuthored:
+            if self.value_state in [Property.ValueState.Authored, Property.ValueState.Cleared]:
                 line += f" = {usd_value_str(self._targets, indents, True)}"
 
-            metadata_str = self._metadata.to_str(indents)
+            metadata_str = self._metadata.to_str(indents, full=full)
             if metadata_str:
                 line += (" " + metadata_str)
 
             result_list.append(line)
 
         for child in self._children.values():
-            child_str = child.to_str(indents)
+            child_str = child.to_str(indents, full=full)
             if child_str:
                 result_list.append(child_str)
 

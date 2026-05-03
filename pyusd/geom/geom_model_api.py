@@ -95,59 +95,63 @@ class GeomModelAPI(APISchemaBase):
 
     \\todo CreatePayload() """
 
-    @classmethod
-    def apply(cls, prim:Prim)->Prim:
-        prim.metadata.apiSchemas.append(cls.__name__)
+    class DrawMode(token):
+        Origin = "origin"
+        Bounds = "bounds"
+        Cards = "cards"
+        Default = "default"
+        Inherited = "inherited"
 
-        model = prim.create_prop(Attribute(namespace, "model", is_leaf=False))
-        model.create_prop(Attribute(token, "drawMode", value="inherited", uniform=True, metadata={
-            "allowedTokens": ["origin", "bounds", "cards", "default", "inherited"],
-            "doc": """Alternate imaging mode; applied to this prim or child prims
-                 where \\em model:applyDrawMode is true, or where the prim
-                 has kind \\em component and \\em model:applyDrawMode is not
-                 authored. See \\ref UsdGeomModelAPI_drawMode
-                 for mode descriptions."""
-        }))
-        model.create_prop(Attribute(bool, "applyDrawMode", value=False, uniform=True, metadata={
-            "doc": """If true, and the resolved value of \\em model:drawMode is
-                 non-default, apply an alternate imaging mode to this prim. See
-                 \\ref UsdGeomModelAPI_drawMode."""
-        }))
-        model.create_prop(Attribute(float3, "drawModeColor", value=(0.18, 0.18, 0.18), uniform=True, metadata={
-            "doc": """The base color of imaging prims inserted for alternate
-                 imaging modes. For \\em origin and \\em bounds modes, this
-                 controls line color; for \\em cards mode, this controls the
-                 fallback quad color."""
-        }))
-        model.create_prop(Attribute(token, "cardGeometry", value="cross", uniform=True, metadata={
-            "allowedTokens": ["cross", "box", "fromTexture"],
-            "doc": """The geometry to generate for imaging prims inserted for \\em
-                 cards imaging mode. See \\ref UsdGeomModelAPI_cardGeometry for
-                 geometry descriptions."""
-        }))
-        model.create_prop(Attribute(asset, "cardTextureXPos", metadata={
-            "doc": """In \\em cards imaging mode, the texture applied to the X+ quad.
-                 The texture axes (s,t) are mapped to model-space axes (-y, -z)."""
-        }))
-        model.create_prop(Attribute(asset, "cardTextureYPos", metadata={
-            "doc": """In \\em cards imaging mode, the texture applied to the Y+ quad.
-                 The texture axes (s,t) are mapped to model-space axes (x, -z)."""
-        }))
-        model.create_prop(Attribute(asset, "cardTextureZPos", metadata={
-            "doc": """In \\em cards imaging mode, the texture applied to the Z+ quad.
-                 The texture axes (s,t) are mapped to model-space axes (x, -y)."""
-        }))
-        model.create_prop(Attribute(asset, "cardTextureXNeg", metadata={
-            "doc": """In \\em cards imaging mode, the texture applied to the X- quad.
-                 The texture axes (s,t) are mapped to model-space axes (y, -z)."""
-        }))
-        model.create_prop(Attribute(asset, "cardTextureYNeg", metadata={
-            "doc": """In \\em cards imaging mode, the texture applied to the Y- quad.
-                 The texture axes (s,t) are mapped to model-space axes (-x, -z)."""
-        }))
-        model.create_prop(Attribute(asset, "cardTextureZNeg", metadata={
-            "doc": """In \\em cards imaging mode, the texture applied to the Z- quad.
-                 The texture axes (s,t) are mapped to model-space axes (-x, -y)."""
-        }))
-        
-        return prim
+    class CardGeometry(token):
+        Cross = "cross"
+        Box = "box"
+        FromTexture = "fromTexture"
+
+    model: Attribute[namespace] = Attribute(namespace, is_leaf=False)
+    model.drawMode = Attribute(DrawMode, value=DrawMode.Inherited, uniform=True,
+        doc = """Alternate imaging mode; applied to this prim or child prims
+        where \\em model:applyDrawMode is true, or where the prim
+        has kind \\em component and \\em model:applyDrawMode is not
+        authored. See \\ref UsdGeomModelAPI_drawMode
+        for mode descriptions."""
+    )
+    model.applyDrawMode = Attribute(bool, value=False, uniform=True, doc=
+        """If true, and the resolved value of \\em model:drawMode is
+        non-default, apply an alternate imaging mode to this prim. See
+        \\ref UsdGeomModelAPI_drawMode."""
+    )
+    model.drawModeColor = Attribute(float3, value=(0.18, 0.18, 0.18), uniform=True, doc=
+        """The base color of imaging prims inserted for alternate
+        imaging modes. For \\em origin and \\em bounds modes, this
+        controls line color; for \\em cards mode, this controls the
+        fallback quad color."""
+    )
+    model.cardGeometry = Attribute(CardGeometry, value=CardGeometry.Cross, uniform=True,
+        doc = """The geometry to generate for imaging prims inserted for \\em
+        cards imaging mode. See \\ref UsdGeomModelAPI_cardGeometry for
+        geometry descriptions."""
+    )
+    model.cardTextureXPos = Attribute(asset, doc=
+        """In \\em cards imaging mode, the texture applied to the X+ quad.
+        The texture axes (s,t) are mapped to model-space axes (-y, -z)."""
+    )
+    model.cardTextureYPos = Attribute(asset, doc=
+        """In \\em cards imaging mode, the texture applied to the Y+ quad.
+        The texture axes (s,t) are mapped to model-space axes (x, -z)."""
+    )
+    model.cardTextureZPos = Attribute(asset, doc=
+        """In \\em cards imaging mode, the texture applied to the Z+ quad.
+        The texture axes (s,t) are mapped to model-space axes (x, -y)."""
+    )
+    model.cardTextureXNeg = Attribute(asset, doc=
+        """In \\em cards imaging mode, the texture applied to the X- quad.
+        The texture axes (s,t) are mapped to model-space axes (y, -z)."""
+    )
+    model.cardTextureYNeg = Attribute(asset, doc=
+        """In \\em cards imaging mode, the texture applied to the Y- quad.
+        The texture axes (s,t) are mapped to model-space axes (-x, -z)."""
+    )
+    model.cardTextureZNeg = Attribute(asset, doc=
+        """In \\em cards imaging mode, the texture applied to the Z- quad.
+        The texture axes (s,t) are mapped to model-space axes (-x, -y)."""
+    )

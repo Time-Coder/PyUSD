@@ -48,10 +48,12 @@ class VisibilityAPI(APISchemaBase):
         }
     }
 
-    guideVisibility: Attribute[token] = Attribute(token, "guideVisibility", value="invisible", uniform=True,
-        metadata={
-            "allowedTokens": ["inherited", "invisible", "visible"]
-        },
+    class Visibility(token):
+        Inherited = "inherited"
+        Invisible = "invisible"
+        Visible = "visible"
+
+    guideVisibility: Attribute[Visibility] = Attribute(Visibility, value=Visibility.Invisible, uniform=True,
         doc = """
         This attribute controls visibility for geometry with purpose "guide".
 
@@ -72,10 +74,7 @@ class VisibilityAPI(APISchemaBase):
         """
     )
 
-    proxyVisibility: Attribute[token] = Attribute(token, value="inherited", uniform=True,
-        metadata={
-            "allowedTokens": ["inherited", "invisible", "visible"]
-        },
+    proxyVisibility: Attribute[Visibility] = Attribute(Visibility, value=Visibility.Inherited, uniform=True,
         doc = """
         This attribute controls visibility for geometry with purpose "proxy".
 
@@ -99,10 +98,7 @@ class VisibilityAPI(APISchemaBase):
         """
     )
 
-    renderVisibility: Attribute[token] = Attribute(token, value="inherited", uniform=True,
-        metadata={
-            "allowedTokens": ["inherited", "invisible", "visible"]
-        },
+    renderVisibility: Attribute[Visibility] = Attribute(Visibility, value=Visibility.Inherited, uniform=True,
         doc = """
         This attribute controls visibility for geometry with purpose
         "render".

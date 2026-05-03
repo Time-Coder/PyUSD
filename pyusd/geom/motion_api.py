@@ -2,6 +2,7 @@ from ..prim import Prim
 from ..attribute import Attribute
 from ..dtypes import namespace
 from ..api_schema_base import APISchemaBase
+from ..common import SchemaKind
 
 
 class MotionAPI(APISchemaBase):
@@ -17,13 +18,11 @@ class MotionAPI(APISchemaBase):
     
     """
     
-    @classmethod
-    def apply(cls, prim:Prim)->Prim:
-        prim.metadata.apiSchemas.append(cls.__name__)
+    schema_kind = SchemaKind.MultipleApplyAPI
 
-        motion = prim.create_prop(Attribute(namespace, "motion", is_leaf=False))
-        motion.create_prop(Attribute(float, "blurScale", value=1.0, metadata={
-            "doc": """BlurScale is an __inherited__ float attribute that stipulates
+    motion: Attribute[namespace] = Attribute(namespace, is_leaf=False)
+    motion.blurScale = Attribute(float, "blurScale", value=1.0, doc=
+        """BlurScale is an __inherited__ float attribute that stipulates
         the rendered motion blur (as typically specified via UsdGeomCamera's
         _shutter:open_ and _shutter:close_ properties) should be scaled for
         __all objects__ at and beneath the prim in namespace on which the
@@ -42,13 +41,15 @@ class MotionAPI(APISchemaBase):
         
         \\sa ComputeMotionBlurScale()
         """
-        }))
-        motion.create_prop(Attribute(float, "velocityScale", value=1.0, metadata={
+    )
+    motion.velocityScale = Attribute(float, value=1.0,
+        metadata={
             "customData": {
                 "apiName": "velocityScale"
-            },
-            "doc": """\\deprecated
-        
+            }
+        },
+        doc="""\\deprecated
+    
         VelocityScale is an **inherited** float attribute that
         velocity-based schemas (e.g. PointBased, PointInstancer) can consume
         to compute interpolated positions and orientations by applying
@@ -59,12 +60,14 @@ class MotionAPI(APISchemaBase):
         VelocityScale allows artists to dial-in, as a post-sim correction, 
         a scale factor to be applied to the velocity prior to computing 
         interpolated positions from it."""
-        }))
-        motion.create_prop(Attribute(int, "nonlinearSampleCount", value=3, metadata={
+    )
+    motion.nonlinearSampleCount = Attribute(int, value=3,
+        metadata={
             "customData": {
                 "apiName": "nonlinearSampleCount"
-            },
-            "doc": """Determines the number of position or transformation samples
+            }
+        },
+        doc="""Determines the number of position or transformation samples
         created when motion is described by attributes contributing non-linear
         terms.
         
@@ -84,6 +87,4 @@ class MotionAPI(APISchemaBase):
 
         'nonlinearSampleCount' is an **inherited** attribute, also
         see ComputeNonlinearSampleCount()"""
-        }))
-
-        return prim
+    )

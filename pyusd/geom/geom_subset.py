@@ -41,10 +41,14 @@ class GeomSubset(Typed):
         }
     }
 
-    elementType: Attribute[token] = Attribute(token, value="face", uniform=True,
-        metadata={
-            "allowedTokens": ["face", "point", "edge", "segment", "tetrahedron"]
-        },
+    class ElementType(token):
+        Face = "face"
+        Point = "point"
+        Edge = "edge"
+        Segment = "segment"
+        Tetrahedron = "tetrahedron"
+
+    elementType: Attribute[ElementType] = Attribute(ElementType, value=ElementType.Face, uniform=True,
         doc = """The type of element that the indices target. "elementType" can
         have one of the following values:
         <ul><li><b>face</b>: Identifies faces on a Gprim's surface. For a 

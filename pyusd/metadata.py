@@ -1,5 +1,7 @@
+from __future__ import annotations
 from typing import List, Dict, Any
 from typeguard import typechecked
+import copy
 
 from .utils import usd_value_str, infer_type, usd_type_str, in_annotations
 from .dtypes import dictionary
@@ -33,6 +35,14 @@ class Metadata:
 
         if "customData" not in kwargs:
             self._custom_data = dictionary()
+
+    def clone(self)->Metadata:
+        result = Metadata()
+        result._builtin_data = copy.deepcopy(self._builtin_data)
+        result._custom_data = copy.deepcopy(self._custom_data)
+        result._builtin_is_set = copy.deepcopy(self._builtin_is_set)
+        result._custom_is_set = copy.deepcopy(self._custom_is_set)
+        return result
 
     @typechecked
     def update(self, kwargs:Dict[str, Any])->None:
@@ -72,7 +82,7 @@ class Metadata:
             self._custom_is_set[name] = True
 
     @typechecked
-    def to_str(self, indents:int=0)->str:        
+    def to_str(self, indents:int=0, full:bool=False)->str:        
         tabs = "    " * indents
         next_tabs = "    " * (indents + 1)
         next2_tabs = "    " * (indents + 2)
@@ -80,14 +90,26 @@ class Metadata:
         
         builtin_str_list:List[str] = []
         for key, value in self._builtin_data.items():
-            if not self._builtin_is_set[key]:
+            if not full and not self._builtin_is_set[key]:
                 continue
-            
-            builtin_str_list.append(f"{next_tabs}{key} = {usd_value_str(value, indents+1)}")
+
+            if value is None:
+                continue
+
+            if key == "doc" and isinstance(value, str) and value == "":
+                continue
+
+            if key != "inherits":
+                builtin_str_list.append(f"{next_tabs}{key} = {usd_value_str(value, indents+1)}")
+            else:
+                builtin_str_list.append(f"{next_tabs}{key} = {value}")
 
         custom_str_list:List[str] = []
         for key, value in self._custom_data.items():
-            if not self._custom_is_set[key]:
+            if not full and not self._custom_is_set[key]:
+                continue
+
+            if value is None:
                 continue
 
             custom_str_list.append(f"{next2_tabs}{usd_type_str(infer_type(value))} {key} = {usd_value_str(value, indents+2)}")

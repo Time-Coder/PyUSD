@@ -22,7 +22,7 @@ class Sphere(Gprim):
         }
     }
 
-    radius: Attribute[double] = Attribute(double, "radius", value=1.0, doc=
+    radius: Attribute[double] = Attribute(double, value=1.0, doc=
         """Indicates the sphere's radius.  If you
         author \\em radius you must also author \\em extent.
         

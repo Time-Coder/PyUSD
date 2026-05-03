@@ -15,8 +15,12 @@ class Gprim(Boundable):
 
     schema_kind: SchemaKind = SchemaKind.AbstractTyped
 
-    primvars: Attribute[namespace] = Attribute(namespace, "primvars", is_leaf=False)
-    primvars.displayColor = Attribute(List[color3f], "displayColor", is_leaf=True,
+    class WindingOrder(token):
+        RightHanded = "rightHanded"
+        LeftHanded = "leftHanded"
+
+    primvars: Attribute[namespace] = Attribute(namespace, is_leaf=False)
+    primvars.displayColor = Attribute(List[color3f], is_leaf=True,
         metadata={
             "customData": {
                 "apiName": "displayColor"
@@ -28,7 +32,7 @@ class Gprim(Boundable):
         UsdGeomPrimvar, it can also be used as a gprim override for any shader
         that consumes a \\em displayColor parameter."""
     )
-    primvars.displayOpacity = Attribute(List[float], "displayOpacity", is_leaf=True,
+    primvars.displayOpacity = Attribute(List[float], is_leaf=True,
         metadata={
             "customData": {
                 "apiName": "displayOpacity"
@@ -40,7 +44,7 @@ class Gprim(Boundable):
         rgba parameters."""
     )
 
-    doubleSided: Attribute[bool] = Attribute(bool, "doubleSided", value=False, uniform=True, doc=
+    doubleSided: Attribute[bool] = Attribute(bool, value=False, uniform=True, doc=
         """Although some renderers treat all parametric or polygonal
         surfaces as if they were effectively laminae with outward-facing
         normals on both sides, some renderers derive significant optimizations
@@ -60,10 +64,7 @@ class Gprim(Boundable):
         calculations."""
     )
 
-    orientation: Attribute[token] = Attribute(token, "orientation", value="rightHanded", uniform=True,
-        metadata={
-            "allowedTokens": ["rightHanded", "leftHanded"]
-        },
+    orientation: Attribute[WindingOrder] = Attribute(WindingOrder, value=WindingOrder.RightHanded, uniform=True,
         doc = """Orientation specifies whether the gprim's surface normal 
         should be computed using the right hand rule, or the left hand rule.
         Please see \\ref UsdGeom_WindingOrder for a deeper explanation and

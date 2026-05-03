@@ -5,7 +5,7 @@ from typeguard import typechecked
 import copy
 
 from .property import Property
-from .dtypes import namespace
+from .dtypes import namespace, token
 from .utils import nest_map, usd_type_str, usd_value_str, analyze_list_type, infer_type, usd_scalar_types, usd_vector_types, usd_quat_types, usd_matrix_types
 
 
@@ -21,7 +21,13 @@ class Attribute(Property, Generic[T]):
     _fix_type: bool
 
     @typechecked
-    def __init__(self, value_type:type, name:str="", value:Optional[T]=None, doc:str="", metadata:Dict[str, Any]={}, is_leaf:bool=True, uniform:bool=False, custom:bool=False, fix_type:bool=True)->None:
+    def __init__(self, value_type:type, name:str="", value:Optional[T]=None, doc:str="", metadata:Optional[Dict[str, Any]]=None, is_leaf:bool=True, uniform:bool=False, custom:bool=False, fix_type:bool=True)->None:
+        if metadata is None:
+            metadata = {}
+        
+        if isinstance(value_type, type) and issubclass(value_type, token) and value_type != token:
+            metadata["allowedTokens"] = [member.value for member in value_type]
+
         Property.__init__(self, name, doc=doc, metadata=metadata, custom=custom, is_leaf=is_leaf)
         self._init(value_type, value, uniform, fix_type)
     
@@ -104,10 +110,10 @@ class Attribute(Property, Generic[T]):
     def value_str(self, indent:int=0)->str:
         return usd_value_str(self.value, indent)
 
-    def to_str(self, indents:int=0)->str:
+    def to_str(self, indents:int=0, full:bool=False)->str:
         result_list = []
         full_name = self.full_name
-        if self.value_state != Property.ValueState.Fallback:
+        if (full or self.value_state != Property.ValueState.Fallback) and self._type != namespace:
             tabs = "    " * indents
             prefix = ""
             if self._custom:
@@ -116,10 +122,13 @@ class Attribute(Property, Generic[T]):
                 prefix += "uniform "
 
             line = f"{tabs}{prefix}{self.type_name} {full_name}"
-            if self.value_state != Property.ValueState.NotAuthored:
+            if (
+                (self.value_state == Property.ValueState.Fallback and self._value is not None) or
+                self.value_state in [Property.ValueState.Authored, Property.ValueState.Cleared]
+            ):
                 line += f" = {self.value_str(indents)}"
 
-            metadata_str = self._metadata.to_str(indents)
+            metadata_str = self._metadata.to_str(indents, full=full)
             if metadata_str:
                 line += (" " + metadata_str)
 
@@ -130,7 +139,7 @@ class Attribute(Property, Generic[T]):
                 result_list.append(line)
 
         for child in self._children.values():
-            child_str = child.to_str(indents)
+            child_str = child.to_str(indents, full=full)
             if child_str:
                 result_list.append(child_str)
 
@@ -145,7 +154,7 @@ class Attribute(Property, Generic[T]):
             return value
 
         current_type = infer_type(value)
-        if current_type == self._type:
+        if current_type == self._type or current_type == str and self._type == token:
             return value
         
         current_dtype, current_array_dim = analyze_list_type(current_type)
@@ -160,14 +169,14 @@ class Attribute(Property, Generic[T]):
         if self._array_dim != current_array_dim:
             raise TypeError(f"cannot convert {current_type} to {self._type}")
 
-        if self._dtype in usd_scalar_types:
+        if issubclass(self._dtype, usd_scalar_types):
             return nest_map(value, self._dtype)
-        elif self._dtype in usd_vector_types or self._dtype in usd_quat_types:
+        elif issubclass(self._dtype, usd_vector_types + usd_quat_types):
             if issubclass(current_dtype, Iterable):
                 return nest_map(value, lambda x: self._dtype(*x))
             else:
                 return nest_map(value, self._dtype)
-        elif self._dtype in usd_matrix_types:
+        elif issubclass(self._dtype, usd_matrix_types):
             if issubclass(current_dtype, Iterable):
                 
                 def func(x):

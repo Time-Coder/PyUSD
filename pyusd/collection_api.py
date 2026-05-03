@@ -170,10 +170,17 @@ class CollectionAPI(APISchemaBase):
         }
     }
 
-    expansionRule: Attribute[token] = Attribute(token, value="expandPrims", uniform=True,
-        metadata={
-            "allowedTokens": ["explicitOnly", "expandPrims", "expandPrimsAndProperties"]
-        },
+    class ExpansionRule(token):
+        ExplicitOnly = "explicitOnly"
+        ExpandPrims = "expandPrims"
+        ExpandPrimsAndProperties = "expandPrimsAndProperties"
+
+    class Mode(token):
+        Automatic = "automatic"
+        Relationship = "relationship"
+        Expression = "expression"
+
+    expansionRule: Attribute[ExpansionRule] = Attribute(ExpansionRule, value=ExpansionRule.ExpandPrims, uniform=True,
         doc="""Specifies how the paths that are included in
         the collection must be expanded to determine its members."""
     )
@@ -208,10 +215,7 @@ class CollectionAPI(APISchemaBase):
         """Specifies a path expression that determines membership in this
         collection."""
     )
-    mode: Attribute[token] = Attribute(token, value="automatic", uniform=True,
-        metadata={
-            "allowedTokens": ["automatic", "relationship", "expression"]
-        },
+    mode: Attribute[Mode] = Attribute(Mode, value=Mode.Automatic, uniform=True,
         doc="""Specifies which mode the collection uses to determine
         membership: `automatic`, `relationship`, or `expression`.
         <ul>

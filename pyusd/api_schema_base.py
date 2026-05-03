@@ -1,3 +1,8 @@
+from .property import Property
+from .common import SchemaKind
+from .metadata import Metadata
+
+
 class APISchemaBase:
     """The base class for all \\em API schemas.
 
@@ -56,6 +61,8 @@ class APISchemaBase:
     
     """
 
+    schema_kind: SchemaKind = SchemaKind.AbstractBase
+
     meta = {
         "customData": {
             "fileName": "apiSchemaBase"
@@ -65,3 +72,44 @@ class APISchemaBase:
     def __init__(self)->None:
         self.metadata.apiSchemas.append(self.__class__.__name__)
     
+    @classmethod
+    def cls_to_str(cls)->str:
+        type_name = cls.__name__
+        result = f'class "{type_name}"'
+
+        if "meta" in cls.__dict__:
+            metadata = Metadata(cls.meta)
+        else:
+            metadata = Metadata()
+
+        update_metadata = {}
+
+        if cls.__mro__[1] is not object:
+            update_metadata["inherits"] = f"</{cls.__mro__[1].__name__}>"
+
+        if cls.__doc__:
+            update_metadata["doc"] = cls.__doc__
+
+        metadata.update(update_metadata)
+
+        metadata_str = metadata.to_str(0, True)
+        if metadata_str:
+            result += (" " + metadata_str)
+
+        result += f'\n{{\n'
+        
+        props_str_list = []
+        for name, prop in cls.__dict__.items():
+            if not isinstance(prop, Property):
+                continue
+
+            prop._name = name
+            prop_str = prop.to_str(1, full=True)
+            if prop_str:
+                props_str_list.append(prop_str)
+
+        if props_str_list:
+            result += "\n".join(props_str_list) + "\n"
+
+        result += f'}}\n'
+        return result

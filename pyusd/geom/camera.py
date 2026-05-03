@@ -100,9 +100,16 @@ class Camera(Xformable):
         }
     }
 
-    projection: Attribute[token] = Attribute(token, value="perspective", metadata={
-        "allowedTokens": ["perspective", "orthographic"]
-    })
+    class Projection(token):
+        Perspective = "perspective"
+        Orthographic = "orthographic"
+
+    class StereoRole(token):
+        Mono = "mono"
+        Left = "left"
+        Right = "right"
+
+    projection: Attribute[Projection] = Attribute(Projection, value=Projection.Perspective)
 
     horizontalAperture: Attribute[float] = Attribute(float, value=20.9550, doc=
         """Horizontal aperture in tenths of a scene unit; see 
@@ -152,10 +159,7 @@ class Camera(Xformable):
         \\ref UsdGeom_CameraUnits ."""
     )
 
-    stereoRole: Attribute[token] = Attribute(token, value="mono", uniform=True,
-        metadata={
-            "allowedTokens": ["mono", "left", "right"]
-        },
+    stereoRole: Attribute[StereoRole] = Attribute(StereoRole, value=StereoRole.Mono, uniform=True,
         doc = """If different from mono, the camera is intended to be the left
         or right camera of a stereo setup."""
     )

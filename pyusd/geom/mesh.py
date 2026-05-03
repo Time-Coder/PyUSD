@@ -86,6 +86,29 @@ class Mesh(PointBased):
         }
     }
 
+    class SubdivisionScheme(token):
+        CatmullClark = "catmullClark"
+        Loop = "loop"
+        Bilinear = "bilinear"
+        None_ = "none"
+
+    class BoundaryInterpolation(token):
+        None_ = "none"
+        EdgeOnly = "edgeOnly"
+        EdgeAndCorner = "edgeAndCorner"
+
+    class FaceVaryingInterpolation(token):
+        None_ = "none"
+        CornersOnly = "cornersOnly"
+        CornersPlus1 = "cornersPlus1"
+        CornersPlus2 = "cornersPlus2"
+        Boundaries = "boundaries"
+        All = "all"
+
+    class TriangleSubdivision(token):
+        CatmullClark = "catmullClark"
+        Smooth = "smooth"
+
     faceVertexIndices: Attribute[List[int]] = Attribute(List[int], doc=
         """Flat list of the index (into the _points_ attribute) of each
         vertex of each face in the mesh.  If this attribute has more than
@@ -100,10 +123,7 @@ class Mesh(PointBased):
         one timeSample, the mesh is considered to be topologically varying."""
     )
 
-    subdivisionScheme: Attribute[token] = Attribute(token, value="catmullClark", uniform=True,
-        metadata={
-          "allowedTokens": ["catmullClark", "loop", "bilinear", "none"]
-        },
+    subdivisionScheme: Attribute[SubdivisionScheme] = Attribute(SubdivisionScheme, value=SubdivisionScheme.CatmullClark, uniform=True,
         doc="""The subdivision scheme to be applied to the surface.
         Valid values are:
 
@@ -124,10 +144,7 @@ class Mesh(PointBased):
         may also not respect authored normals."""
     )
 
-    interpolateBoundary: Attribute[token] = Attribute(token, value="edgeAndCorner",
-        metadata={
-            "allowedTokens": ["none", "edgeOnly", "edgeAndCorner"]
-        },
+    interpolateBoundary: Attribute[BoundaryInterpolation] = Attribute(BoundaryInterpolation, value=BoundaryInterpolation.EdgeAndCorner,
         doc="""Specifies how subdivision is applied for faces adjacent to
         boundary edges and boundary points. Valid values correspond to choices
         available in OpenSubdiv:
@@ -144,10 +161,7 @@ class Mesh(PointBased):
         https://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html#boundary-interpolation-rules"""
     )
 
-    faceVaryingLinearInterpolation: Attribute[token] = Attribute(token, value="cornersPlus1",
-        metadata={
-            "allowedTokens": ["none", "cornersOnly", "cornersPlus1", "cornersPlus2", "boundaries", "all"]
-        },
+    faceVaryingLinearInterpolation: Attribute[FaceVaryingInterpolation] = Attribute(FaceVaryingInterpolation, value=FaceVaryingInterpolation.CornersPlus1,
         doc="""Specifies how elements of a primvar of interpolation type
         "faceVarying" are interpolated for subdivision surfaces. Interpolation
         can be as smooth as a "vertex" primvar or constrained to be linear at
@@ -172,10 +186,7 @@ class Mesh(PointBased):
         https://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html#face-varying-interpolation-rules"""
     )
 
-    triangleSubdivisionRule: Attribute[token] = Attribute(token, value="catmullClark",
-        metadata={
-            "allowedTokens": ["catmullClark", "smooth"]
-        },
+    triangleSubdivisionRule: Attribute[TriangleSubdivision] = Attribute(TriangleSubdivision, value=TriangleSubdivision.CatmullClark,
         doc="""Specifies an option to the subdivision rules for the
         Catmull-Clark scheme to try and improve undesirable artifacts when
         subdividing triangles.  Valid values are "catmullClark" for the

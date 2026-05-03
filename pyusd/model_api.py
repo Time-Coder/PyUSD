@@ -49,9 +49,9 @@ class ModelAPI(APISchemaBase):
     @typechecked
     def is_kind(self, base_kind:Kind, validation:KindValidation=KindValidation.KindValidationModelHierarchy)->bool:
         """Return true if the prim's kind metadata is or inherits from
-        \p baseKind as defined by the Kind Registry.
+        \\p baseKind as defined by the Kind Registry.
         
-        If \p validation is KindValidationModelHierarchy (the default), then
+        If \\p validation is KindValidationModelHierarchy (the default), then
         this also ensures that if baseKind is a model, the prim conforms to
         the rules of model hierarchy, as defined by IsModel. If set to
         KindValidationNone, no additional validation is done.
@@ -90,9 +90,9 @@ class ModelAPI(APISchemaBase):
     @asset_identifier.setter
     @typechecked
     def asset_identifier(self, identifier:Union[asset, str])->None:
-        """Sets the model's asset identifier to the given asset path, \p identifier.
+        """Sets the model's asset identifier to the given asset path, \\p identifier.
         
-        \sa GetAssetIdentifier()"""
+        \\sa GetAssetIdentifier()"""
 
         if not isinstance(identifier, asset):
             identifier = asset(identifier)
@@ -110,9 +110,9 @@ class ModelAPI(APISchemaBase):
     @asset_name.setter
     @typechecked
     def asset_name(self, asset_name:str)->None:
-        """Sets the model's asset name to \p assetName.
+        """Sets the model's asset name to \\p assetName.
         
-        \sa GetAssetName()"""
+        \\sa GetAssetName()"""
 
         self.metadata.assetInfo.name = asset_name
     
@@ -135,7 +135,7 @@ class ModelAPI(APISchemaBase):
     def asset_version(self, asset_version:str)->None:
         """Sets the model's asset version string. 
         
-        \sa GetAssetVersion()"""
+        \\sa GetAssetVersion()"""
 
         self.metadata.assetInfo.version = asset_version
     
@@ -156,7 +156,7 @@ class ModelAPI(APISchemaBase):
         """Sets the list of external asset dependencies referenced inside the 
         payload of a model.
         
-        \sa GetPayloadAssetDependencies()"""
+        \\sa GetPayloadAssetDependencies()"""
 
         self.metadata.assetInfo.payloadAssetDependencies = asset_dependencies
     
@@ -176,7 +176,7 @@ class ModelAPI(APISchemaBase):
     @asset_info.setter
     @typechecked
     def asset_info(self, info:Dict[str, Any])->None:
-        """Sets the model's assetInfo dictionary to \p info in the current edit 
+        """Sets the model's assetInfo dictionary to \\p info in the current edit 
         target."""
 
         self.metadata.assetInfo = info

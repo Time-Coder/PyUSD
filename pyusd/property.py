@@ -33,11 +33,14 @@ class Property:
     meta: Dict[str, Any] = {}
 
     @typechecked
-    def __init__(self, name:str="", doc:str="", metadata:Dict[str, Any]={}, custom:bool=False, is_leaf:bool=True)->None:
+    def __init__(self, name:str="", doc:str="", metadata:Optional[Dict[str, Any]]=None, custom:bool=False, is_leaf:bool=True)->None:
+        if metadata is None:
+            metadata = {}
+        
         if "doc" in metadata:
             doc = metadata["doc"]
 
-        if doc == "":
+        if doc == "" and self.__class__.__doc__ is not None:
             doc = self.__class__.__doc__
 
         if "doc" not in metadata:
@@ -59,19 +62,20 @@ class Property:
             for name, value in klass.__dict__.items():
                 if name not in self._children and isinstance(value, Property):
                     prop = value.clone()
-                    prop._parent_prim = self
+                    prop._parent_prim = self._parent_prim
+                    prop._parent_prop = self
                     prop._name = name
                     self._children[name] = prop
 
         self._metadata.update(self.meta)
 
     def clone(self)->Property:
-        result = object()
+        result = Property()
         result.__class__ = self.__class__
         result._parent_prim = None
         result._parent_prop = None
         result._name = self._name
-        result._metadata = copy.deepcopy(self._metadata)
+        result._metadata = self._metadata.clone()
         result._children = {}
         result._custom = self._custom
         result._is_leaf = self._is_leaf
@@ -237,10 +241,10 @@ class Property:
 
         self._children[name].set(value)
 
-    def to_str(self, indents:int=0)->str:
+    def to_str(self, indents:int=0, full:bool=False)->str:
         result_list = []
         for child in self._children.values():
-            child_str = child.to_str(indents)
+            child_str = child.to_str(indents, full=full)
             if child_str:
                 result_list.append(child_str)
 

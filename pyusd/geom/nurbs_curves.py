@@ -1,5 +1,6 @@
 from .curves import Curves
 from ..attribute import Attribute
+from ..dtypes import double
 from ..gf import double2
 from ..common import SchemaKind
 from typing import List
@@ -37,7 +38,7 @@ class NurbsCurves(Curves):
         curveVertexCount[i]"""
     )
 
-    knots: Attribute[List[float]] = Attribute(List[float], "knots", doc=
+    knots: Attribute[List[double]] = Attribute(List[double], "knots", doc=
         """Knot vector providing curve parameterization.
         The length of the slice of the array for the ith curve 
         must be ( curveVertexCount[i] + order[i] ), and its
@@ -53,7 +54,7 @@ class NurbsCurves(Curves):
         Range maps to (vmin, vmax) in the RenderMan spec."""
     )
 
-    pointWeights: Attribute[List[float]] = Attribute(List[float], "pointWeights", doc=
+    pointWeights: Attribute[List[double]] = Attribute(List[double], "pointWeights", doc=
         """Optionally provides "w" components for each control point,
         thus must be the same length as the points attribute.  If authored,
         the curve will be rational.  If unauthored, the curve will be

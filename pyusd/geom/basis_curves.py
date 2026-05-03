@@ -210,26 +210,31 @@ class BasisCurves(Curves):
     
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
-    type: Attribute[token] = Attribute(token, value="cubic", uniform=True,
-        metadata={
-            "allowedTokens": ["linear", "cubic"]
-        },
+    class Type(token):
+        Linear = "linear"
+        Cubic = "cubic"
+
+    class Basis(token):
+        Bezier = "bezier"
+        BSpline = "bspline"
+        CatmullRom = "catmullRom"
+
+    class Wrap(token):
+        Nonperiodic = "nonperiodic"
+        Periodic = "periodic"
+        Pinned = "pinned"
+
+    type: Attribute[Type] = Attribute(Type, value=Type.Cubic, uniform=True,
         doc="""Linear curves interpolate linearly between two vertices.  
         Cubic curves use a basis matrix with four vertices to interpolate a segment."""
     )
-    basis: Attribute[token] = Attribute(token, value="bezier", uniform=True,
-        metadata={
-            "allowedTokens": ["bezier", "bspline", "catmullRom"]
-        },
+    basis: Attribute[Basis] = Attribute(Basis, value=Basis.Bezier, uniform=True,
         doc="""The basis specifies the vstep and matrix used for cubic 
         interpolation.  \\note The 'hermite' and 'power' tokens have been
         removed. We've provided UsdGeomHermiteCurves
         as an alternative for the 'hermite' basis."""
     )
-    wrap: Attribute[token] = Attribute(token, value="nonperiodic", uniform=True,
-        metadata={
-            "allowedTokens": ["nonperiodic", "periodic", "pinned"]
-        },
+    wrap: Attribute[Wrap] = Attribute(Wrap, value=Wrap.Nonperiodic, uniform=True,
         doc = """If wrap is set to periodic, the curve when rendered will 
         repeat the initial vertices (dependent on the vstep) to close the
         curve. If wrap is set to 'pinned', phantom points may be created

@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Dict, Union, Optional, List, Any, TYPE_CHECKING
 from typeguard import typechecked
+import copy
 
 from .property import Property
 from .metadata import Metadata
@@ -44,7 +45,6 @@ class Prim:
         self._metadata:Metadata = Metadata({
             "specifier": Specifier.Def,
             "typeName": self.__class__.__name__,
-            "doc": self.__class__.__doc__,
             "apiSchemas": [],
             "assetInfo": {
                 "identifier": None,
@@ -53,8 +53,11 @@ class Prim:
                 "version": None
             }
         })
-        if issubclass(self.__class__.__mro__[1], Prim):
+
+        if issubclass(self.__class__.__mro__[1], Prim) and self.__class__.__mro__[1] != Prim:
             self._metadata.update({"inherits": f"</{self.__class__.__mro__[1].__name__}>"})
+
+        self._metadata.update({"doc": self.__class__.__doc__})
 
         for klass in self.__class__.__mro__:
             if klass is object:
@@ -298,7 +301,7 @@ class Prim:
     def __str__(self)->str:
         return self.__class__.__name__ + "(<" + self.path + ">)"
     
-    def to_str(self, indents:int=0)->str:
+    def to_str(self, indents:int=0)->str:        
         tabs = "    " * indents
         prim_type_name = self.__class__.__name__
         if prim_type_name in ["Prim", "Typed"]:
@@ -319,7 +322,7 @@ class Prim:
                 props_str_list.append(prop_str)
 
         if props_str_list:
-            result += "\n".join(reversed(props_str_list)) + "\n"
+            result += "\n".join(props_str_list) + "\n"
 
         children_str_list = []
         for child in self._children.values():
@@ -334,6 +337,51 @@ class Prim:
         result += f'{tabs}}}\n'
         return result
     
+    @classmethod
+    def cls_to_str(cls)->str:
+        prim_type_name = cls.__name__
+        if cls.schema_kind == SchemaKind.ConcreteTyped:
+            result = f'class {prim_type_name} "{prim_type_name}"'
+        else:
+            result = f'class "{prim_type_name}"'
+
+        if "meta" in cls.__dict__:
+            metadata = Metadata(cls.meta)
+        else:
+            metadata = Metadata()
+
+        update_metadata = {}
+
+        if issubclass(cls.__mro__[1], Prim) and cls.__mro__[1] != Prim:
+            update_metadata["inherits"] = f"</{cls.__mro__[1].__name__}>"
+
+        if cls.__doc__:
+            update_metadata["doc"] = cls.__doc__
+
+        metadata.update(update_metadata)
+
+        metadata_str = metadata.to_str(0, True)
+        if metadata_str:
+            result += (" " + metadata_str)
+
+        result += f'\n{{\n'
+        
+        props_str_list = []
+        for name, prop in cls.__dict__.items():
+            if not isinstance(prop, Property):
+                continue
+
+            prop._name = name
+            prop_str = prop.to_str(1, full=True)
+            if prop_str:
+                props_str_list.append(prop_str)
+
+        if props_str_list:
+            result += "\n".join(props_str_list) + "\n"
+
+        result += f'}}\n'
+        return result
+
     def __getattr__(self, name:str)->Property:
         if name not in self._props:
             self.create_prop(Property(name, custom=True, is_leaf=False))

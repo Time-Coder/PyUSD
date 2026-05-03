@@ -1,7 +1,7 @@
 from .gprim import Gprim
 from ..attribute import Attribute
 from ..dtypes import double, token
-from ..common import SchemaKind
+from ..common import SchemaKind, Axis
 from ..gf import float3
 from typing import List
 
@@ -45,10 +45,7 @@ class Capsule_1(Gprim):
 
         \\sa GetExtentAttr()"""
     )
-    axis: Attribute[token] = Attribute(token, value="Z", uniform=True,
-        metadata={
-            "allowedTokens": ["X", "Y", "Z"]
-        },
+    axis: Attribute[Axis] = Attribute(Axis, value=Axis.Z, uniform=True,
         doc = "The axis along which the spine of the capsule is aligned"
     )
     extent: Attribute[List[float3]] = Attribute(List[float3], value=[(-0.5, -0.5, -1.0), (0.5, 0.5, 1.0)], doc=

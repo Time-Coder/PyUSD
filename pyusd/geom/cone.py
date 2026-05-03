@@ -1,7 +1,7 @@
 from .gprim import Gprim
 from ..attribute import Attribute
 from ..dtypes import double, token
-from ..common import SchemaKind
+from ..common import SchemaKind, Axis
 from ..gf import float3
 from typing import List
 
@@ -38,10 +38,7 @@ class Cone(Gprim):
         \\sa GetExtentAttr()"""
     )
 
-    axis: Attribute[token] = Attribute(token, "axis", value="Z", uniform=True,
-        metadata={
-            "allowedTokens": ["X", "Y", "Z"]
-        },
+    axis: Attribute[Axis] = Attribute(Axis, value=Axis.Z, uniform=True,
         doc = "The axis along which the spine of the cone is aligned"
     )
 

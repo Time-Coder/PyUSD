@@ -65,9 +65,9 @@ class ColorSpaceAPI(APISchemaBase):
     }
 
     colorSpace: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    colorSpace.name = Attribute(token, uniform=True, doc=
+    colorSpace.create_prop(Attribute(token, "name", uniform=True, doc=
         """The color space that applies to attributes with
         unauthored color spaces on this prim and its descendents.
         """
-    )
+    ))
     

@@ -1,6 +1,6 @@
 from .point_based import PointBased
 from ..attribute import Attribute
-from ..dtypes import namespace, token
+from ..dtypes import namespace, token, double
 from ..gf import double2, double3
 from ..common import SchemaKind
 from typing import List
@@ -58,6 +58,11 @@ class NurbsPatch(PointBased):
     
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
+    class Form(token):
+        Open = "open"
+        Closed = "closed"
+        Periodic = "periodic"
+
     uVertexCount: Attribute[int] = Attribute(int, "uVertexCount", doc=
         """Number of vertices in the U direction.  Should be at least as
         large as uOrder."""
@@ -78,39 +83,33 @@ class NurbsPatch(PointBased):
         equal to the degree of the polynomial basis to be evaluated, plus 1."""
     )
 
-    uKnots: Attribute[List[float]] = Attribute(List[float], "uKnots", doc=
+    uKnots: Attribute[List[double]] = Attribute(List[double], "uKnots", doc=
         """Knot vector for U direction providing U parameterization.
         The length of this array must be ( uVertexCount + uOrder ), and its
         entries must take on monotonically increasing values."""  
     )
 
-    vKnots: Attribute[List[float]] = Attribute(List[float], "vKnots", doc=
+    vKnots: Attribute[List[double]] = Attribute(List[double], "vKnots", doc=
         """Knot vector for V direction providing U parameterization.
         The length of this array must be ( vVertexCount + vOrder ), and its
         entries must take on monotonically increasing values."""  
     )
 
-    uForm: Attribute[token] = Attribute(token, "uForm", value="open", uniform=True,
-        metadata={
-            "allowedTokens": ["open", "closed", "periodic"]
-        },
+    uForm: Attribute[Form] = Attribute(Form, value=Form.Open, uniform=True,
         doc="""Interpret the control grid and knot vectors as representing
         an open, geometrically closed, or geometrically closed and C2 continuous
         surface along the U dimension.
         \\sa \\ref UsdGeom_NurbsPatch_Form "NurbsPatch Form" """
     )
 
-    vForm: Attribute[token] = Attribute(token, "vForm", value="open", uniform=True,
-        metadata={
-            "allowedTokens": ["open", "closed", "periodic"]
-        },
+    vForm: Attribute[Form] = Attribute(Form, value=Form.Open, uniform=True,
         doc="""Interpret the control grid and knot vectors as representing
         an open, geometrically closed, or geometrically closed and C2 continuous
         surface along the V dimension.
         \\sa \\ref UsdGeom_NurbsPatch_Form "NurbsPatch Form" """
     )
 
-    uRange: Attribute[double2] = Attribute(double2, "uRange", doc=
+    uRange: Attribute[double2] = Attribute(double2, doc=
         """Provides the minimum and maximum parametric values (as defined
         by uKnots) over which the surface is actually defined.  The minimum
         must be less than the maximum, and greater than or equal to the
@@ -118,7 +117,7 @@ class NurbsPatch(PointBased):
         to the last element's value in uKnots."""
     )
 
-    vRange: Attribute[double2] = Attribute(double2, "vRange", doc=
+    vRange: Attribute[double2] = Attribute(double2, doc=
         """Provides the minimum and maximum parametric values (as defined
         by vKnots) over which the surface is actually defined.  The minimum
         must be less than the maximum, and greater than or equal to the
@@ -126,7 +125,7 @@ class NurbsPatch(PointBased):
         to the last element's value in vKnots."""
     )
 
-    pointWeights: Attribute[List[float]] = Attribute(List[float], "pointWeights", doc=
+    pointWeights: Attribute[List[double]] = Attribute(List[double], doc=
         """Optionally provides "w" components for each control point,
         thus must be the same length as the points attribute.  If authored,
         the patch will be rational.  If unauthored, the patch will be
@@ -135,7 +134,7 @@ class NurbsPatch(PointBased):
         \\em points are not pre-weighted."""
     )
 
-    trimCurve: Attribute[namespace] = Attribute(namespace, "trimCurve", is_leaf=False)
+    trimCurve: Attribute[namespace] = Attribute(namespace, is_leaf=False)
     trimCurve.counts = Attribute(List[int], "counts", doc=
         """Each element specifies how many curves are present in each
         "loop" of the trimCurve, and the length of the array determines how
@@ -143,24 +142,24 @@ class NurbsPatch(PointBased):
         total nuber of curves in the trim, to which we will refer as 
         \\em nCurves in describing the other trim attributes."""
     )
-    trimCurve.orders = Attribute(List[int], "orders", doc=
+    trimCurve.orders = Attribute(List[int], doc=
         """Flat list of orders for each of the \\em nCurves curves."""
     )
     trimCurve.vertexCounts = Attribute(List[int], "vertexCounts", doc=
         """Flat list of number of vertices for each of the
         \\em nCurves curves."""
     )
-    trimCurve.knots = Attribute(List[float], "knots", doc=
+    trimCurve.knots = Attribute(List[double], doc=
         """Flat list of parametric values for each of the
         \\em nCurves curves.  There will be as many knots as the sum over
         all elements of \\em vertexCounts plus the sum over all elements of
         \\em orders."""
     )
-    trimCurve.ranges = Attribute(List[double2], "ranges", doc=
+    trimCurve.ranges = Attribute(List[double2], doc=
         """Flat list of minimum and maximum parametric values 
         (as defined by \\em knots) for each of the \\em nCurves curves."""
     )
-    trimCurve.points = Attribute(List[double3], "points", doc=
+    trimCurve.points = Attribute(List[double3], doc=
         """Flat list of homogeneous 2D points (u, v, w) that comprise
         the \\em nCurves curves.  The number of points should be equal to the
         um over all elements of \\em vertexCounts."""

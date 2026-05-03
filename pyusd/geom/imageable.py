@@ -27,10 +27,17 @@ class Imageable(Typed):
         }
     }
 
-    visibility: Attribute[token] = Attribute(token, "visibility", value="inherited",
-        metadata={
-            "allowedTokens": ["inherited", "invisible"]
-        },
+    class Visibility(token):
+        Inherited = "inherited"
+        Invisible = "invisible"
+
+    class Purpose(token):
+        Default = "default"
+        Render = "render"
+        Proxy = "proxy"
+        Guide = "guide"
+
+    visibility: Attribute[Visibility] = Attribute(Visibility, value=Visibility.Inherited,
         doc = """Visibility is meant to be the simplest form of "pruning" 
         visibility that is supported by most DCC apps.  Visibility is 
         animatable, allowing a sub-tree of geometry to be present for some 
@@ -39,10 +46,7 @@ class Imageable(Typed):
         available for inspection, for positioning, for defining volumes, etc."""
     )
 
-    purpose: Attribute[token] = Attribute(token, "purpose", value="default", uniform=True,
-        metadata={
-            "allowedTokens": ["default", "render", "proxy", "guide"]
-        },
+    purpose: Attribute[Purpose] = Attribute(Purpose, value=Purpose.Default, uniform=True,
         doc = """Purpose is a classification of geometry into categories that 
         can each be independently included or excluded from traversals of prims 
         on a stage, such as rendering or bounding-box computation traversals.

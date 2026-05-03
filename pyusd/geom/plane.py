@@ -1,7 +1,7 @@
 from .gprim import Gprim
 from ..attribute import Attribute
 from ..dtypes import double, token
-from ..common import SchemaKind
+from ..common import SchemaKind, Axis
 from ..gf import float3
 from typing import List
 
@@ -30,14 +30,14 @@ class Plane(Gprim):
         }
     }
 
-    doubleSided: Attribute[bool] = Attribute(bool, value=True, doc=
+    doubleSided: Attribute[bool] = Attribute(bool, value=True, uniform=True, doc=
         """Planes are double-sided by default. Clients may also support
         single-sided planes.
 
         \\sa UsdGeomGprim::GetDoubleSidedAttr()"""
     )
 
-    width: Attribute[double] = Attribute(double, "width", value=2.0, doc=
+    width: Attribute[double] = Attribute(double, value=2.0, doc=
         """The width of the plane, which aligns to the x-axis when \\em axis is
         'Z' or 'Y', or to the z-axis when \\em axis is 'X'.  If you author \\em width 
         you must also author \\em extent.
@@ -45,7 +45,7 @@ class Plane(Gprim):
         \\sa UsdGeomGprim::GetExtentAttr()"""
     )
 
-    length: Attribute[double] = Attribute(double, "length", value=2.0, doc=
+    length: Attribute[double] = Attribute(double, value=2.0, doc=
         """The length of the plane, which aligns to the y-axis when \\em axis is
         'Z' or 'X', or to the z-axis when \\em axis is 'Y'.  If you author \\em length 
         you must also author \\em extent.
@@ -53,10 +53,7 @@ class Plane(Gprim):
         \\sa UsdGeomGprim::GetExtentAttr()"""
     )
 
-    axis: Attribute[token] = Attribute(token, "axis", value="Z", uniform=True,
-        metadata={
-            "allowedTokens": ["X", "Y", "Z"]
-        },
+    axis: Attribute[Axis] = Attribute(Axis, value=Axis.Z, uniform=True,
         doc = """The axis along which the surface of the plane is aligned. When set
         to 'Z' the plane is in the xy-plane; when \\em axis is 'X' the plane is in 
         the yz-plane, and when \\em axis is 'Y' the plane is in the xz-plane.

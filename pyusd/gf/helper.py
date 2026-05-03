@@ -10,7 +10,7 @@ from decimal import Decimal
 _module_map:Dict[str, ModuleType] = {}
 
 def in_annotations(name:str, cls:type)->bool:
-    for klass in reversed(cls.__mro__):
+    for klass in cls.__mro__:
         if hasattr(klass, '__annotations__'):
             if name in klass.__annotations__:
                 return True

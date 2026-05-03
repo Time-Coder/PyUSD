@@ -1,4 +1,5 @@
 from enum import Enum
+from .dtypes import token
 
 
 class SchemaKind(Enum):
@@ -27,18 +28,25 @@ class SchemaKind(Enum):
     MultipleApplyAPI = 6
 
 
-class Kind(Enum):
+class Kind(token):
     # base class for all model kinds. model is considered an abstract type and should not be assigned as any prim’s kind
-    Model = 0
+    Model = "model"
 
     # models that simply group other models
-    Group = 1
+    Group = "group"
 
     # an important group model, often a published asset or reference to a published asset
-    Assembly = 2
+    Assembly = "assembly"
 
     # a "leaf model" that can contain no other models
-    Component = 3
+    Component = "component"
 
     # an identified, important "sub part" of a component model
-    Subcomponent = 4
+    Subcomponent = "subcomponent"
+
+
+class Axis(token):
+    X = "X"
+    Y = "Y"
+    Z = "Z"
+    

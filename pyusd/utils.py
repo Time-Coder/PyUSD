@@ -1,4 +1,7 @@
+import os
 from typing import List, Any, Set, get_origin, get_args, Optional
+from types import ModuleType
+from typeguard import typechecked
 
 import numpy as np
 
@@ -18,7 +21,7 @@ from .gf import (
 from .dtypes import double, half, int64, string, token, pathExpression, timecode, uchar, uint, uint64, namespace, asset, dictionary
 
 
-usd_scalar_types = {
+usd_scalar_types = (
     bool,
     double,
     float,
@@ -34,9 +37,9 @@ usd_scalar_types = {
     uchar,
     uint,
     uint64
-}
+)
 
-usd_vector_types = {
+usd_vector_types = (
     double2, texCoord2d,
     double3, color3d, vector3d, point3d, normal3d, texCoord3d,
     double4, color4d, 
@@ -46,21 +49,21 @@ usd_vector_types = {
     int2,
     int3,
     int4
-}
+)
 
-usd_matrix_types = {
+usd_matrix_types = (
     matrix2d,
     matrix3d,
     matrix4d, frame4d
-}
+)
 
-usd_quat_types = {
+usd_quat_types = (
     quath,
     quatf,
     quatd
-}
+)
 
-usd_dtypes = {
+usd_dtypes = (
     namespace,
     dictionary,
     dict,
@@ -68,9 +71,19 @@ usd_dtypes = {
     *usd_vector_types,
     *usd_matrix_types,
     *usd_quat_types
+)
+
+allowed_types = usd_dtypes + (tuple,)
+
+TYPE_PRIORITY = { int: 1, float: 2 }
+NUMPY_TO_PY_TYPE_MAP = {
+    np.int8: int, np.int16: int, np.int32: int, np.int64: int,
+    np.uint8: int, np.uint16: int, np.uint32: int, np.uint64: int,
+    np.float16: float, np.float32: float, np.float64: float,
+    np.bool_: bool
 }
 
-def usd_value_str(value:Any, indents:int=0, degenerate_list:bool=False):
+def usd_value_str(value:Any, indents:int=0, degenerate_list:bool=False)->str:
     from .gf import genType
     from .prim import Prim
 
@@ -92,6 +105,7 @@ def usd_value_str(value:Any, indents:int=0, degenerate_list:bool=False):
                 else:
                     result += "\n"
             result += f"{tabs})"
+            return result
         else:
             return f"({', '.join([usd_value_str(sub_value) for sub_value in value])})"
     elif isinstance(value, dict):
@@ -138,11 +152,8 @@ def usd_value_str(value:Any, indents:int=0, degenerate_list:bool=False):
             result += f",\n{next_tabs}".join([usd_value_str(subvalue, indents+1) for subvalue in value])
             result += f"\n{tabs}{right_bracket}"
         return result
-    elif isinstance(value, str):
-        if "\n" in value:
-            return f'"""{value}"""'
-        else:
-            return f'"{value}"'
+    elif isinstance(value, asset):
+        return f'@{value}@'
     elif isinstance(value, Prim):
         return f"<{value.path}>"
     elif isinstance(value, float):
@@ -152,6 +163,12 @@ def usd_value_str(value:Any, indents:int=0, degenerate_list:bool=False):
             return str(value)
     elif isinstance(value, bool):
         return ("true" if value else "false")
+    elif isinstance(value, str):
+        value = value.replace("\\", "\\\\")
+        if "\n" in value:
+            return f'"""{value}"""'
+        else:
+            return f'"{value}"'
     else:
         return str(value)
     
@@ -162,10 +179,10 @@ def usd_type_str(type_:type, array_dim:int=0)->str:
     result = ""
     if dtype == str:
         result = "string"
-    elif dtype == float:
-        result = "double"
     elif dtype == dict:
         result = "dictionary"
+    elif issubclass(dtype, token):
+        result = "token"
     else:
         result = dtype.__name__
 
@@ -198,18 +215,7 @@ def analyze_list_type(type_hint):
 
     return current_type, depth
 
-def infer_type(data: Any, allowed_types: Optional[Set[type]] = None) -> str:
-    if allowed_types is None:
-        allowed_types = usd_dtypes | { tuple }
-
-    TYPE_PRIORITY = { int: 1, float: 2 }
-    NUMPY_TO_PY_TYPE_MAP = {
-        np.int8: int, np.int16: int, np.int32: int, np.int64: int,
-        np.uint8: int, np.uint16: int, np.uint32: int, np.uint64: int,
-        np.float16: float, np.float32: float, np.float64: float,
-        np.bool_: bool
-    }
-
+def infer_type(data: Any) -> str:
     def _analyze(item: Any) -> tuple:
         if isinstance(item, list):
             if not item: return 1, Any, None
@@ -236,15 +242,19 @@ def infer_type(data: Any, allowed_types: Optional[Set[type]] = None) -> str:
         elif isinstance(item, np.ndarray):
             py_equiv_type = NUMPY_TO_PY_TYPE_MAP.get(item.dtype.type, item.dtype.type)
             
-            if py_equiv_type not in allowed_types:
+            if not issubclass(py_equiv_type, allowed_types):
                  pass 
             
             return 0, py_equiv_type, item.dtype
 
         else:
             val_type = type(item)
-            if val_type not in allowed_types:
+            if not issubclass(val_type, allowed_types):
                 raise TypeError(f"not supported type: {val_type}")
+            
+            if val_type == float:
+                val_type = double
+
             return 0, val_type, None
 
     if isinstance(data, np.ndarray):
@@ -286,9 +296,25 @@ def nest_map(nested_list, func):
 
 
 def in_annotations(name:str, cls:type)->bool:
-    for klass in reversed(cls.__mro__):
+    for klass in cls.__mro__:
         if hasattr(klass, '__annotations__'):
             if name in klass.__annotations__:
                 return True
             
     return False
+
+@typechecked
+def generate_schema(module: ModuleType)->None:
+    from .typed import Typed
+    from .api_schema_base import APISchemaBase
+
+    result_list = []
+    for cls_name in module.__all__:
+        cls = getattr(module, cls_name)
+        if isinstance(cls, type) and issubclass(cls, (Typed, APISchemaBase)):
+            result_list.append(cls.cls_to_str())
+
+    result = "\n".join(result_list)
+    target_file_path = os.path.join(os.path.dirname(module.__file__), "schema_generated.usda")
+    with open(target_file_path, "w") as f:
+        f.write(result)
