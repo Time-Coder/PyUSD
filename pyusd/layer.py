@@ -11,7 +11,9 @@ class Layer:
     def __init__(self, file_name:str="")->None:
         self._file_name:str = file_name
         self._root_prims:Dict[str, Prim] = {}
-        self._metadata:Metadata = Metadata()
+        self._metadata:Metadata = Metadata({
+            "subLayers": []
+        })
 
     @property
     def file_name(self)->str:

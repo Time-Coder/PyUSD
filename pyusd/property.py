@@ -60,12 +60,18 @@ class Property:
                 continue
 
             for name, value in klass.__dict__.items():
-                if name not in self._children and isinstance(value, Property):
-                    prop = value.clone()
-                    prop._parent_prim = self._parent_prim
-                    prop._parent_prop = self
-                    prop._name = name
-                    self._children[name] = prop
+                if not isinstance(value, Property):
+                    continue
+
+                value._name = name
+
+                if name in self._children:
+                    continue
+
+                prop = value.clone()
+                prop._parent_prim = self._parent_prim
+                prop._parent_prop = self
+                self._children[name] = prop
 
         self._metadata.update(self.meta)
 

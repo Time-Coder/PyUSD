@@ -64,11 +64,17 @@ class Prim:
                 continue
 
             for name, value in klass.__dict__.items():
-                if name not in self._props and isinstance(value, Property):
-                    prop = value.clone()
-                    prop._parent_prim = self
-                    prop._name = name
-                    self._props[name] = prop
+                if not isinstance(value, Property):
+                    continue
+
+                value._name = name
+
+                if name in self._props:
+                    continue
+
+                prop = value.clone()
+                prop._parent_prim = self
+                self._props[name] = prop
 
         self._metadata.update(self.meta)
     

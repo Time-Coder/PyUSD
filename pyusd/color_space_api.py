@@ -1,4 +1,3 @@
-from .prim import Prim
 from .attribute import Attribute
 from .dtypes import token, namespace
 from .api_schema_base import APISchemaBase
