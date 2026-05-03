@@ -165,7 +165,7 @@ class Camera(Xformable):
     )
 
     shutter: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    shutter.open = Attribute(double, "open", value=0.0, doc=
+    shutter.open = Attribute(double, value=0.0, doc=
         """Frame relative shutter open time in UsdTimeCode units (negative
         value indicates that the shutter opens before the current
         frame time). Used for motion blur."""
