@@ -5,6 +5,7 @@ from ..dtypes import namespace
 from ..dtypes import string
 from ..common import SchemaKind
 
+
 class PhysicsCollisionGroup(Typed):
     """Defines a collision group for coarse filtering. When a collision 
     occurs between two objects that have a PhysicsCollisionGroup assigned,

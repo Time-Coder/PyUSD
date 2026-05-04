@@ -5,6 +5,7 @@ from ..dtypes import namespace
 from ..gf import vector3f
 from ..common import SchemaKind
 
+
 class PhysicsRigidBodyAPI(APISchemaBase):
     """Applies physics body attributes to any UsdGeomXformable prim and
     marks that prim to be driven by a simulation. If a simulation is running

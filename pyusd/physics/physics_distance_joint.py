@@ -3,6 +3,7 @@ from ..attribute import Attribute
 from ..dtypes import namespace
 from ..common import SchemaKind
 
+
 class PhysicsDistanceJoint(Typed):
     """Predefined distance joint type (Distance between rigid bodies
     may be limited to given minimum or maximum distance.)

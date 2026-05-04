@@ -4,6 +4,7 @@ from ..relationship import Relationship
 from ..dtypes import namespace
 from ..common import SchemaKind
 
+
 class PhysicsCollisionAPI(APISchemaBase):
     """Applies collision attributes to a UsdGeomXformable prim. If a 
     simulation is running, this geometry will collide with other geometries that 

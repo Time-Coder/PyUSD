@@ -1,6 +1,7 @@
 from ..typed import Typed
 from ..common import SchemaKind
 
+
 class PhysicsFixedJoint(Typed):
     """Predefined fixed joint type (All degrees of freedom are 
     removed.)

@@ -1,7 +1,7 @@
 from ..typed import Typed
-from ..attribute import Attribute
 from ..dtypes import namespace
 from .physics import Physics
+
 
 class PhysicsDistanceJoint(Typed):
     """Predefined distance joint type (Distance between rigid bodies

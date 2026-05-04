@@ -4,6 +4,7 @@ from ..relationship import Relationship
 from ..dtypes import namespace
 from ..common import SchemaKind
 
+
 class PhysicsFilteredPairsAPI(APISchemaBase):
     """API to describe fine-grained filtering. If a collision between
     two objects occurs, this pair might be filtered if the pair is defined

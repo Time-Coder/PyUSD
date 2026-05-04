@@ -1,8 +1,8 @@
 from ..typed import Typed
-from ..attribute import Attribute
 from ..dtypes import namespace, token
 from ..common import Axis
 from .physics import Physics
+
 
 class PhysicsSphericalJoint(Typed):
     """Predefined spherical joint type (Removes linear degrees of 

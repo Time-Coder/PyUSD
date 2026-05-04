@@ -5,6 +5,7 @@ from ..dtypes import token
 from ..common import SchemaKind
 from ..common import Axis
 
+
 class PhysicsSphericalJoint(Typed):
     """Predefined spherical joint type (Removes linear degrees of 
     freedom, cone limit may restrict the motion in a given range.) It allows

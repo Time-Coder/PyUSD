@@ -4,6 +4,7 @@ from ..dtypes import namespace
 from ..gf import vector3f
 from ..common import SchemaKind
 
+
 class PhysicsScene(Typed):
     "General physics simulation properties, required for simulation."
 

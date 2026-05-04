@@ -1,6 +1,7 @@
 from ..api_schema_base import APISchemaBase
 from ..common import SchemaKind
 
+
 class PhysicsArticulationRootAPI(APISchemaBase):
     """PhysicsArticulationRootAPI can be applied to a scene graph node, 
     and marks the subtree rooted here for inclusion in one or more reduced 

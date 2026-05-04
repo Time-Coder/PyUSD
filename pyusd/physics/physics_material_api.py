@@ -3,6 +3,7 @@ from ..attribute import Attribute
 from ..dtypes import namespace
 from ..common import SchemaKind
 
+
 class PhysicsMaterialAPI(APISchemaBase):
     """ Adds simulation material properties to a Material. All collisions 
     that have a relationship to this material will have their collision response 

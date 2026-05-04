@@ -5,6 +5,7 @@ from ..dtypes import namespace
 from ..gf import point3f, quatf
 from ..common import SchemaKind
 
+
 class PhysicsJoint(Typed):
     """A joint constrains the movement of rigid bodies. Joint can be 
     created between two rigid bodies or between one rigid body and world.

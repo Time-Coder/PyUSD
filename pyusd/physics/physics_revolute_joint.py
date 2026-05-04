@@ -5,6 +5,7 @@ from ..dtypes import token
 from ..common import SchemaKind
 from ..common import Axis
 
+
 class PhysicsRevoluteJoint(Typed):
     """Predefined revolute joint type (rotation along revolute joint
     axis is permitted.)

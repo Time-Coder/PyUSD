@@ -4,6 +4,7 @@ from ..dtypes import namespace
 from ..dtypes import token
 from ..common import SchemaKind
 
+
 class PhysicsMeshCollisionAPI(APISchemaBase):
     """Attributes to control how a Mesh is made into a collider.
     Can be applied to only a USDGeomMesh in addition to its

@@ -1,7 +1,7 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
 from ..dtypes import namespace, token
 from .physics import Physics
+
 
 class PhysicsDriveAPI(APISchemaBase):
     """The PhysicsDriveAPI when applied to any joint primitive will drive

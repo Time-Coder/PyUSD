@@ -67,24 +67,34 @@ class CodeGenerator:
         self._parsed = True
     
     def generate_pyclasses(self) -> None:
-        """生成所有 Python 类文件
+        """生成所有 Python 类文件（.py）
         
         如果尚未解析，会自动调用 parse() 方法。
-        为每个类生成对应的 .py 文件和 __init__.py。
+        只为每个类生成对应的 .py 文件。
         """
         # 如果没有解析过，自动调用 parse
         if not self._parsed:
             self.parse()
         
-        # 第一步：为每个类生成 Python 文件
+        # 为每个类生成 Python 文件
         for class_name in self.class_names:
             class_info = self.classes_info[class_name]
             self._generate_class_file(class_name, class_info)
+    
+    def generate_pyi(self) -> None:
+        """生成所有类型存根文件（.pyi）
         
-        # 第二步：收集所有命名空间的成员
+        包括主类的 .pyi 文件和命名空间类的 .pyi 文件。
+        必须在 generate_pyclasses 之后调用。
+        """
+        # 如果没有解析过，自动调用 parse
+        if not self._parsed:
+            self.parse()
+        
+        # 第一步：收集所有命名空间的成员
         namespace_members = self._collect_all_namespace_members()
         
-        # 第三步：为每个命名空间生成 .pyi 文件
+        # 第二步：为每个命名空间生成 .pyi 文件
         for ns_prefix, members in namespace_members.items():
             ns_class_name = self._snake_to_pascal(ns_prefix)
             ns_file_name = self._camel_to_snake(ns_prefix) + '.pyi'
@@ -97,15 +107,21 @@ class CodeGenerator:
             print(f"Generated namespace: {ns_file_path}")
             self._generated_ns_files.add(ns_prefix)
         
-        # 第四步：重新生成所有类的 .pyi 文件（使用已生成的命名空间文件）
+        # 第三步：重新生成所有类的 .pyi 文件（使用已生成的命名空间文件）
         for class_name in self.class_names:
             class_info = self.classes_info[class_name]
             base_class = self._determine_base_class(class_info)
             _, imported_token_classes = self._generate_token_classes(class_info['attributes'])
             self._regenerate_pyi_file(class_name, class_info, base_class, imported_token_classes)
+    
+    def generate_all(self) -> None:
+        """生成所有文件（.py、.pyi 和 __init__.py）
         
-        # 第五步：生成 __init__.py
-        self._generate_init_file()
+        这是完整的生成流程，依次调用 generate_pyclasses、generate_pyi 和 generate_init_file。
+        """
+        self.generate_pyclasses()
+        self.generate_pyi()
+        self.generate_init_file()
     
     def _collect_all_namespace_members(self) -> Dict[str, List[Dict[str, Any]]]:
         """收集所有类的命名空间成员"""
@@ -145,7 +161,7 @@ class CodeGenerator:
         pyi_class_def = self._generate_pyi_class_definition(class_name, base_class, class_info, self._generated_ns_files)
         
         # 组合内容
-        content = pyi_imports + "\n\n" + pyi_class_def + "\n"
+        content = pyi_imports + "\n\n\n" + pyi_class_def + "\n"
         
         # 写入 .pyi 文件
         file_name = self._camel_to_snake(class_name) + '.pyi'
@@ -588,7 +604,7 @@ class CodeGenerator:
         return 'SchemaKind.AbstractTyped'
     
     def _generate_class_file(self, class_name: str, class_info: Dict[str, Any]) -> None:
-        """生成单个类的 Python 文件和对应的 .pyi 文件"""
+        """生成单个类的 Python 文件（.py）"""
         base_class = self._determine_base_class(class_info)
         
         # 生成导入语句
@@ -603,7 +619,7 @@ class CodeGenerator:
         class_def = self._generate_class_definition(class_info)
         
         # 组合完整内容
-        content = imports + "\n\n" + class_def + "\n"
+        content = imports + "\n\n\n" + class_def + "\n"
         
         # 写入 .py 文件
         file_name = self._camel_to_snake(class_name) + '.py'
@@ -613,9 +629,6 @@ class CodeGenerator:
             f.write(content)
         
         print(f"Generated: {file_path}")
-        
-        # 生成对应的 .pyi 文件
-        self._generate_pyi_file(class_name, class_info, base_class, imported_token_classes)
     
     def _generate_pyi_file(self, class_name: str, class_info: Dict[str, Any], base_class: str, imported_token_classes: List[str]) -> None:
         """生成类型存根文件 (.pyi) - 第一遍生成（不包含命名空间导入）"""
@@ -626,7 +639,7 @@ class CodeGenerator:
         pyi_class_def = self._generate_pyi_class_definition(class_name, base_class, class_info, set())
         
         # 组合内容
-        content = pyi_imports + "\n\n" + pyi_class_def + "\n"
+        content = pyi_imports + "\n\n\n" + pyi_class_def + "\n"
         
         # 写入 .pyi 文件
         file_name = self._camel_to_snake(class_name) + '.pyi'
@@ -727,12 +740,8 @@ class CodeGenerator:
             else:
                 imports.append(f"from .{self._camel_to_snake(base_class)} import {base_class}")
         
-        # 添加常用导入
+        # 添加常用导入（.pyi 文件不需要 Attribute 和 Relationship）
         if class_info['attributes'] or class_info['relationships']:
-            imports.append("from ..attribute import Attribute")
-            if class_info['relationships']:
-                imports.append("from ..relationship import Relationship")
-            
             # 收集所有需要的类型
             needed_types = set()
             for attr in class_info['attributes']:
@@ -1362,7 +1371,7 @@ class CodeGenerator:
         else:
             return f"    {ns_prefix}.{rel_name} = Relationship({params})"
     
-    def _generate_init_file(self) -> None:
+    def generate_init_file(self) -> None:
         """生成 __init__.py 文件"""
         lines = []
         
