@@ -20,12 +20,12 @@ class RenderSettingsBase(Typed):
         }
     }
 
-    class Aspectratioconformpolicy(token):
-        Expandaperture = "expandAperture"
-        Cropaperture = "cropAperture"
-        Adjustaperturewidth = "adjustApertureWidth"
-        Adjustapertureheight = "adjustApertureHeight"
-        Adjustpixelaspectratio = "adjustPixelAspectRatio"
+    class AspectRatioConformPolicy(token):
+        ExpandAperture = "expandAperture"
+        CropAperture = "cropAperture"
+        AdjustApertureWidth = "adjustApertureWidth"
+        AdjustApertureHeight = "adjustApertureHeight"
+        AdjustPixelAspectRatio = "adjustPixelAspectRatio"
 
 
     resolution: Attribute[int2] = Attribute(int2,
@@ -45,7 +45,7 @@ class RenderSettingsBase(Typed):
         """
     )
 
-    aspectRatioConformPolicy: Attribute[Aspectratioconformpolicy] = Attribute(Aspectratioconformpolicy,
+    aspectRatioConformPolicy: Attribute[AspectRatioConformPolicy] = Attribute(AspectRatioConformPolicy,
         uniform=True,
         value="expandAperture",
         doc=

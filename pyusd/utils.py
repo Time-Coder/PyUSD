@@ -947,18 +947,38 @@ def _generate_token_classes(attributes: list) -> tuple:
 
 def _token_to_constant(token_value: str) -> str:
     """将 token 值转换为合法的 Python 常量名"""
+    # 处理空字符串
+    if not token_value:
+        return 'Empty'
+    
     # 替换特殊字符为下划线
     result = token_value.replace(':', '_').replace('-', '_').replace('.', '_').replace('/', '_')
+    
+    # 如果结果为空（原字符串只包含特殊字符）
+    if not result or result == '_':
+        return 'Unknown'
+    
     # 如果以数字开头，添加前缀
     if result[0].isdigit():
         result = '_' + result
+    
+    # 处理 camelCase：在大写字母前插入下划线
+    import re
+    result = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', result)
+    
     # 转换为 PascalCase
     parts = result.split('_')
     result = ''.join(word.capitalize() for word in parts if word)
+    
+    # 如果结果为空（所有部分都被过滤掉了）
+    if not result:
+        return 'Unknown'
+    
     # 如果是 Python 关键字，添加后缀
     python_keywords = {'None', 'True', 'False', 'class', 'def', 'return', 'import', 'from', 'if', 'else', 'elif', 'for', 'while', 'try', 'except', 'finally', 'with', 'as', 'pass', 'break', 'continue', 'lambda', 'yield', 'global', 'nonlocal', 'assert', 'del', 'raise', 'in', 'is', 'not', 'and', 'or'}
     if result in python_keywords:
         result = result + '_'
+    
     return result
 
 
@@ -1422,5 +1442,10 @@ def _camel_to_snake(name: str) -> str:
 
 
 def _snake_to_pascal(name: str) -> str:
-    """将 snake_case 转换为 PascalCase"""
+    """将 snake_case 或 camelCase 转换为 PascalCase"""
+    # 先处理 camelCase：在大写字母前插入下划线
+    import re
+    # 在小写字母后跟大写字母的位置插入下划线
+    name = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', name)
+    # 然后按标准方式转换
     return ''.join(word.capitalize() for word in name.split('_'))
