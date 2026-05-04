@@ -1,13 +1,30 @@
 from ..typed import Typed
 from ..attribute import Attribute
 from ..relationship import Relationship
-from typing import List
 from ..dtypes import namespace
 from ..dtypes import string
 from ..common import SchemaKind
 
 class PhysicsCollisionGroup(Typed):
+    """Defines a collision group for coarse filtering. When a collision 
+    occurs between two objects that have a PhysicsCollisionGroup assigned,
+    they will collide with each other unless this PhysicsCollisionGroup pair 
+    is filtered. See filteredGroups attribute.
+    
+    A CollectionAPI:colliders maintains a list of PhysicsCollisionAPI rel-s that 
+    defines the members of this Collisiongroup.
+    
+    """
+
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
+
+    meta = {
+        "customData": {
+            "className": "CollisionGroup",
+            "extraIncludes": """
+    #include "pxr/usd/usd/collectionAPI.h" """
+        }
+    }
 
     physics: Attribute[namespace] = Attribute(namespace, is_leaf=False)
     physics.mergeGroup = Attribute(string,

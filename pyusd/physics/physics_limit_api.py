@@ -1,11 +1,27 @@
 from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
-from typing import List
 from ..dtypes import namespace
 from ..common import SchemaKind
 
 class PhysicsLimitAPI(APISchemaBase):
+    """The PhysicsLimitAPI can be applied to a PhysicsJoint and will
+    restrict the movement along an axis. PhysicsLimitAPI is a multipleApply 
+    schema: The PhysicsJoint can be restricted along "transX", "transY", 
+    "transZ", "rotX", "rotY", "rotZ", "distance". Setting these as a 
+    multipleApply schema TfToken name will define the degree of freedom the
+    PhysicsLimitAPI is applied to. Note that if the low limit is higher than 
+    the high limit, motion along this axis is considered locked.
+    """
+
     schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
+
+    meta = {
+        "customData": {
+            "className": "LimitAPI",
+            "apiSchemaType": "multipleApply",
+            "propertyNamespacePrefix": "limit"
+        }
+    }
 
     physics: Attribute[namespace] = Attribute(namespace, is_leaf=False)
     physics.low = Attribute(float,

@@ -1,13 +1,24 @@
 from ..typed import Typed
 from ..attribute import Attribute
-from typing import List
 from ..dtypes import namespace
 from ..dtypes import token
 from ..common import SchemaKind
 from ..common import Axis
 
 class PhysicsSphericalJoint(Typed):
+    """Predefined spherical joint type (Removes linear degrees of 
+    freedom, cone limit may restrict the motion in a given range.) It allows
+    two limit values, which when equal create a circular, else an elliptic 
+    cone limit around the limit axis.
+    """
+
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
+
+    meta = {
+        "customData": {
+            "className": "SphericalJoint"
+        }
+    }
 
     physics: Attribute[namespace] = Attribute(namespace, is_leaf=False)
     physics.axis = Attribute(Axis,

@@ -1,12 +1,19 @@
 from ..typed import Typed
 from ..attribute import Attribute
-from typing import List
 from ..dtypes import namespace
 from ..gf import vector3f
 from ..common import SchemaKind
 
 class PhysicsScene(Typed):
+    "General physics simulation properties, required for simulation."
+
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
+
+    meta = {
+        "customData": {
+            "className": "Scene"
+        }
+    }
 
     physics: Attribute[namespace] = Attribute(namespace, is_leaf=False)
     physics.gravityDirection = Attribute(vector3f,

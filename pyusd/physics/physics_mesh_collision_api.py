@@ -1,12 +1,22 @@
 from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
-from typing import List
 from ..dtypes import namespace
 from ..dtypes import token
 from ..common import SchemaKind
 
 class PhysicsMeshCollisionAPI(APISchemaBase):
+    """Attributes to control how a Mesh is made into a collider.
+    Can be applied to only a USDGeomMesh in addition to its
+    PhysicsCollisionAPI.
+    """
+
     schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
+
+    meta = {
+        "customData": {
+            "className": "MeshCollisionAPI"
+        }
+    }
 
     class Approximation(token):
         None_ = "none"

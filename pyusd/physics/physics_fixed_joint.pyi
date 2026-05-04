@@ -2,4 +2,7 @@ from ..typed import Typed
 from .physics import Physics
 
 class PhysicsFixedJoint(Typed):
-    pass
+    """Predefined fixed joint type (All degrees of freedom are 
+    removed.)
+    """
+

@@ -1,12 +1,22 @@
 from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
-from typing import List
 from ..dtypes import namespace
 from ..gf import float3, point3f, quatf
 from ..common import SchemaKind
 
 class PhysicsMassAPI(APISchemaBase):
+    """Defines explicit mass properties (mass, density, inertia etc.).        
+    MassAPI can be applied to any object that has a PhysicsCollisionAPI or
+    a PhysicsRigidBodyAPI.
+    """
+
     schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
+
+    meta = {
+        "customData": {
+            "className": "MassAPI"
+        }
+    }
 
     physics: Attribute[namespace] = Attribute(namespace, is_leaf=False)
     physics.mass = Attribute(float,

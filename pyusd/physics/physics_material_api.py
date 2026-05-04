@@ -1,11 +1,21 @@
 from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
-from typing import List
 from ..dtypes import namespace
 from ..common import SchemaKind
 
 class PhysicsMaterialAPI(APISchemaBase):
+    """ Adds simulation material properties to a Material. All collisions 
+    that have a relationship to this material will have their collision response 
+    defined through this material.
+    """
+
     schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
+
+    meta = {
+        "customData": {
+            "className": "MaterialAPI"
+        }
+    }
 
     physics: Attribute[namespace] = Attribute(namespace, is_leaf=False)
     physics.dynamicFriction = Attribute(float,

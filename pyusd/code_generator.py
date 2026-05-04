@@ -188,19 +188,26 @@ class CodeGenerator:
     def _parse_metadata(self, node: Node, info: Dict[str, Any]) -> None:
         """解析元数据"""
         for child in node.named_children:
-            if child.type == 'dictionary_item':
+            if child.type == 'metadata_assignment':
                 key = ''
                 value = None
-                for item_child in child.named_children:
-                    if item_child.type == 'identifier':
-                        key = item_child.text.decode('utf-8')
-                    elif item_child.type == 'string':
-                        value = item_child.text.decode('utf-8').strip('"')
+                value_dict = None
+                for assign_child in child.named_children:
+                    if assign_child.type == 'identifier':
+                        key = assign_child.text.decode('utf-8')
+                    elif assign_child.type == 'string':
+                        value = assign_child.text.decode('utf-8').strip('"')
+                    elif assign_child.type == 'dictionary':
+                        value_dict = self._parse_usd_dictionary(assign_child)
                 
-                if key == 'documentation':
+                if key == 'documentation' or key == 'doc':
                     info['doc'] = value or ''
-                elif key == 'customData':
-                    pass  # customData 在 block 中解析
+                elif key == 'customData' and value_dict:
+                    info['custom_data'] = value_dict
+                    # 同时保存到 metadata
+                    if not info.get('metadata'):
+                        info['metadata'] = {}
+                    info['metadata']['customData'] = value_dict
             elif child.type == 'attribute_assignment':
                 self._parse_attribute_assignment(child, info)
     
@@ -808,7 +815,11 @@ class CodeGenerator:
             imports.append("from ..attribute import Attribute")
             if class_info['relationships']:
                 imports.append("from ..relationship import Relationship")
-            imports.append("from typing import List")
+            
+            # 检查是否需要 List（只有当有数组类型属性时才需要）
+            has_array = any(attr['type'].endswith('[]') for attr in class_info['attributes'])
+            if has_array:
+                imports.append("from typing import List")
             
             # 检查是否需要 namespace 类型（属性或关系有命名空间前缀）
             has_namespace_attrs = any(attr.get('full_name', '').count(':') > 0 for attr in class_info['attributes'])
@@ -874,10 +885,11 @@ class CodeGenerator:
         # 类声明
         lines.append(f"class {class_info['name']}({self._determine_base_class(class_info)}):")
         
-        # docstring
+        # docstring（类级别使用 4 空格缩进）
         if class_info['doc']:
-            doc_str = self._format_doc_string(class_info['doc'])
-            lines.append(f"    {doc_str}")
+            doc_str = self._format_class_doc_string(class_info['doc'])
+            lines.append(doc_str)
+            lines.append("")  # docstring 后加空行
         
         # schema_kind
         schema_kind = self._determine_schema_kind(class_info)
@@ -968,8 +980,9 @@ class CodeGenerator:
         
         # docstring
         if class_info['doc']:
-            doc_str = self._format_doc_string(class_info['doc'])
-            lines.append(f"    {doc_str}")
+            doc_str = self._format_class_doc_string(class_info['doc'])
+            lines.append(doc_str)
+            lines.append("")  # docstring 后加空行
         
         # 生成 allowedTokens 对应的枚举类
         token_classes, _ = self._generate_token_classes(class_info['attributes'])
@@ -1396,7 +1409,11 @@ class CodeGenerator:
                 return "float('-inf')"
             return str(value)
         elif isinstance(value, str):
-            return f'"{value}"'
+            if '\n' in value:
+                # 多行字符串，使用三引号
+                return f'"""{value}"""'
+            else:
+                return f'"{value}"'
         elif isinstance(value, list):
             items = [self._usd_value_to_python(item) for item in value]
             return f"[{', '.join(items)}]"
@@ -1404,6 +1421,50 @@ class CodeGenerator:
             items = [f'"{k}": {self._usd_value_to_python(v)}' for k, v in value.items()]
             return '{' + ', '.join(items) + '}'
         return str(value)
+    
+    def _format_class_doc_string(self, doc: str) -> str:
+        """格式化类级别的 doc 字符串（4 空格缩进）"""
+        if not doc:
+            return '    ""'
+        
+        if '\n' in doc:
+            # 多行 doc，使用三引号，并规范化缩进
+            lines = doc.split('\n')
+            # 找到最小的非空行缩进
+            min_indent = float('inf')
+            for line in lines[1:]:  # 跳过第一行
+                stripped = line.lstrip()
+                if stripped:  # 非空行
+                    indent = len(line) - len(stripped)
+                    min_indent = min(min_indent, indent)
+            
+            # 如果找到最小缩进，去除它
+            if min_indent != float('inf') and min_indent > 0:
+                normalized_lines = [lines[0]]  # 第一行保持不变
+                for line in lines[1:]:
+                    if line.strip():  # 非空行
+                        normalized_lines.append(line[min_indent:])
+                    else:  # 空行
+                        normalized_lines.append('')
+                dedented_doc = '\n'.join(normalized_lines)
+            else:
+                dedented_doc = doc
+            
+            # 为每行添加 4 个空格缩进（类级别）
+            indented_lines = []
+            for i, line in enumerate(dedented_doc.split('\n')):
+                if i == 0:
+                    # 第一行紧跟在三引号后面
+                    indented_lines.append('    """' + line)
+                else:
+                    # 后续行添加 4 个空格缩进
+                    indented_lines.append('    ' + line if line else '    ')
+            indented_doc = '\n'.join(indented_lines)
+            
+            return f'{indented_doc}\n    """'
+        else:
+            # 单行 doc
+            return f'    "{doc}"'
     
     def _format_doc_string(self, doc: str) -> str:
         """格式化 doc 字符串"""

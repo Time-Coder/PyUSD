@@ -1,13 +1,26 @@
 from ..typed import Typed
 from ..attribute import Attribute
 from ..relationship import Relationship
-from typing import List
 from ..dtypes import namespace
 from ..gf import point3f, quatf
 from ..common import SchemaKind
 
 class PhysicsJoint(Typed):
+    """A joint constrains the movement of rigid bodies. Joint can be 
+    created between two rigid bodies or between one rigid body and world.
+    By default joint primitive defines a D6 joint where all degrees of 
+    freedom are free. Three linear and three angular degrees of freedom.
+    Note that default behavior is to disable collision between jointed bodies.
+    
+    """
+
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
+
+    meta = {
+        "customData": {
+            "className": "Joint"
+        }
+    }
 
     physics: Attribute[namespace] = Attribute(namespace, is_leaf=False)
     physics.localPos0 = Attribute(point3f,

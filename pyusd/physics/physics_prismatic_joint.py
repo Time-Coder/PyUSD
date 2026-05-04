@@ -1,13 +1,22 @@
 from ..typed import Typed
 from ..attribute import Attribute
-from typing import List
 from ..dtypes import namespace
 from ..dtypes import token
 from ..common import SchemaKind
 from ..common import Axis
 
 class PhysicsPrismaticJoint(Typed):
+    """Predefined prismatic joint type (translation along prismatic 
+    joint axis is permitted.)
+    """
+
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
+
+    meta = {
+        "customData": {
+            "className": "PrismaticJoint"
+        }
+    }
 
     physics: Attribute[namespace] = Attribute(namespace, is_leaf=False)
     physics.axis = Attribute(Axis,

@@ -1,11 +1,20 @@
 from ..typed import Typed
 from ..attribute import Attribute
-from typing import List
 from ..dtypes import namespace
 from ..common import SchemaKind
 
 class PhysicsDistanceJoint(Typed):
+    """Predefined distance joint type (Distance between rigid bodies
+    may be limited to given minimum or maximum distance.)
+    """
+
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
+
+    meta = {
+        "customData": {
+            "className": "DistanceJoint"
+        }
+    }
 
     physics: Attribute[namespace] = Attribute(namespace, is_leaf=False)
     physics.minDistance = Attribute(float,
