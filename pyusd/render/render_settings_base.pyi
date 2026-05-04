@@ -1,13 +1,10 @@
 from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
 from ..relationship import Relationship
-from typing import List
 from ..gf import float4, int2
 from ..dtypes import token
-from ..common import SchemaKind
 
 class RenderSettingsBase(APISchemaBase):
-    schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
 
     class AspectRatioConformPolicy(token):
         ExpandAperture = "expandAperture"
@@ -16,27 +13,25 @@ class RenderSettingsBase(APISchemaBase):
         AdjustApertureHeight = "adjustApertureHeight"
         AdjustPixelAspectRatio = "adjustPixelAspectRatio"
 
+    @property
+    def resolution(self)->Attribute[int2]:
+        """The image pixel resolution, corresponding to the
+        camera's screen window."""
 
-    resolution = Attribute(int2,
-        uniform=True,
-        doc="""
-The image pixel resolution, corresponding to the
-        camera's screen window.
-"""
-    )
+    @resolution.setter
+    def resolution(self, value:int2)->None: ...
 
-    pixelAspectRatio = Attribute(float,
-        uniform=True,
-        doc="""
-The aspect ratio (width/height) of image pixels..
-        The default ratio 1.0 indicates square pixels.
-"""
-    )
+    @property
+    def pixelAspectRatio(self)->Attribute[float]:
+        """The aspect ratio (width/height) of image pixels..
+        The default ratio 1.0 indicates square pixels."""
 
-    aspectRatioConformPolicy = Attribute(AspectRatioConformPolicy,
-        uniform=True,
-        doc="""
+    @pixelAspectRatio.setter
+    def pixelAspectRatio(self, value:float)->None: ...
 
+    @property
+    def aspectRatioConformPolicy(self)->Attribute[AspectRatioConformPolicy]:
+        """
         Indicates the policy to use to resolve an aspect
         ratio mismatch between the camera aperture and image settings.
 
@@ -60,14 +55,14 @@ The aspect ratio (width/height) of image pixels..
         - "adjustPixelAspectRatio": compute pixelAspectRatio to
           make the image exactly cover the aperture; disregards
           existing attribute value of pixelAspectRatio
-        
-"""
-    )
+        """
 
-    dataWindowNDC = Attribute(float4,
-        uniform=True,
-        doc="""
-dataWindowNDC specifies the axis-aligned rectangular
+    @aspectRatioConformPolicy.setter
+    def aspectRatioConformPolicy(self, value:AspectRatioConformPolicy)->None: ...
+
+    @property
+    def dataWindowNDC(self)->Attribute[float4]:
+        """dataWindowNDC specifies the axis-aligned rectangular
         region in the adjusted aperture window within which the renderer
         should produce data.
 
@@ -96,41 +91,44 @@ dataWindowNDC specifies the axis-aligned rectangular
         The dataWindow:ndc coordinate system references the
         aperture after any adjustments required by
         aspectRatioConformPolicy.
-        
-"""
-    )
+        """
 
-    instantaneousShutter = Attribute(bool,
-        uniform=True,
-        doc="""
-Deprecated - use disableMotionBlur instead. Override
+    @dataWindowNDC.setter
+    def dataWindowNDC(self, value:float4)->None: ...
+
+    @property
+    def instantaneousShutter(self)->Attribute[bool]:
+        """Deprecated - use disableMotionBlur instead. Override
         the targeted _camera_'s _shutterClose_ to be equal to the
         value of its _shutterOpen_, to produce a zero-width shutter
         interval.  This gives us a convenient way to disable motion
-        blur.
-"""
-    )
+        blur."""
 
-    disableMotionBlur = Attribute(bool,
-        uniform=True,
-        doc="""
-Disable all motion blur by setting the shutter interval
+    @instantaneousShutter.setter
+    def instantaneousShutter(self, value:bool)->None: ...
+
+    @property
+    def disableMotionBlur(self)->Attribute[bool]:
+        """Disable all motion blur by setting the shutter interval
         of the targeted camera to [0,0] - that is, take only one sample,
-        namely at the current time code.
-"""
-    )
+        namely at the current time code."""
 
-    disableDepthOfField = Attribute(bool,
-        uniform=True,
-        doc="""
-Disable all depth of field by setting F-stop of the targeted
-        camera to infinity.
-"""
-    )
+    @disableMotionBlur.setter
+    def disableMotionBlur(self, value:bool)->None: ...
 
-    camera = Relationship(
-        doc="""
-The _camera_ relationship specifies the primary
-        camera to use in a render.  It must target a UsdGeomCamera.
-"""
-    )
+    @property
+    def disableDepthOfField(self)->Attribute[bool]:
+        """Disable all depth of field by setting F-stop of the targeted
+        camera to infinity."""
+
+    @disableDepthOfField.setter
+    def disableDepthOfField(self, value:bool)->None: ...
+
+    @property
+    def camera(self)->Relationship:
+        """The _camera_ relationship specifies the primary
+        camera to use in a render.  It must target a UsdGeomCamera."""
+
+    @camera.setter
+    def camera(self, value:Relationship)->None: ...
+

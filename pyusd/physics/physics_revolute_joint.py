@@ -1,4 +1,4 @@
-from .physics_joint import PhysicsJoint
+from ..typed import Typed
 from ..attribute import Attribute
 from typing import List
 from ..dtypes import namespace
@@ -6,22 +6,12 @@ from ..dtypes import token
 from ..common import SchemaKind
 from ..common import Axis
 
-
-class PhysicsRevoluteJoint(PhysicsJoint):
-    """Predefined revolute joint type (rotation along revolute joint
-    axis is permitted.)"""
+class PhysicsRevoluteJoint(Typed):
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
-
-    meta = {
-        "customData": {
-            "className": "RevoluteJoint"
-        }
-    }
 
     physics: Attribute[namespace] = Attribute(namespace, is_leaf=False)
     physics.axis = Attribute(Axis,
         uniform=True,
-        value="X",
         doc="Joint axis.",
         metadata={
             "customData": {
@@ -31,9 +21,7 @@ class PhysicsRevoluteJoint(PhysicsJoint):
         }
     )
     physics.lowerLimit = Attribute(float,
-        value=float('-inf'),
-        doc=
-        """Lower limit. Units: degrees. -inf means not limited in 
+        doc="""Lower limit. Units: degrees. -inf means not limited in 
         negative direction.
         """,
         metadata={
@@ -44,9 +32,7 @@ class PhysicsRevoluteJoint(PhysicsJoint):
         }
     )
     physics.upperLimit = Attribute(float,
-        value=float('inf'),
-        doc=
-        """Upper limit. Units: degrees. inf means not limited in 
+        doc="""Upper limit. Units: degrees. inf means not limited in 
         positive direction.
         """,
         metadata={

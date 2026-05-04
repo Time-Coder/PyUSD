@@ -1,11 +1,8 @@
 from ..typed import Typed
 from ..attribute import Attribute
-from typing import List
 from ..dtypes import string, token
-from ..common import SchemaKind
 
 class RenderVar(Typed):
-    schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     class SourceType(token):
         Raw = "raw"
@@ -13,21 +10,24 @@ class RenderVar(Typed):
         Lpe = "lpe"
         Intrinsic = "intrinsic"
 
+    @property
+    def dataType(self)->Attribute[token]:
+        """The type of this channel, as a USD attribute type."""
 
-    dataType = Attribute(token, uniform=True, doc="The type of this channel, as a USD attribute type.")
+    @dataType.setter
+    def dataType(self, value:token)->None: ...
 
-    sourceName = Attribute(string,
-        uniform=True,
-        doc="""
-The renderer should look for an output of this name
-        as the computed value for the RenderVar.
-"""
-    )
+    @property
+    def sourceName(self)->Attribute[string]:
+        """The renderer should look for an output of this name
+        as the computed value for the RenderVar."""
 
-    sourceType = Attribute(SourceType,
-        uniform=True,
-        doc="""
+    @sourceName.setter
+    def sourceName(self, value:string)->None: ...
 
+    @property
+    def sourceType(self)->Attribute[SourceType]:
+        """
         Indicates the type of the source.
 
         - "raw": The name should be passed directly to the
@@ -45,6 +45,8 @@ The renderer should look for an output of this name
           but represents a future namespace for UsdRender to provide
           portable baseline RenderVars, such as camera depth, that
           may have varying implementations for each renderer.
-        
-"""
-    )
+        """
+
+    @sourceType.setter
+    def sourceType(self, value:SourceType)->None: ...
+

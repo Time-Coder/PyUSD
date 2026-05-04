@@ -1,4 +1,3 @@
-from ..typed import Typed
 from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
 from typing import List
@@ -6,24 +5,12 @@ from ..dtypes import namespace
 from ..gf import float3, point3f, quatf
 from ..common import SchemaKind
 
-
 class PhysicsMassAPI(APISchemaBase):
-    """Defines explicit mass properties (mass, density, inertia etc.).        
-    MassAPI can be applied to any object that has a PhysicsCollisionAPI or
-    a PhysicsRigidBodyAPI."""
     schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
-
-    meta = {
-        "customData": {
-            "className": "MassAPI"
-        }
-    }
 
     physics: Attribute[namespace] = Attribute(namespace, is_leaf=False)
     physics.mass = Attribute(float,
-        value=0.0,
-        doc=
-        """If non-zero, directly specifies the mass of the object.
+        doc="""If non-zero, directly specifies the mass of the object.
         Note that any child prim can also have a mass when they apply massAPI.
         In this case, the precedence rule is 'parent mass overrides the
         child's'. This may come as counter-intuitive, but mass is a computed 
@@ -31,7 +18,7 @@ class PhysicsMassAPI(APISchemaBase):
         has mass of 10, and one of two children has mass of 20, allowing 
         child's mass to override its parent results in a mass of -10 for the 
         other child. Note if mass is 0.0 it is ignored. Units: mass.
-        
+
         """,
         metadata={
             "customData": {
@@ -41,9 +28,7 @@ class PhysicsMassAPI(APISchemaBase):
         }
     )
     physics.density = Attribute(float,
-        value=0.0,
-        doc=
-        """If non-zero, specifies the density of the object.
+        doc="""If non-zero, specifies the density of the object.
         In the context of rigid body physics, density indirectly results in 
         setting mass via (mass = density x volume of the object). How the 
         volume is computed is up to implementation of the physics system.
@@ -73,8 +58,7 @@ class PhysicsMassAPI(APISchemaBase):
         }
     )
     physics.diagonalInertia = Attribute(float3,
-        doc=
-        """If non-zero, specifies diagonalized inertia tensor along the 
+        doc="""If non-zero, specifies diagonalized inertia tensor along the 
         principal axes. Note if diagonalInertial is (0.0, 0.0, 0.0) it is 
         ignored. Units: mass*distance*distance.
         """,
@@ -86,8 +70,7 @@ class PhysicsMassAPI(APISchemaBase):
         }
     )
     physics.principalAxes = Attribute(quatf,
-        doc=
-        """Orientation of the inertia tensor's principal axes in the 
+        doc="""Orientation of the inertia tensor's principal axes in the 
         prim's local space.
         """,
         metadata={

@@ -1,26 +1,13 @@
-from pyusd.geom.imageable import Imageable
+from ..typed import Typed
 from ..attribute import Attribute
+from ..relationship import Relationship
 from typing import List
 from ..dtypes import namespace
 from ..gf import point3f, quatf
-from ..relationship import Relationship
 from ..common import SchemaKind
 
-
-class PhysicsJoint(Imageable):
-    """A joint constrains the movement of rigid bodies. Joint can be 
-    created between two rigid bodies or between one rigid body and world.
-    By default joint primitive defines a D6 joint where all degrees of 
-    freedom are free. Three linear and three angular degrees of freedom.
-    Note that default behavior is to disable collision between jointed bodies.
-    """
+class PhysicsJoint(Typed):
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
-
-    meta = {
-        "customData": {
-            "className": "Joint"
-        }
-    }
 
     physics: Attribute[namespace] = Attribute(namespace, is_leaf=False)
     physics.localPos0 = Attribute(point3f,
@@ -60,7 +47,6 @@ class PhysicsJoint(Imageable):
         }
     )
     physics.jointEnabled = Attribute(bool,
-        value=True,
         doc="Determines if the joint is enabled.",
         metadata={
             "customData": {
@@ -70,7 +56,6 @@ class PhysicsJoint(Imageable):
         }
     )
     physics.collisionEnabled = Attribute(bool,
-        value=False,
         doc="Determines if the jointed subtrees should collide or not.",
         metadata={
             "customData": {
@@ -81,7 +66,6 @@ class PhysicsJoint(Imageable):
     )
     physics.excludeFromArticulation = Attribute(bool,
         uniform=True,
-        value=False,
         doc="Determines if the joint can be included in an Articulation.",
         metadata={
             "customData": {
@@ -91,9 +75,7 @@ class PhysicsJoint(Imageable):
         }
     )
     physics.breakForce = Attribute(float,
-        value=float('inf'),
-        doc=
-        """Joint break force. If set, joint is to break when this force
+        doc="""Joint break force. If set, joint is to break when this force
         limit is reached. (Used for linear DOFs.) 
         Units: mass * distance / second / second
         """,
@@ -105,9 +87,7 @@ class PhysicsJoint(Imageable):
         }
     )
     physics.breakTorque = Attribute(float,
-        value=float('inf'),
-        doc=
-        """Joint break torque. If set, joint is to break when this torque
+        doc="""Joint break torque. If set, joint is to break when this torque
         limit is reached. (Used for angular DOFs.) 
         Units: mass * distance * distance / second / second
         """,
@@ -118,8 +98,7 @@ class PhysicsJoint(Imageable):
             "displayName": "Break Torque"
         }
     )
-
-    body0: Relationship = Relationship(
+    physics.body0 = Relationship(
         doc="Relationship to any UsdGeomXformable.",
         metadata={
             "customData": {
@@ -128,8 +107,7 @@ class PhysicsJoint(Imageable):
             "displayName": "Body 0"
         }
     )
-
-    body1: Relationship = Relationship(
+    physics.body1 = Relationship(
         doc="Relationship to any UsdGeomXformable.",
         metadata={
             "customData": {

@@ -1,26 +1,14 @@
-from ..typed import Typed
 from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
 from typing import List
 from ..dtypes import namespace
 from ..common import SchemaKind
 
-
 class PhysicsMaterialAPI(APISchemaBase):
-    """ Adds simulation material properties to a Material. All collisions 
-    that have a relationship to this material will have their collision response 
-    defined through this material."""
     schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
-
-    meta = {
-        "customData": {
-            "className": "MaterialAPI"
-        }
-    }
 
     physics: Attribute[namespace] = Attribute(namespace, is_leaf=False)
     physics.dynamicFriction = Attribute(float,
-        value=0.0,
         doc="Dynamic friction coefficient. Unitless.",
         metadata={
             "customData": {
@@ -30,7 +18,6 @@ class PhysicsMaterialAPI(APISchemaBase):
         }
     )
     physics.staticFriction = Attribute(float,
-        value=0.0,
         doc="Static friction coefficient. Unitless.",
         metadata={
             "customData": {
@@ -40,7 +27,6 @@ class PhysicsMaterialAPI(APISchemaBase):
         }
     )
     physics.restitution = Attribute(float,
-        value=0.0,
         doc="Restitution coefficient. Unitless.",
         metadata={
             "customData": {
@@ -50,9 +36,7 @@ class PhysicsMaterialAPI(APISchemaBase):
         }
     )
     physics.density = Attribute(float,
-        value=0.0,
-        doc=
-        """If non-zero, defines the density of the material. This can be
+        doc="""If non-zero, defines the density of the material. This can be
         used for body mass computation, see PhysicsMassAPI.
         Note that if the density is 0.0 it is ignored. 
         Units: mass/distance/distance/distance.

@@ -197,7 +197,7 @@ class CollectionAPI(APISchemaBase):
         relationship target the <b>collection:{collectionName}</b> property on
         the owning prim of the collection to be included"""
     )
-    excludes: Relationship = Relationship("excludes", doc=
+    excludes: Relationship = Relationship(doc=
         """Specifies a list of targets that are excluded below
         the included paths in this collection. This can target prims or
         properties directly, but cannot target another collection. This is to

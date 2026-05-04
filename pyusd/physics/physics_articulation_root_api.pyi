@@ -1,5 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..common import SchemaKind
+from .physics import Physics
 
 class PhysicsArticulationRootAPI(APISchemaBase):
-    schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
+    pass

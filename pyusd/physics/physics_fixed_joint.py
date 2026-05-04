@@ -1,14 +1,5 @@
-from .physics_joint import PhysicsJoint
+from ..typed import Typed
 from ..common import SchemaKind
 
-
-class PhysicsFixedJoint(PhysicsJoint):
-    """Predefined fixed joint type (All degrees of freedom are 
-    removed.)"""
+class PhysicsFixedJoint(Typed):
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
-
-    meta = {
-        "customData": {
-            "className": "FixedJoint"
-        }
-    }
