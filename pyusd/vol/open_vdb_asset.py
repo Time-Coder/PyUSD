@@ -1,16 +1,17 @@
 from .field_asset import FieldAsset
 from ..attribute import Attribute
-from typing import List
 from ..dtypes import token
 from ..common import SchemaKind
 
 
 class OpenVDBAsset(FieldAsset):
     """OpenVDB field primitive. The FieldAsset filePath attribute must
-             specify a file in the OpenVDB format on disk."""
+    specify a file in the OpenVDB format on disk.
+    """
+
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
-    class Fielddatatype(token):
+    class FieldDataType(token):
         Half = "half"
         Float = "float"
         Double = "double"
@@ -32,28 +33,26 @@ class OpenVDBAsset(FieldAsset):
         Mask = "mask"
         String = "string"
 
-    class Fieldclass(token):
-        Levelset = "levelSet"
-        Fogvolume = "fogVolume"
+    class FieldClass(token):
+        LevelSet = "levelSet"
+        FogVolume = "fogVolume"
         Staggered = "staggered"
         Unknown = "unknown"
 
 
-    fieldDataType: Attribute[Fielddatatype] = Attribute(Fielddatatype,
-        doc=
-        """Token which is used to indicate the data type of an
-                 individual field. Authors use this to tell consumers more
-                 about the field without opening the file on disk. The list of 
-                 allowed tokens reflects the available choices for OpenVDB 
-                 volumes.
+    fieldDataType = Attribute(FieldDataType,
+        doc="""Token which is used to indicate the data type of an
+        individual field. Authors use this to tell consumers more
+        about the field without opening the file on disk. The list of 
+        allowed tokens reflects the available choices for OpenVDB 
+        volumes.
         """
     )
 
-    fieldClass: Attribute[Fieldclass] = Attribute(Fieldclass,
-        doc=
-        """Optional token which can be used to indicate the class of
-                 an individual grid. This is a mapping to openvdb::GridClass
-                 where the values are GRID_LEVEL_SET, GRID_FOG_VOLUME, 
-                 GRID_STAGGERED, and GRID_UNKNOWN.
+    fieldClass = Attribute(FieldClass,
+        doc="""Optional token which can be used to indicate the class of
+        an individual grid. This is a mapping to openvdb::GridClass
+        where the values are GRID_LEVEL_SET, GRID_FOG_VOLUME, 
+        GRID_STAGGERED, and GRID_UNKNOWN.
         """
     )

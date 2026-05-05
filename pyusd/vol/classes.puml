@@ -1,0 +1,96 @@
+@startuml
+' vol Classes Inheritance and Properties Diagram
+
+' Abstract base classes
+class VolumeFieldBase {
+}
+
+class FieldBase {
+}
+
+class VolumeFieldAsset {
+    +filePath: asset
+    +fieldName: token
+    +fieldIndex: int
+    +fieldDataType: token
+    +vectorDataRoleHint: VectorDataRoleHint
+}
+
+class FieldAsset {
+}
+
+class ParticleFieldPositionBaseAPI {
+}
+
+class ParticleFieldPositionAttributeAPI {
+    +positions: List[point3f]
+    +positionsh: List[point3h]
+}
+
+class ParticleFieldOrientationAttributeAPI {
+    +orientations: List[quatf]
+    +orientationsh: List[quath]
+}
+
+class ParticleFieldScaleAttributeAPI {
+    +scales: List[float3]
+    +scalesh: List[half3]
+}
+
+class ParticleFieldOpacityAttributeAPI {
+    +opacities: List[float]
+    +opacitiesh: List[half]
+}
+
+class ParticleFieldKernelBaseAPI {
+}
+
+class ParticleFieldKernelGaussianEllipsoidAPI {
+}
+
+class ParticleFieldKernelGaussianSurfletAPI {
+}
+
+class ParticleFieldKernelConstantSurfletAPI {
+}
+
+class ParticleFieldRadianceBaseAPI {
+}
+
+class ParticleFieldSphericalHarmonicsAttributeAPI {
+    +radiance:sphericalHarmonicsDegree: int
+    +radiance:sphericalHarmonicsCoefficients: List[float3]
+    +radiance:sphericalHarmonicsCoefficientsh: List[half3]
+}
+
+' Concrete classes
+class Volume {
+}
+
+class Field3DAsset {
+    +fieldDataType: FieldDataType
+    +fieldPurpose: token
+}
+
+class OpenVDBAsset {
+    +fieldDataType: FieldDataType
+    +fieldClass: FieldClass
+}
+
+class ParticleField {
+}
+
+class ParticleField3DGaussianSplat {
+    +projectionModeHint: ProjectionModeHint
+    +sortingModeHint: SortingModeHint
+}
+
+' Relationships
+VolumeFieldBase <|-- FieldBase
+FieldBase <|-- VolumeFieldAsset
+VolumeFieldAsset <|-- FieldAsset
+FieldAsset <|-- Field3DAsset
+FieldAsset <|-- OpenVDBAsset
+ParticleField <|-- ParticleField3DGaussianSplat
+
+@enduml

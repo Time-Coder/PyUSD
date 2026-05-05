@@ -1,0 +1,50 @@
+@startuml
+' render Classes Inheritance and Properties Diagram
+
+' Abstract base classes
+class RenderSettingsBase {
+    +resolution: int2
+    +pixelAspectRatio: float
+    +aspectRatioConformPolicy: AspectRatioConformPolicy
+    +dataWindowNDC: float4
+    +instantaneousShutter: bool
+    +disableMotionBlur: bool
+    +disableDepthOfField: bool
+    +camera: Relationship
+}
+
+' Concrete classes
+class RenderSettings {
+    +includedPurposes: List[token]
+    +materialBindingPurposes: MaterialBindingPurposes
+    +renderingColorSpace: token
+    +products: Relationship
+}
+
+class RenderVar {
+    +dataType: token
+    +sourceName: string
+    +sourceType: SourceType
+}
+
+class RenderProduct {
+    +productType: ProductType
+    +productName: token
+    +orderedVars: Relationship
+}
+
+class RenderPass {
+    +passType: token
+    +command: List[string]
+    +fileName: asset
+    +collection:renderVisibility:includeRoot: bool
+    +collection:cameraVisibility:includeRoot: bool
+    +renderSource: Relationship
+    +inputPasses: Relationship
+}
+
+' Relationships
+RenderSettingsBase <|-- RenderSettings
+RenderSettingsBase <|-- RenderProduct
+
+@enduml

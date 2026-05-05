@@ -1,0 +1,11 @@
+@startuml
+' mtlx Classes Inheritance and Properties Diagram
+
+' Abstract base classes
+class MaterialXConfigAPI {
+    +config:mtlx:version: string
+}
+
+' Relationships
+
+@enduml

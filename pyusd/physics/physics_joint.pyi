@@ -1,10 +1,10 @@
-from ..typed import Typed
+from ..geom.imageable import Imageable
 from ..gf import quatf
 from ..dtypes import namespace
 from .physics import Physics
 
 
-class PhysicsJoint(Typed):
+class PhysicsJoint(Imageable):
     """A joint constrains the movement of rigid bodies. Joint can be 
     created between two rigid bodies or between one rigid body and world.
     By default joint primitive defines a D6 joint where all degrees of 

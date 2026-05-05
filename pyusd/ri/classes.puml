@@ -1,0 +1,19 @@
+@startuml
+' ri Classes Inheritance and Properties Diagram
+
+' Abstract base classes
+class StatementsAPI {
+}
+
+class RiMaterialAPI {
+    +outputs:ri:surface: token
+    +outputs:ri:displacement: token
+    +outputs:ri:volume: token
+}
+
+class RiSplineAPI {
+}
+
+' Relationships
+
+@enduml

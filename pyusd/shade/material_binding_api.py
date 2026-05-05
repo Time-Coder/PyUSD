@@ -1,4 +1,3 @@
-from ..typed import Typed
 from ..api_schema_base import APISchemaBase
 from ..common import SchemaKind
 
@@ -20,7 +19,7 @@ class MaterialBindingAPI(APISchemaBase):
     \\ref UsdShadeMaterialBindingAPI_MaterialResolution) that examines all of 
     these bindings, and selects the one Material that best matches the 
     client's needs.
-
+    
     The intent of <b>purpose</b> is that each gprim should be able to resolve a 
     Material for any given purpose, which implies it can have differently bound 
     materials for different purposes. There are two <i>special</i> values of 
@@ -38,7 +37,7 @@ class MaterialBindingAPI(APISchemaBase):
     A binding can also have no specific purpose at all, in which 
     case, it is considered to be the fallback or all-purpose binding (denoted 
     by the empty-valued token <b>UsdShadeTokens->allPurpose</b>). 
-
+    
     The <b>purpose</b> of a material binding is encoded in the name of the 
     binding relationship. 
     <ul><li>
@@ -65,7 +64,7 @@ class MaterialBindingAPI(APISchemaBase):
     to be associated with each Material.
     </li>
     </ul>
-
+    
     <b>Note:</b> Both <b>bindingName</b> and <b>purpose</b> must be 
     non-namespaced tokens. This allows us to know the role of a binding 
     relationship simply from the number of tokens in it. 
@@ -78,7 +77,7 @@ class MaterialBindingAPI(APISchemaBase):
     <li><b>Five tokens</b>: a purpose-restricted, collection-based binding, 
     e.g. material:binding:collection:full:metalBits</li>
     </ul>
-
+    
     A <b>binding-strength</b> value is used to specify whether a binding 
     authored on a prim should be weaker or stronger than bindings that appear 
     lower in namespace. We encode the binding strength with as token-valued 
@@ -88,90 +87,70 @@ class MaterialBindingAPI(APISchemaBase):
     <i>UsdShadeTokens->strongerThanDescendants</i>. When binding-strength is 
     not authored (i.e. empty) on a binding-relationship, the default behavior 
     matches UsdShadeTokens->weakerThanDescendants.
-
-    \
-ote If a material binding relationship is a built-in property defined as 
+    
+    \\note If a material binding relationship is a built-in property defined as 
     part of a typed prim's schema, a fallback value should not be provided for 
     it. This is because the "material resolution" algorithm only conisders 
     <i>authored</i> properties.
+    
     """
+
     schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
 
     meta = {
         "customData": {
             "extraIncludes": """
-                #include "pxr/usd/usd/collectionAPI.h"
-                #include "pxr/usd/usdGeom/subset.h"
-                #include "pxr/usd/usdShade/material.h"
-                #include <tbb/concurrent_unordered_map.h>""",
+    #include "pxr/usd/usd/collectionAPI.h"
+    #include "pxr/usd/usdGeom/subset.h"
+    #include "pxr/usd/usdShade/material.h"
+    #include <tbb/concurrent_unordered_map.h>""",
             "schemaTokens": {
-                "materialBinding": {
-                    "value": "material:binding",
-                    "doc": """
-                                        The relationship name on non-shading prims to
-                                        denote a binding to a UsdShadeMaterial.
-                                        """
-                },
-                "materialBindingCollection": {
-                    "value": "material:binding:collection",
-                    "doc": """ 
-                                        The relationship name on non-shading prims to
-                                        denote a collection-based binding to a UsdShadeMaterial.
-                                        """
-                },
-                "allPurpose": {
-                    "value": "",
-                    "doc": """Possible value for the 'materialPurpose' parameter
-                                        in the various methods available in UsdShadeMaterialBindingAPI.
-                                        Its value is empty and its purpose is to represent a general 
-                                        purpose material-binding that applies in the absence of a 
-                                        specific-purpose binding.
-                                        """
-                },
-                "preview": {
-                    "doc": """Possible value for the 'materialPurpose' 
-                                        parameter in UsdShadeMaterialBindingAPI, to be used when the 
-                                        render is in service of a goal other than a high fidelity "full"
-                                        render (such as scene manipulation, modeling, or realtime 
-                                        playback). Latency and speed are generally of greater concern 
-                                        for preview renders, therefore preview materials are generally 
-                                        designed to be "lighterweight" compared to full materials.
-                                        """
-                },
-                "full": {
-                    "doc": """Possible value for the 'materialPurpose'
-                                        parameter in UsdShadeMaterialBindingAPI, to be used when the
-                                        purpose of the render is entirely about visualizing the truest
-                                        representation of a scene, considering all lighting and material
-                                        information, at highest fidelity.
-                                        """
-                },
-                "bindMaterialAs": {
-                    "doc": """Token valued metadata key authored on a material 
-                                        binding relationship to indicate the strength of the binding 
-                                        relative to bindings authored on descendants.
-                                        """
-                },
-                "weakerThanDescendants": {
-                    "doc": """Possible value for 'bindMaterialAs' metadata on the 
-                                        collection-based material binding relationship. Indicates 
-                                        that the binding represented by the relationship is weaker than 
-                                        any bindings authored on the descendants."""
-                },
-                "strongerThanDescendants": {
-                    "doc": """Possible value for 'bindMaterialAs' metadata on the 
-                                        collection-based material binding relationship. Indicates 
-                                        that the binding represented by the relationship is stronger than 
-                                        any bindings authored on the descendants."""
-                },
-                "fallbackStrength": {
-                    "doc": """Sentinal value to be used for 'bindMaterialAs' 
-                                        metadata's default value. Clients should pass this in for the 
-                                        'bindingStrength' argument to UsdShadeMaterialBindingAPI::Bind(),
-                                        if they want to author the default value (weakerThanDescendants)
-                                        sparsely. The value "fallbackStrength" never gets authored 
-                                        into scene description."""
-                }
+                "materialBinding": {"value": "material:binding", "doc": """
+                    The relationship name on non-shading prims to
+                    denote a binding to a UsdShadeMaterial.
+                    """},
+                "materialBindingCollection": {"value": "material:binding:collection", "doc": """ 
+                    The relationship name on non-shading prims to
+                    denote a collection-based binding to a UsdShadeMaterial.
+                    """},
+                "allPurpose": {"value": "", "doc": """Possible value for the 'materialPurpose' parameter
+                    in the various methods available in UsdShadeMaterialBindingAPI.
+                    Its value is empty and its purpose is to represent a general 
+                    purpose material-binding that applies in the absence of a 
+                    specific-purpose binding.
+                    """},
+                "preview": {"doc": """Possible value for the 'materialPurpose' 
+                    parameter in UsdShadeMaterialBindingAPI, to be used when the 
+                    render is in service of a goal other than a high fidelity "full"
+                    render (such as scene manipulation, modeling, or realtime 
+                    playback). Latency and speed are generally of greater concern 
+                    for preview renders, therefore preview materials are generally 
+                    designed to be "lighterweight" compared to full materials.
+                    """},
+                "full": {"doc": """Possible value for the 'materialPurpose'
+                    parameter in UsdShadeMaterialBindingAPI, to be used when the
+                    purpose of the render is entirely about visualizing the truest
+                    representation of a scene, considering all lighting and material
+                    information, at highest fidelity.
+                    """},
+                "bindMaterialAs": {"doc": """Token valued metadata key authored on a material 
+                    binding relationship to indicate the strength of the binding 
+                    relative to bindings authored on descendants.
+                    """},
+                "weakerThanDescendants": {"doc": """Possible value for 'bindMaterialAs' metadata on the 
+                    collection-based material binding relationship. Indicates 
+                    that the binding represented by the relationship is weaker than 
+                    any bindings authored on the descendants."""},
+                "strongerThanDescendants": {"doc": """Possible value for 'bindMaterialAs' metadata on the 
+                    collection-based material binding relationship. Indicates 
+                    that the binding represented by the relationship is stronger than 
+                    any bindings authored on the descendants."""},
+                "fallbackStrength": {"doc": """Sentinal value to be used for 'bindMaterialAs' 
+                    metadata's default value. Clients should pass this in for the 
+                    'bindingStrength' argument to UsdShadeMaterialBindingAPI::Bind(),
+                    if they want to author the default value (weakerThanDescendants)
+                    sparsely. The value "fallbackStrength" never gets authored 
+                    into scene description."""}
             }
         }
     }

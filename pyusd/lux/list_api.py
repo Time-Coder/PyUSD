@@ -1,10 +1,8 @@
-from ..typed import Typed
 from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
-from typing import List
+from ..relationship import Relationship
 from ..dtypes import namespace
 from ..dtypes import token
-from ..relationship import Relationship
 from ..common import SchemaKind
 
 
@@ -12,19 +10,20 @@ class ListAPI(APISchemaBase):
     """
     \\deprecated
     Use LightListAPI instead
-"""
+    
+    """
+
     schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
 
-    class Cachebehavior(token):
-        Consumeandhalt = "consumeAndHalt"
-        Consumeandcontinue = "consumeAndContinue"
+    class CacheBehavior(token):
+        ConsumeAndHalt = "consumeAndHalt"
+        ConsumeAndContinue = "consumeAndContinue"
         Ignore = "ignore"
 
 
     lightList: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    lightList.cacheBehavior = Attribute(Cachebehavior,
-        doc=
-        """
+    lightList.cacheBehavior = Attribute(CacheBehavior,
+        doc="""
         Controls how the lightList should be interpreted.
         Valid values are:
         - consumeAndHalt: The lightList should be consulted,
@@ -37,8 +36,8 @@ class ListAPI(APISchemaBase):
         - ignore: The lightList should be entirely ignored.  This
           provides a simple way to temporarily invalidate an existing
           cache.  This is the fallback behavior.
-        
+
         """
     )
 
-    lightList: Relationship = Relationship(doc="Relationship to lights in the scene.")
+    lightList = Relationship(doc="Relationship to lights in the scene.")

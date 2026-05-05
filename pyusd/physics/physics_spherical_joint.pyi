@@ -1,10 +1,10 @@
-from ..typed import Typed
+from .physics_joint import PhysicsJoint
 from ..dtypes import namespace, token
 from ..common import Axis
 from .physics import Physics
 
 
-class PhysicsSphericalJoint(Typed):
+class PhysicsSphericalJoint(PhysicsJoint):
     """Predefined spherical joint type (Removes linear degrees of 
     freedom, cone limit may restrict the motion in a given range.) It allows
     two limit values, which when equal create a circular, else an elliptic 

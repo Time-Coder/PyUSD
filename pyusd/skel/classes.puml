@@ -1,0 +1,45 @@
+@startuml
+' skel Classes Inheritance and Properties Diagram
+
+' Abstract base classes
+class SkelBindingAPI {
+    +primvars:skel:skinningMethod: SkinningMethod
+    +primvars:skel:geomBindTransform: matrix4d
+    +skel:joints: List[token]
+    +primvars:skel:jointIndices: List[int]
+    +primvars:skel:jointWeights: List[float]
+    +skel:blendShapes: List[token]
+    +skel:animationSource: Relationship
+    +skel:skeleton: Relationship
+    +skel:blendShapeTargets: Relationship
+}
+
+' Concrete classes
+class SkelRoot {
+}
+
+class Skeleton {
+    +joints: List[token]
+    +jointNames: List[token]
+    +bindTransforms: List[matrix4d]
+    +restTransforms: List[matrix4d]
+}
+
+class SkelAnimation {
+    +joints: List[token]
+    +translations: List[float3]
+    +rotations: List[quatf]
+    +scales: List[half3]
+    +blendShapes: List[token]
+    +blendShapeWeights: List[float]
+}
+
+class BlendShape {
+    +offsets: List[vector3f]
+    +normalOffsets: List[vector3f]
+    +pointIndices: List[int]
+}
+
+' Relationships
+
+@enduml

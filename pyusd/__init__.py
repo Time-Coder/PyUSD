@@ -4,7 +4,7 @@ from .property import Property
 from .attribute import Attribute
 from .relationship import Relationship
 from .dtypes import double, half, uint, uint64, int64, double, string, uchar, opaque, group, asset, timecode, namespace, dictionary, pathExpression
-from .utils import generate_schema
+from .code_generator import CodeGenerator
 
 from .typed import Typed
 from .api_schema_base import APISchemaBase
@@ -16,6 +16,7 @@ from .clips_api import ClipsAPI
 
 
 __all__ = [
+    "CodeGenerator",
     "Layer",
     "Prim",
     "Attribute",

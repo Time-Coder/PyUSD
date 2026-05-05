@@ -1,0 +1,11 @@
+@startuml
+' semantics Classes Inheritance and Properties Diagram
+
+' Abstract base classes
+class SemanticsLabelsAPI {
+    +__INSTANCE_NAME__: List[token]
+}
+
+' Relationships
+
+@enduml

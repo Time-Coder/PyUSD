@@ -1,9 +1,15 @@
-from ..typed import Typed
-from ..attribute import Attribute
-from ..relationship import Relationship
+from .render_settings_base import RenderSettingsBase
 from ..dtypes import token
+from .collection import Collection
 
-class RenderSettings(Typed):
+
+class RenderSettings(RenderSettingsBase):
+    """A UsdRenderSettings prim specifies global settings for
+    a render process, including an enumeration of the RenderProducts
+    that should result, and the UsdGeomImageable purposes that should
+    be rendered.  \\ref UsdRenderHowSettingsAffectRendering
+    """
+
 
     class MaterialBindingPurposes(token):
         Full = "full"

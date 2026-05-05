@@ -1,4 +1,4 @@
-from ..typed import Typed
+from .physics_joint import PhysicsJoint
 from ..attribute import Attribute
 from ..dtypes import namespace
 from ..dtypes import token
@@ -6,7 +6,7 @@ from ..common import SchemaKind
 from ..common import Axis
 
 
-class PhysicsRevoluteJoint(Typed):
+class PhysicsRevoluteJoint(PhysicsJoint):
     """Predefined revolute joint type (rotation along revolute joint
     axis is permitted.)
     """

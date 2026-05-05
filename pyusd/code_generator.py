@@ -5,9 +5,10 @@ USD Schema 代码生成器
 """
 
 import os
-import textwrap
-from typing import List, Dict, Any, Set, Tuple, Optional
+from typing import List, Dict, Any, Set, Tuple
 from tree_sitter import Node
+from typeguard import typechecked
+from types import ModuleType
 
 
 class CodeGenerator:
@@ -122,6 +123,148 @@ class CodeGenerator:
         self.generate_pyclasses()
         self.generate_pyi()
         self.generate_init_file()
+        self.generate_puml()
+    
+    def generate_puml(self, output_file: str = None) -> None:
+        """生成 PlantUML 格式的类图
+        
+        Args:
+            output_file: 输出文件路径，默认为 schema_dir 下的 classes.puml
+        """
+        if not self._parsed:
+            self.parse()
+        
+        if output_file is None:
+            output_file = os.path.join(self.schema_dir, 'classes.puml')
+        
+        lines = []
+        lines.append("@startuml")
+        lines.append(f"' {os.path.basename(self.schema_dir)} Classes Inheritance and Properties Diagram")
+        lines.append("")
+        
+        # 按继承层级分组类
+        abstract_classes = []
+        concrete_classes = []
+        
+        for class_name in self.class_names:
+            class_info = self.classes_info[class_name]
+            kind = class_info.get('kind', '')
+            has_explicit_name = class_info.get('has_explicit_name', False)
+            
+            # AbstractTyped 或 APISchemaBase 的子类视为抽象类
+            if kind == 'class' and not has_explicit_name:
+                abstract_classes.append(class_info)
+            else:
+                concrete_classes.append(class_info)
+        
+        # 生成抽象类定义
+        if abstract_classes:
+            lines.append("' Abstract base classes")
+            for class_info in abstract_classes:
+                lines.extend(self._generate_puml_class(class_info))
+                lines.append("")
+        
+        # 生成具体类定义
+        if concrete_classes:
+            lines.append("' Concrete classes")
+            for class_info in concrete_classes:
+                lines.extend(self._generate_puml_class(class_info))
+                lines.append("")
+        
+        # 生成继承关系
+        lines.append("' Relationships")
+        for class_name in self.class_names:
+            class_info = self.classes_info[class_name]
+            inherits = class_info.get('inherits', [])
+            
+            for parent in inherits:
+                # 只包含当前模块中的父类
+                parent_name = parent.lstrip('</').rstrip('>')
+                if parent_name in self.classes_info:
+                    lines.append(f"{parent_name} <|-- {class_name}")
+        
+        lines.append("")
+        lines.append("@enduml")
+        
+        # 写入文件
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write("\n".join(lines) + "\n")
+        
+        print(f"Generated PlantUML: {output_file}")
+    
+    def _generate_puml_class(self, class_info: Dict[str, Any]) -> List[str]:
+        """生成单个类的 PlantUML 定义"""
+        lines = []
+        class_name = class_info['name']
+        
+        lines.append(f"class {class_name} {{")
+        
+        # 添加属性
+        for attr in class_info['attributes']:
+            attr_name = attr.get('full_name', attr['name'])
+            attr_type = self._usd_type_to_python_type(attr['type'])
+            
+            # 处理 allowedTokens
+            if attr.get('allowed_tokens'):
+                attr_type = self._snake_to_pascal(attr['name'])
+            
+            # 构建属性字符串
+            attr_str = f"    +{attr_name}: {attr_type}"
+            
+            # 添加默认值
+            default_value = attr.get('default')
+            if default_value is not None:
+                py_default = self._format_puml_default(default_value, attr['type'])
+                attr_str += f" = {py_default}"
+            
+            lines.append(attr_str)
+        
+        # 添加关系
+        for rel in class_info['relationships']:
+            rel_name = rel.get('full_name', rel['name'])
+            lines.append(f"    +{rel_name}: Relationship")
+        
+        lines.append("}")
+        
+        return lines
+    
+    def _format_puml_default(self, value: Any, usd_type: str) -> str:
+        """格式化 PlantUML 中的默认值"""
+        if isinstance(value, bool):
+            return str(value).lower()  # true/false
+        elif isinstance(value, (int, float)):
+            return str(value)
+        elif isinstance(value, str):
+            return f'"{value}"'
+        elif isinstance(value, (list, tuple)):
+            if len(value) == 0:
+                return "[]"
+            # 格式化列表元素
+            elements = [self._format_puml_default(v, usd_type.replace('[]', '')) for v in value]
+            return f"[{', '.join(elements)}]"
+        elif isinstance(value, dict):
+            # 简单字典格式化
+            items = [f"{k}: {self._format_puml_default(v, '')}" for k, v in value.items()]
+            return "{" + ", ".join(items) + "}"
+        else:
+            return str(value)
+
+    @staticmethod
+    @typechecked
+    def generate_schema(module: ModuleType)->None:
+        from .typed import Typed
+        from .api_schema_base import APISchemaBase
+
+        result_list = []
+        for cls_name in module.__all__:
+            cls = getattr(module, cls_name)
+            if isinstance(cls, type) and issubclass(cls, (Typed, APISchemaBase)):
+                result_list.append(cls.cls_to_str())
+
+        result = "\n".join(result_list)
+        target_file_path = os.path.join(os.path.dirname(module.__file__), "schema_generated.usda")
+        with open(target_file_path, "w") as f:
+            f.write(result)
     
     def _collect_all_namespace_members(self) -> Dict[str, List[Dict[str, Any]]]:
         """收集所有类的命名空间成员"""
@@ -208,6 +351,7 @@ class CodeGenerator:
                 key = ''
                 value = None
                 value_dict = None
+                value_path = None
                 for assign_child in child.named_children:
                     if assign_child.type == 'identifier':
                         key = assign_child.text.decode('utf-8')
@@ -215,6 +359,8 @@ class CodeGenerator:
                         value = assign_child.text.decode('utf-8').strip('"')
                     elif assign_child.type == 'dictionary':
                         value_dict = self._parse_usd_dictionary(assign_child)
+                    elif assign_child.type == 'arc_path':
+                        value_path = assign_child.text.decode('utf-8')
                 
                 if key == 'documentation' or key == 'doc':
                     info['doc'] = value or ''
@@ -224,6 +370,9 @@ class CodeGenerator:
                     if not info.get('metadata'):
                         info['metadata'] = {}
                     info['metadata']['customData'] = value_dict
+                elif key == 'inherits' and value_path:
+                    # inherits 可以是单个路径或路径列表
+                    info['inherits'].append(value_path)
             elif child.type == 'attribute_assignment':
                 self._parse_attribute_assignment(child, info)
     
@@ -536,25 +685,21 @@ class CodeGenerator:
                 return 'APISchemaBase'
             return 'APISchemaBase'
         
-        # Typed schemas
-        if kind == 'class' and has_explicit_name:
-            return 'Typed'
-        
-        # Inherits
+        # 优先使用 inherits 字段
         inherits = class_info.get('inherits', [])
         if inherits:
             parent_name = inherits[0]
-            if '/' in parent_name:
-                parent_name = parent_name.split('/')[-1]
+            # 去除路径格式 </...>
+            parent_name = parent_name.lstrip('</').rstrip('>')
             
             # 特殊处理已知基类
             base_class_mapping = {
-                'APISchemaBase': 'APISchemaBase',
                 'Typed': 'Typed',
+                'APISchemaBase': 'APISchemaBase',
                 'Imageable': 'Imageable',
-                'Gprim': 'Gprim',
-                'Boundable': 'Boundable',
                 'Xformable': 'Xformable',
+                'Boundable': 'Boundable',
+                'Gprim': 'Gprim',
                 'PointBased': 'PointBased',
                 'GeomSubset': 'GeomSubset',
             }
@@ -562,22 +707,13 @@ class CodeGenerator:
             if parent_name in base_class_mapping:
                 return base_class_mapping[parent_name]
             
-            # 跨模块继承
-            cross_module_bases = {
-                'Imageable': ('geom', 'Imageable'),
-                'Gprim': ('geom', 'Gprim'),
-                'Boundable': ('geom', 'Boundable'),
-                'Xformable': ('geom', 'Xformable'),
-                'PointBased': ('geom', 'PointBased'),
-                'GeomModelAPI': ('geom', 'GeomModelAPI'),
-                'PrimvarsAPI': ('geom', 'PrimvarsAPI'),
-                'VisibilityAPI': ('geom', 'VisibilityAPI'),
-                'MotionAPI': ('geom', 'MotionAPI'),
-                'XformCommonAPI': ('geom', 'XformCommonAPI'),
-            }
-            
-            if parent_name in cross_module_bases:
+            # 如果父类是当前模块中的其他类，直接返回父类名
+            if parent_name in self.classes_info:
                 return parent_name
+        
+        # Typed schemas（如果没有 inherits）
+        if kind == 'class' and has_explicit_name:
+            return 'Typed'
         
         return 'Typed'
     

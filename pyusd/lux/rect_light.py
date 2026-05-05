@@ -1,6 +1,5 @@
 from .boundable_light_base import BoundableLightBase
 from ..attribute import Attribute
-from typing import List
 from ..dtypes import namespace
 from ..dtypes import asset, token
 from ..common import SchemaKind
@@ -11,13 +10,15 @@ class RectLight(BoundableLightBase):
     The rectangle is centered in the XY plane and emits light along the -Z axis.
     The rectangle is 1 unit in length in the X and Y axis.  In the default 
     position, a texture file's min coordinates should be at (+X, +Y) and 
-    max coordinates at (-X, -Y)."""
+    max coordinates at (-X, -Y).
+    """
+
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     meta = {
         "customData": {
             "extraPlugInfo": {
-                "implementsComputeExtent": "None"
+                "implementsComputeExtent": None
             }
         }
     }
@@ -25,7 +26,6 @@ class RectLight(BoundableLightBase):
     light: Attribute[namespace] = Attribute(namespace, is_leaf=False)
     light.shaderId = Attribute(token,
         uniform=True,
-        value="RectLight",
         metadata={
             "customData": {
                 "apiSchemaOverride": True

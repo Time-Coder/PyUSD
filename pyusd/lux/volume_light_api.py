@@ -1,7 +1,5 @@
-from ..typed import Typed
 from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
-from typing import List
 from ..dtypes import namespace
 from ..dtypes import token
 from ..common import SchemaKind
@@ -17,13 +15,14 @@ class VolumeLightAPI(APISchemaBase):
     properties to "volume lights" through the creation of API schemas which are 
     authored to auto-apply to VolumeLightAPI.
     \\see \\ref Usd_AutoAppliedAPISchemas
+    
     """
+
     schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
 
     light: Attribute[namespace] = Attribute(namespace, is_leaf=False)
     light.shaderId = Attribute(token,
         uniform=True,
-        value="VolumeLight",
         metadata={
             "customData": {
                 "apiSchemaOverride": True
@@ -32,7 +31,6 @@ class VolumeLightAPI(APISchemaBase):
     )
     light.materialSyncMode = Attribute(token,
         uniform=True,
-        value="materialGlowTintsLight",
         metadata={
             "customData": {
                 "apiSchemaOverride": True

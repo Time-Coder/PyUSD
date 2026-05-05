@@ -1,9 +1,23 @@
-from ..typed import Typed
-from ..attribute import Attribute
-from ..relationship import Relationship
+from .render_settings_base import RenderSettingsBase
 from ..dtypes import token
+from .collection import Collection
 
-class RenderProduct(Typed):
+
+class RenderProduct(RenderSettingsBase):
+    """A UsdRenderProduct describes an image or other
+    file-like artifact produced by a render. A RenderProduct
+    combines one or more RenderVars into a file or interactive
+    buffer.  It also provides all the controls established in
+    UsdRenderSettingsBase as optional overrides to whatever the
+    owning UsdRenderSettings prim dictates.
+    
+    Specific renderers may support additional settings, such
+    as a way to configure compression settings, filetype metadata,
+    and so forth.  Such settings can be encoded using
+    renderer-specific API schemas applied to the product prim.
+    
+    """
+
 
     class ProductType(token):
         Raster = "raster"

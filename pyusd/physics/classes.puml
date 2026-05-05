@@ -1,0 +1,118 @@
+@startuml
+' physics Classes Inheritance and Properties Diagram
+
+' Abstract base classes
+class PhysicsRigidBodyAPI {
+    +physics:rigidBodyEnabled: bool
+    +physics:kinematicEnabled: bool
+    +physics:startsAsleep: bool
+    +physics:velocity: vector3f
+    +physics:angularVelocity: vector3f
+    +physics:simulationOwner: Relationship
+}
+
+class PhysicsMassAPI {
+    +physics:mass: float
+    +physics:density: float
+    +physics:centerOfMass: point3f
+    +physics:diagonalInertia: float3
+    +physics:principalAxes: quatf
+}
+
+class PhysicsCollisionAPI {
+    +physics:collisionEnabled: bool
+    +physics:simulationOwner: Relationship
+}
+
+class PhysicsMeshCollisionAPI {
+    +physics:approximation: Approximation
+}
+
+class PhysicsMaterialAPI {
+    +physics:dynamicFriction: float
+    +physics:staticFriction: float
+    +physics:restitution: float
+    +physics:density: float
+}
+
+class PhysicsFilteredPairsAPI {
+    +physics:filteredPairs: Relationship
+}
+
+class PhysicsLimitAPI {
+    +physics:low: float
+    +physics:high: float
+}
+
+class PhysicsDriveAPI {
+    +physics:type: Type
+    +physics:maxForce: float
+    +physics:targetPosition: float
+    +physics:targetVelocity: float
+    +physics:damping: float
+    +physics:stiffness: float
+}
+
+class PhysicsArticulationRootAPI {
+}
+
+' Concrete classes
+class PhysicsScene {
+    +physics:gravityDirection: vector3f
+    +physics:gravityMagnitude: float
+}
+
+class PhysicsCollisionGroup {
+    +physics:mergeGroup: string
+    +physics:invertFilteredGroups: bool
+    +physics:filteredGroups: Relationship
+}
+
+class PhysicsJoint {
+    +physics:localPos0: point3f
+    +physics:localRot0: quatf
+    +physics:localPos1: point3f
+    +physics:localRot1: quatf
+    +physics:jointEnabled: bool
+    +physics:collisionEnabled: bool
+    +physics:excludeFromArticulation: bool
+    +physics:breakForce: float
+    +physics:breakTorque: float
+    +physics:body0: Relationship
+    +physics:body1: Relationship
+}
+
+class PhysicsRevoluteJoint {
+    +physics:axis: Axis
+    +physics:lowerLimit: float
+    +physics:upperLimit: float
+}
+
+class PhysicsPrismaticJoint {
+    +physics:axis: Axis
+    +physics:lowerLimit: float
+    +physics:upperLimit: float
+}
+
+class PhysicsSphericalJoint {
+    +physics:axis: Axis
+    +physics:coneAngle0Limit: float
+    +physics:coneAngle1Limit: float
+}
+
+class PhysicsDistanceJoint {
+    +physics:minDistance: float
+    +physics:maxDistance: float
+}
+
+class PhysicsFixedJoint {
+}
+
+' Relationships
+PhysicsJoint <|-- PhysicsRevoluteJoint
+PhysicsJoint <|-- PhysicsPrismaticJoint
+PhysicsJoint <|-- PhysicsSphericalJoint
+PhysicsJoint <|-- PhysicsDistanceJoint
+PhysicsJoint <|-- PhysicsFixedJoint
+
+@enduml

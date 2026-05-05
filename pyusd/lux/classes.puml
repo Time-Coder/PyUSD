@@ -1,0 +1,148 @@
+@startuml
+' lux Classes Inheritance and Properties Diagram
+
+' Abstract base classes
+class LightAPI {
+    +collection:lightLink:includeRoot: bool
+    +collection:shadowLink:includeRoot: bool
+    +light:shaderId: token
+    +light:materialSyncMode: MaterialSyncMode
+    +inputs:intensity: float
+    +inputs:exposure: float
+    +inputs:diffuse: float
+    +inputs:specular: float
+    +inputs:normalize: bool
+    +inputs:color: color3f
+    +inputs:enableColorTemperature: bool
+    +inputs:colorTemperature: float
+    +light:filters: Relationship
+}
+
+class MeshLightAPI {
+    +light:shaderId: token
+    +light:materialSyncMode: token
+}
+
+class VolumeLightAPI {
+    +light:shaderId: token
+    +light:materialSyncMode: token
+}
+
+class LightListAPI {
+    +lightList:cacheBehavior: CacheBehavior
+    +lightList: Relationship
+}
+
+class ListAPI {
+    +lightList:cacheBehavior: CacheBehavior
+    +lightList: Relationship
+}
+
+class ShapingAPI {
+    +inputs:shaping:focus: float
+    +inputs:shaping:focusTint: color3f
+    +inputs:shaping:cone:angle: float
+    +inputs:shaping:cone:softness: float
+    +inputs:shaping:ies:file: asset
+    +inputs:shaping:ies:angleScale: float
+    +inputs:shaping:ies:normalize: bool
+}
+
+class ShadowAPI {
+    +inputs:shadow:enable: bool
+    +inputs:shadow:color: color3f
+    +inputs:shadow:distance: float
+    +inputs:shadow:falloff: float
+    +inputs:shadow:falloffGamma: float
+}
+
+class BoundableLightBase {
+}
+
+class NonboundableLightBase {
+}
+
+' Concrete classes
+class LightFilter {
+    +collection:filterLink:includeRoot: bool
+    +lightFilter:shaderId: token
+}
+
+class DistantLight {
+    +light:shaderId: token
+    +inputs:angle: float
+    +inputs:intensity: float
+}
+
+class DiskLight {
+    +light:shaderId: token
+    +inputs:radius: float
+}
+
+class RectLight {
+    +light:shaderId: token
+    +inputs:width: float
+    +inputs:height: float
+    +inputs:texture:file: asset
+}
+
+class SphereLight {
+    +light:shaderId: token
+    +inputs:radius: float
+    +treatAsPoint: bool
+}
+
+class CylinderLight {
+    +light:shaderId: token
+    +inputs:length: float
+    +inputs:radius: float
+    +treatAsLine: bool
+}
+
+class GeometryLight {
+    +light:shaderId: token
+    +geometry: Relationship
+}
+
+class DomeLight {
+    +light:shaderId: token
+    +inputs:texture:file: asset
+    +inputs:texture:format: Format
+    +guideRadius: float
+    +portals: Relationship
+}
+
+class DomeLight_1 {
+    +light:shaderId: token
+    +inputs:texture:file: asset
+    +inputs:texture:format: Format
+    +guideRadius: float
+    +poleAxis: PoleAxis
+    +portals: Relationship
+}
+
+class PortalLight {
+    +light:shaderId: token
+    +inputs:width: float
+    +inputs:height: float
+}
+
+class PluginLight {
+}
+
+class PluginLightFilter {
+}
+
+' Relationships
+NonboundableLightBase <|-- DistantLight
+BoundableLightBase <|-- DiskLight
+BoundableLightBase <|-- RectLight
+BoundableLightBase <|-- SphereLight
+BoundableLightBase <|-- CylinderLight
+NonboundableLightBase <|-- GeometryLight
+NonboundableLightBase <|-- DomeLight
+NonboundableLightBase <|-- DomeLight_1
+BoundableLightBase <|-- PortalLight
+LightFilter <|-- PluginLightFilter
+
+@enduml

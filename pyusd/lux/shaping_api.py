@@ -1,7 +1,5 @@
-from ..typed import Typed
 from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
-from typing import List
 from ..dtypes import namespace
 from ..gf import color3f
 from ..dtypes import asset
@@ -9,21 +7,21 @@ from ..common import SchemaKind
 
 
 class ShapingAPI(APISchemaBase):
-    """Controls for shaping a light's emission."""
+    "Controls for shaping a light's emission."
+
     schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
 
     meta = {
         "customData": {
             "extraIncludes": """
-                #include "pxr/usd/usdShade/input.h"
-                #include "pxr/usd/usdShade/output.h" """
+    #include "pxr/usd/usdShade/input.h"
+    #include "pxr/usd/usdShade/output.h" """
         }
     }
 
     inputs: Attribute[namespace] = Attribute(namespace, is_leaf=False)
     inputs.shaping.focus = Attribute(float,
-        doc=
-        """A control to shape the spread of light.  Higher focus
+        doc="""A control to shape the spread of light.  Higher focus
         values pull light towards the center and narrow the spread.
 
         This is implemented as a multiplication with the absolute value of the
@@ -44,7 +42,7 @@ class ShapingAPI(APISchemaBase):
         cylinder lights will emit "behind" the light as well as in front. If it 
         is desired that the light emits forward only, this can be achieved by setting
         the `inputs:shaping:coneAngle` to 90 degrees or less.
-        
+
         """,
         metadata={
             "displayGroup": "Shaping",
@@ -55,8 +53,7 @@ class ShapingAPI(APISchemaBase):
         }
     )
     inputs.shaping.focusTint = Attribute(color3f,
-        doc=
-        """Off-axis color tint.  This tints the emission in the
+        doc="""Off-axis color tint.  This tints the emission in the
         falloff region.  The default tint is black.
 
         This is implemented as a linear interpolation between `focusTint` and
@@ -78,7 +75,7 @@ class ShapingAPI(APISchemaBase):
         cylinder lights will emit "behind" the light as well as in front. If it 
         is desired that the light emits forward only, this can be achieved by setting
         the `inputs:shaping:coneAngle` to 90 degrees or less.
-        
+
         """,
         metadata={
             "displayGroup": "Shaping",
@@ -89,8 +86,7 @@ class ShapingAPI(APISchemaBase):
         }
     )
     inputs.shaping.cone.angle = Attribute(float,
-        doc=
-        """Angular limit off the primary axis to restrict the light
+        doc="""Angular limit off the primary axis to restrict the light
         spread, in degrees.
 
         Light emissions at angles off the primary axis greater than this are
@@ -112,7 +108,7 @@ class ShapingAPI(APISchemaBase):
         However, at the default of coneSoftness = 0, the luminance is
         unaltered if emissionOffAxisAngle <= coneAngle, so the coneAngle
         functions as a hard binary "off" toggle for all angles > coneAngle.
-        
+
         """,
         metadata={
             "displayGroup": "Shaping",
@@ -123,8 +119,7 @@ class ShapingAPI(APISchemaBase):
         }
     )
     inputs.shaping.cone.softness = Attribute(float,
-        doc=
-        """Controls the cutoff softness for cone angle.
+        doc="""Controls the cutoff softness for cone angle.
 
         At the default of coneSoftness = 0, the luminance is unaltered if 
         emissionOffAxisAngle <= coneAngle, and 0 if
@@ -149,7 +144,7 @@ class ShapingAPI(APISchemaBase):
         </b></center>
 
         Values outside of the [0, 1] range are clamped to the range.
-        
+
         """,
         metadata={
             "displayGroup": "Shaping",
@@ -160,8 +155,7 @@ class ShapingAPI(APISchemaBase):
         }
     )
     inputs.shaping.ies.file = Attribute(asset,
-        doc=
-        """An IES (Illumination Engineering Society) light
+        doc="""An IES (Illumination Engineering Society) light
         profile describing the angular distribution of light.
 
         For full details on the .ies file format, see the full specification,
@@ -193,7 +187,7 @@ class ShapingAPI(APISchemaBase):
         See `inputs:shaping:ies:angleScale` for a description of
         `applyAngleScale`, and `inputs:shaping:ies:normalize` for how
         `iesProfilePower` is calculated.
-        
+
         """,
         metadata={
             "displayGroup": "Shaping",
@@ -204,8 +198,7 @@ class ShapingAPI(APISchemaBase):
         }
     )
     inputs.shaping.ies.angleScale = Attribute(float,
-        doc=
-        """Rescales the angular distribution of the IES profile.
+        doc="""Rescales the angular distribution of the IES profile.
 
         Applies a scaling factor to the latitudinal theta/vertical polar
         coordinate before sampling the IES profile, to shift the samples more
@@ -274,7 +267,7 @@ class ShapingAPI(APISchemaBase):
         angle mapping, but in more non-intuitive ways (i.e., broadening /
         narrowing may seem inverted, and the IES profile may seem to "translate"
         through the vertical angles, rather than uniformly scale).
-        
+
         """,
         metadata={
             "displayGroup": "Shaping",
@@ -285,16 +278,14 @@ class ShapingAPI(APISchemaBase):
         }
     )
     inputs.shaping.ies.normalize = Attribute(bool,
-        value=False,
-        doc=
-        """Normalizes the IES profile so that it affects the shaping
+        doc="""Normalizes the IES profile so that it affects the shaping
         of the light while preserving the overall energy output.
 
         The sampled luminous intensity is scaled by the overall power of the
         IES profile if this is on, where the total power is calculated by
         integrating the luminous intensity over all solid angle patches
         defined in the profile.
-        
+
         """,
         metadata={
             "displayGroup": "Shaping",

@@ -1,24 +1,22 @@
-from ..typed import Typed
 from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
-from typing import List
-from ..dtypes import namespace
-from ..dtypes import token
-from ..gf import color3f
 from ..relationship import Relationship
+from ..dtypes import namespace
+from ..gf import color3f
+from ..dtypes import token
 from ..common import SchemaKind
 
 
 class LightAPI(APISchemaBase):
     """API schema that imparts the quality of being a light onto a prim. 
-
+    
     A light is any prim that has this schema applied to it.  This is true 
     regardless of whether LightAPI is included as a built-in API of the prim 
     type (e.g. RectLight or DistantLight) or is applied directly to a Gprim 
     that should be treated as a light.
-
+    
     <b>Quantities and Units</b>
-
+    
     Most renderers consuming OpenUSD today are RGB renderers, rather than
     spectral. Units in RGB renderers are tricky to define as each of the red,
     green and blue channels transported by the renderer represents the
@@ -26,37 +24,37 @@ class LightAPI(APISchemaBase):
     with a sensor response function, e.g. CIE 1931 𝓍̅. Thus the main quantity
     in an RGB renderer is neither radiance nor luminance, but "integrated
     radiance" or "tristimulus weight".
-
+    
     The emission of a default light with `intensity` 1 and `color` [1, 1, 1] is
     an Illuminant D spectral distribution with chromaticity matching the
     rendering color space white point, normalized such that a ray normally
     incident upon the sensor with EV0 exposure settings will generate a pixel
     value of [1, 1, 1] in the rendering color space.
-
+    
     Given the above definition, that means that the luminance of said default
     light will be 1 *nit (cd∕m²)* and its emission spectral radiance
     distribution is easily computed by appropriate normalization.
-
+    
     For brevity, the term *emission* will be used in the documentation to mean
     "emitted spectral radiance" or "emitted integrated radiance/tristimulus
     weight", as appropriate.
-
+    
     The method of "uplifting" an RGB color to a spectral distribution is
     unspecified other than that it should round-trip under the rendering
     illuminant to the limits of numerical accuracy.
-
+    
     Note that some color spaces, most notably ACES, define their white points
     by chromaticity coordinates that do not exactly line up to any value of a
     standard illuminant. Because we do not define the method of uplift beyond
     the round-tripping requirement, we discourage the use of such color spaces
     as the rendering color space, and instead encourage the use of color spaces
     whose white point has a well-defined spectral representation, such as D65.
-
+    
     <b>Linking</b>
-
+    
     Lights can be linked to geometry.  Linking controls which geometry
     a light illuminates, and which geometry casts shadows from the light.
-
+    
     Linking is specified as collections (UsdCollectionAPI) which can
     be accessed via GetLightLinkCollection() and GetShadowLinkCollection().
     Note that these collections have their includeRoot set to true,
@@ -68,33 +66,35 @@ class LightAPI(APISchemaBase):
     include the desired objects.  These are complementary approaches
     that may each be preferable depending on the scenario and how
     to best express the intent of the light setup.
-
+    
     <b>Encapsulation</b>
     A prim with LightAPI applied must not be parented under a
     UsdShadeConnectable prim, with the exception of prims which themselves have
     UsdLuxLightAPI applied. Some lighting scenarios require light prims to be 
     parented under other light prims. For example, a DomeLight might contain
     PortalLight children to refine the lighting for a particular scene.
-
+    
+    
     """
+
     schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
 
     meta = {
         "customData": {
             "extraPlugInfo": {
-                "providesUsdShadeConnectableAPIBehavior": "None"
+                "providesUsdShadeConnectableAPIBehavior": None
             },
             "extraIncludes": """
-                #include "pxr/usd/usd/collectionAPI.h"
-                #include "pxr/usd/usdShade/input.h"
-                #include "pxr/usd/usdShade/output.h" """
+    #include "pxr/usd/usd/collectionAPI.h"
+    #include "pxr/usd/usdShade/input.h"
+    #include "pxr/usd/usdShade/output.h" """
         }
     }
 
-    class Materialsyncmode(token):
-        Materialglowtintslight = "materialGlowTintsLight"
+    class MaterialSyncMode(token):
+        MaterialGlowTintsLight = "materialGlowTintsLight"
         Independent = "independent"
-        Nomaterialresponse = "noMaterialResponse"
+        NoMaterialResponse = "noMaterialResponse"
 
 
     collection: Attribute[namespace] = Attribute(namespace, is_leaf=False)
@@ -118,9 +118,7 @@ class LightAPI(APISchemaBase):
     light: Attribute[namespace] = Attribute(namespace, is_leaf=False)
     light.shaderId = Attribute(token,
         uniform=True,
-        value="",
-        doc=
-        """Default ID for the light's shader. 
+        doc="""Default ID for the light's shader. 
         This defines the shader ID for this light when a render context specific
         shader ID is not available. 
 
@@ -133,7 +131,7 @@ class LightAPI(APISchemaBase):
         \\see GetShaderIdAttrForRenderContext
         \\see SdrRegistry::GetShaderNodeByIdentifier
         \\see SdrRegistry::GetShaderNodeByIdentifierAndType
-        
+
         """,
         metadata={
             "displayGroup": "Internal",
@@ -142,11 +140,9 @@ class LightAPI(APISchemaBase):
             }
         }
     )
-    light.materialSyncMode = Attribute(Materialsyncmode,
+    light.materialSyncMode = Attribute(MaterialSyncMode,
         uniform=True,
-        value="noMaterialResponse",
-        doc=
-        """
+        doc="""
         For a LightAPI applied to geometry that has a bound Material, 
         which is entirely or partly emissive, this specifies the relationship 
         of the Material response to the lighting response.
@@ -173,7 +169,7 @@ class LightAPI(APISchemaBase):
           *inputs:color*. This is the standard mode for "canonical" lights in 
           UsdLux and indicates to renderers that a Material will either never 
           be bound or can always be ignored.
-        
+
         """,
         metadata={
             "displayGroup": "Geometry",
@@ -186,8 +182,7 @@ class LightAPI(APISchemaBase):
 
     inputs: Attribute[namespace] = Attribute(namespace, is_leaf=False)
     inputs.intensity = Attribute(float,
-        doc=
-        """Scales the brightness of the light linearly.
+        doc="""Scales the brightness of the light linearly.
 
         Expresses the "base", unmultiplied luminance emitted (L) of the light,
         in nits (cd∕m²):
@@ -202,7 +197,7 @@ class LightAPI(APISchemaBase):
         pixel value of [1, 1, 1] in an RGB renderer, and thus have a luminance
         of 1 nit. A light with `intensity` 2 and `exposure` 0 would therefore
         have a luminance of 2 nits.
-        
+
         """,
         metadata={
             "displayGroup": "Basic",
@@ -213,8 +208,7 @@ class LightAPI(APISchemaBase):
         }
     )
     inputs.exposure = Attribute(float,
-        doc=
-        """Scales the brightness of the light exponentially as a power
+        doc="""Scales the brightness of the light exponentially as a power
         of 2 (similar to an F-stop control over exposure).  The result
         is multiplied against the intensity:
 
@@ -228,7 +222,7 @@ class LightAPI(APISchemaBase):
         pixel value of [1, 1, 1] in an RGB renderer, and thus have a luminance
         of 1 nit (cd∕m²). A light with `intensity` 1 and `exposure` 2 would
         therefore have a luminance of 4 nits.
-        
+
         """,
         metadata={
             "displayGroup": "Basic",
@@ -239,9 +233,7 @@ class LightAPI(APISchemaBase):
         }
     )
     inputs.diffuse = Attribute(float,
-        value=1.0,
-        doc=
-        """A multiplier for the effect of this light on the diffuse
+        doc="""A multiplier for the effect of this light on the diffuse
         response of materials.  This is a non-physical control.
         """,
         metadata={
@@ -253,9 +245,7 @@ class LightAPI(APISchemaBase):
         }
     )
     inputs.specular = Attribute(float,
-        value=1.0,
-        doc=
-        """A multiplier for the effect of this light on the specular
+        doc="""A multiplier for the effect of this light on the specular
         response of materials.  This is a non-physical control.
         """,
         metadata={
@@ -267,9 +257,7 @@ class LightAPI(APISchemaBase):
         }
     )
     inputs.normalize = Attribute(bool,
-        value=False,
-        doc=
-        """Normalizes the emission such that the power of the light
+        doc="""Normalizes the emission such that the power of the light
         remains constant while altering the size of the light, by dividing the
         luminance by the world-space surface area of the light.
 
@@ -380,7 +368,7 @@ class LightAPI(APISchemaBase):
         whatever heuristic seems to make sense. For instance,
         MyMandelbulbLight might use a sizeFactor equal to the world-space
         surface area of a sphere which "roughly" bounds it.
-        
+
         """,
         metadata={
             "displayGroup": "Advanced",
@@ -391,8 +379,7 @@ class LightAPI(APISchemaBase):
         }
     )
     inputs.color = Attribute(color3f,
-        doc=
-        """The color of emitted light, in the rendering color space.
+        doc="""The color of emitted light, in the rendering color space.
 
         This color is just multiplied with the emission:
 
@@ -406,7 +393,7 @@ class LightAPI(APISchemaBase):
         well defined in terms of a Illuminant D illuminant (ideally a D
         illuminant whose white point has a well-defined spectral representation,
         such as D65), to avoid unspecified uplift. See: \\ref usdLux_quantities
-        
+
         """,
         metadata={
             "displayGroup": "Basic",
@@ -417,7 +404,6 @@ class LightAPI(APISchemaBase):
         }
     )
     inputs.enableColorTemperature = Attribute(bool,
-        value=False,
         doc="Enables using colorTemperature.",
         metadata={
             "displayGroup": "Basic",
@@ -428,8 +414,7 @@ class LightAPI(APISchemaBase):
         }
     )
     inputs.colorTemperature = Attribute(float,
-        doc=
-        """Color temperature, in degrees Kelvin, representing the
+        doc="""Color temperature, in degrees Kelvin, representing the
         white point.  The default is a common white point, D65.  Lower
         values are warmer and higher values are cooler.  The valid range
         is from 1000 to 10000. Only takes effect when
@@ -446,7 +431,7 @@ class LightAPI(APISchemaBase):
         color after multiplying with the `color` attribute.  We recommend the
         use of a rendering color space well defined in terms of a Illuminant D
         illuminant, to avoid unspecified uplift.  See: \\ref usdLux_quantities
-        
+
         """,
         metadata={
             "displayGroup": "Basic",
@@ -456,8 +441,7 @@ class LightAPI(APISchemaBase):
             }
         }
     )
-
-    filters: Relationship = Relationship(
+    light.filters = Relationship(
         doc="Relationship to the light filters that apply to this light.",
         metadata={
             "customData": {

@@ -1,6 +1,5 @@
 from .boundable_light_base import BoundableLightBase
 from ..attribute import Attribute
-from typing import List
 from ..dtypes import namespace
 from ..dtypes import token
 from ..common import SchemaKind
@@ -10,35 +9,22 @@ class CylinderLight(BoundableLightBase):
     """Light emitted outward from a cylinder.
     The cylinder is centered at the origin and has its major axis on the X axis.
     The cylinder does not emit light from the flat end-caps.
+    
     """
+
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     meta = {
         "customData": {
             "extraPlugInfo": {
-                "implementsComputeExtent": "None"
+                "implementsComputeExtent": None
             }
         }
     }
 
-    treatAsLine: Attribute[bool] = Attribute(bool,
-        value=False,
-        doc=
-        """A hint that this light can be treated as a 'line'
-        light (effectively, a zero-radius cylinder) by renderers that
-        benefit from non-area lighting. Renderers that only support
-        area lights can disregard this.
-        """,
-        metadata={
-            "displayGroup": "Advanced",
-            "displayName": "Treat As Line"
-        }
-    )
-
     light: Attribute[namespace] = Attribute(namespace, is_leaf=False)
     light.shaderId = Attribute(token,
         uniform=True,
-        value="CylinderLight",
         metadata={
             "customData": {
                 "apiSchemaOverride": True
@@ -58,7 +44,6 @@ class CylinderLight(BoundableLightBase):
         }
     )
     inputs.radius = Attribute(float,
-        value=0.5,
         doc="Radius of the cylinder.",
         metadata={
             "displayGroup": "Geometry",
@@ -66,5 +51,17 @@ class CylinderLight(BoundableLightBase):
             "customData": {
                 "apiName": "radius"
             }
+        }
+    )
+
+    treatAsLine = Attribute(bool,
+        doc="""A hint that this light can be treated as a 'line'
+        light (effectively, a zero-radius cylinder) by renderers that
+        benefit from non-area lighting. Renderers that only support
+        area lights can disregard this.
+        """,
+        metadata={
+            "displayGroup": "Advanced",
+            "displayName": "Treat As Line"
         }
     )

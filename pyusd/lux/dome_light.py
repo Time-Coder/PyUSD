@@ -1,10 +1,8 @@
 from .nonboundable_light_base import NonboundableLightBase
 from ..attribute import Attribute
-from typing import List
-from ..dtypes import namespace
-from ..dtypes import token
-from ..dtypes import asset
 from ..relationship import Relationship
+from ..dtypes import namespace
+from ..dtypes import asset, token
 from ..common import SchemaKind
 
 
@@ -35,30 +33,22 @@ class DomeLight(NonboundableLightBase):
     The size of the data window should be 2*N by N pixels (width by height),
     where N can be any integer greater than 0.
     -------------------------------------------------------------------------
-"""
+    
+    """
+
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
-    class Textureformat(token):
+    class Format(token):
         Automatic = "automatic"
         Latlong = "latlong"
-        Mirroredball = "mirroredBall"
+        MirroredBall = "mirroredBall"
         Angular = "angular"
-        Cubemapverticalcross = "cubeMapVerticalCross"
+        CubeMapVerticalCross = "cubeMapVerticalCross"
 
-
-    guideRadius: Attribute[float] = Attribute(float,
-        value=1.0e5,
-        doc="The radius of guide geometry to use to visualize the dome light.  The default is 1 km for scenes whose metersPerUnit is the USD default of 0.01 (i.e., 1 world unit is 1 cm).",
-        metadata={
-            "displayGroup": "Guides",
-            "displayName": "Radius"
-        }
-    )
 
     light: Attribute[namespace] = Attribute(namespace, is_leaf=False)
     light.shaderId = Attribute(token,
         uniform=True,
-        value="DomeLight",
         metadata={
             "customData": {
                 "apiSchemaOverride": True
@@ -68,8 +58,7 @@ class DomeLight(NonboundableLightBase):
 
     inputs: Attribute[namespace] = Attribute(namespace, is_leaf=False)
     inputs.texture.file = Attribute(asset,
-        doc=
-        """A color texture to use on the dome, such as an HDR (high
+        doc="""A color texture to use on the dome, such as an HDR (high
         dynamic range) texture intended for IBL (image based lighting).
         """,
         metadata={
@@ -80,10 +69,8 @@ class DomeLight(NonboundableLightBase):
             }
         }
     )
-    inputs.texture.format = Attribute(Textureformat,
-        value="automatic",
-        doc=
-        """
+    inputs.texture.format = Attribute(Format,
+        doc="""
         Specifies the parameterization of the color map file.
         Valid values are:
         - automatic: Tries to determine the layout from the file itself.
@@ -97,7 +84,7 @@ class DomeLight(NonboundableLightBase):
           at the edges.
         - cubeMapVerticalCross: A cube map with faces laid out as a
           vertical cross.
-        
+
         """,
         metadata={
             "displayGroup": "Basic",
@@ -108,4 +95,12 @@ class DomeLight(NonboundableLightBase):
         }
     )
 
-    portals: Relationship = Relationship(doc="Optional portals to guide light sampling.")
+    guideRadius = Attribute(float,
+        doc="The radius of guide geometry to use to visualize the dome light.  The default is 1 km for scenes whose metersPerUnit is the USD default of 0.01 (i.e., 1 world unit is 1 cm).",
+        metadata={
+            "displayGroup": "Guides",
+            "displayName": "Radius"
+        }
+    )
+
+    portals = Relationship(doc="Optional portals to guide light sampling.")

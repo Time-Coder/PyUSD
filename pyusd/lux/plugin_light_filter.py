@@ -7,14 +7,16 @@ class PluginLightFilter(LightFilter):
     external SdrShadingNode definition, through UsdShadeNodeDefAPI, that can be 
     provided to render delegates without the need to provide a schema 
     definition for the light filter's type.
-
+    
     \\see \\ref usdLux_PluginSchemas
-"""
+    
+    """
+
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     meta = {
         "customData": {
             "extraIncludes": """
-                #include "pxr/usd/usdShade/nodeDefAPI.h" """
+    #include "pxr/usd/usdShade/nodeDefAPI.h" """
         }
     }

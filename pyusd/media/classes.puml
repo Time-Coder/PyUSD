@@ -1,0 +1,21 @@
+@startuml
+' media Classes Inheritance and Properties Diagram
+
+' Abstract base classes
+class AssetPreviewsAPI {
+}
+
+' Concrete classes
+class SpatialAudio {
+    +filePath: asset
+    +auralMode: AuralMode
+    +playbackMode: PlaybackMode
+    +startTime: timecode
+    +endTime: timecode
+    +mediaOffset: double
+    +gain: double
+}
+
+' Relationships
+
+@enduml

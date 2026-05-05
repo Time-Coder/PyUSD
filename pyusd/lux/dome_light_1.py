@@ -1,10 +1,8 @@
 from .nonboundable_light_base import NonboundableLightBase
 from ..attribute import Attribute
-from typing import List
-from ..dtypes import namespace
-from ..dtypes import token
-from ..dtypes import asset
 from ..relationship import Relationship
+from ..dtypes import namespace
+from ..dtypes import asset, token
 from ..common import SchemaKind
 
 
@@ -47,55 +45,27 @@ class DomeLight_1(NonboundableLightBase):
     latitudes -pi/2 and +pi/2 will instead correspond to the negative and
     positive Z direction, and latitude 0, longitude 0 will instead point into
     the negative Y direction in 3D space.
-"""
+    
+    """
+
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
-    class Textureformat(token):
+    class Format(token):
         Automatic = "automatic"
         Latlong = "latlong"
-        Mirroredball = "mirroredBall"
+        MirroredBall = "mirroredBall"
         Angular = "angular"
-        Cubemapverticalcross = "cubeMapVerticalCross"
+        CubeMapVerticalCross = "cubeMapVerticalCross"
 
-    class Poleaxis(token):
+    class PoleAxis(token):
         Scene = "scene"
         Y = "Y"
         Z = "Z"
 
 
-    guideRadius: Attribute[float] = Attribute(float,
-        value=1.0e5,
-        doc="The radius of guide geometry to use to visualize the dome light.  The default is 1 km for scenes whose metersPerUnit is the USD default of 0.01 (i.e., 1 world unit is 1 cm).",
-        metadata={
-            "displayGroup": "Guides",
-            "displayName": "Radius"
-        }
-    )
-
-    poleAxis: Attribute[Poleaxis] = Attribute(Poleaxis,
-        uniform=True,
-        value="scene",
-        doc=
-        """
-        A token which indicates the starting alignment of the dome
-        light's top pole. This alignment is for the dome itself and is *not*
-        inherited by the namespace children of the dome.
-        Valid values are:
-        - scene: The dome light's top pole is aligned with the stage's up axis.
-        - Y: The dome light's top pole is aligned with the +Y axis.
-        - Z: The dome light's top pole is aligned with the +Z axis.
-        
-        """,
-        metadata={
-            "displayGroup": "Advanced",
-            "displayName": "Pole Axis"
-        }
-    )
-
     light: Attribute[namespace] = Attribute(namespace, is_leaf=False)
     light.shaderId = Attribute(token,
         uniform=True,
-        value="DomeLight",
         metadata={
             "customData": {
                 "apiSchemaOverride": True
@@ -105,8 +75,7 @@ class DomeLight_1(NonboundableLightBase):
 
     inputs: Attribute[namespace] = Attribute(namespace, is_leaf=False)
     inputs.texture.file = Attribute(asset,
-        doc=
-        """A color texture to use on the dome, such as an HDR (high
+        doc="""A color texture to use on the dome, such as an HDR (high
         dynamic range) texture intended for IBL (image based lighting).
         """,
         metadata={
@@ -117,10 +86,8 @@ class DomeLight_1(NonboundableLightBase):
             }
         }
     )
-    inputs.texture.format = Attribute(Textureformat,
-        value="automatic",
-        doc=
-        """
+    inputs.texture.format = Attribute(Format,
+        doc="""
         Specifies the parameterization of the color map file.
         Valid values are:
         - automatic: Tries to determine the layout from the file itself.
@@ -134,7 +101,7 @@ class DomeLight_1(NonboundableLightBase):
           at the edges.
         - cubeMapVerticalCross: A cube map with faces laid out as a
           vertical cross.
-        
+
         """,
         metadata={
             "displayGroup": "Basic",
@@ -145,4 +112,30 @@ class DomeLight_1(NonboundableLightBase):
         }
     )
 
-    portals: Relationship = Relationship(doc="Optional portals to guide light sampling.")
+    guideRadius = Attribute(float,
+        doc="The radius of guide geometry to use to visualize the dome light.  The default is 1 km for scenes whose metersPerUnit is the USD default of 0.01 (i.e., 1 world unit is 1 cm).",
+        metadata={
+            "displayGroup": "Guides",
+            "displayName": "Radius"
+        }
+    )
+
+    poleAxis = Attribute(PoleAxis,
+        uniform=True,
+        doc="""
+        A token which indicates the starting alignment of the dome
+        light's top pole. This alignment is for the dome itself and is *not*
+        inherited by the namespace children of the dome.
+        Valid values are:
+        - scene: The dome light's top pole is aligned with the stage's up axis.
+        - Y: The dome light's top pole is aligned with the +Y axis.
+        - Z: The dome light's top pole is aligned with the +Z axis.
+
+        """,
+        metadata={
+            "displayGroup": "Advanced",
+            "displayName": "Pole Axis"
+        }
+    )
+
+    portals = Relationship(doc="Optional portals to guide light sampling.")

@@ -1,6 +1,5 @@
 from .node_graph import NodeGraph
 from ..attribute import Attribute
-from typing import List
 from ..dtypes import namespace
 from ..dtypes import token
 from ..common import SchemaKind
@@ -38,7 +37,7 @@ class Material(NodeGraph):
     a single variantSet.  
     See \\ref UsdShadeMaterial_Variations "Authoring Material Variations" 
     for more details.
-
+    
     ## Materials Encapsulate their Networks in Namespace
     
     UsdShade requires that all of the shaders that "belong" to the Material 
@@ -52,70 +51,60 @@ class Material(NodeGraph):
     Finally, Material encapsulation also allows us to 
     \\ref UsdShadeMaterial_BaseMaterial "specialize" child materials from 
     parent materials.
-
+    
     For UsdShade schema domain any connectable child prim of UsdShadeMaterial 
     must be either UsdShadeShader derived or UsdShadeNodeGraph derived but not 
     UsdShadeMaterial, that is, UsdShadeMaterial can not be nested. It also must
     not contain any imageable prims as its descendants (UsdGeomScope,
     UsdGeomCamera, UsdGeomMesh etc).
-
+    
     Other derived classes of UsdShadeNodeGraph from other schema domains may 
     define their own stricter rules.
+    
     """
+
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     meta = {
         "customData": {
             "extraPlugInfo": {
-                "providesUsdShadeConnectableAPIBehavior": "None"
+                "providesUsdShadeConnectableAPIBehavior": None
             },
             "extraIncludes": """'''
-                #include "pxr/usd/usd/variantSets.h"
-                #include "pxr/usd/usdGeom/subset.h"
-                #include "pxr/usd/usdShade/connectableAPI.h"'''""",
+    #include "pxr/usd/usd/variantSets.h"
+    #include "pxr/usd/usdGeom/subset.h"
+    #include "pxr/usd/usdShade/connectableAPI.h"'''""",
             "schemaTokens": {
-                "materialVariant": {
-                    "doc": """The variant name of material variation
-                                        described on a UsdShadeMaterial.
-                                        """
-                },
-                "surface": {
-                    "doc": """Describes the <i>surface</i> output 
-                                        terminal on a UsdShadeMaterial. It is used to define the 
-                                        terminal UsdShadeShader describing the surface of a 
-                                        UsdShadeMaterial.
-                                        """
-                },
-                "displacement": {
-                    "doc": """Describes the <i>displacement</i> output 
-                                        terminal on a UsdShadeMaterial. It is used to define the 
-                                        terminal UsdShadeShader describing the displacement of a 
-                                        UsdShadeMaterial.
-                                        """
-                },
-                "volume": {
-                    "doc": """Describes the <i>volume</i> output 
-                                        terminal on a UsdShadeMaterial. It is used to define the 
-                                        terminal UsdShadeShader describing the volume of a 
-                                        UsdShadeMaterial.
-                                        """
-                },
-                "universalRenderContext": {
-                    "value": "",
-                    "doc": """Possible value for the "renderContext" parameter
-                                        in \\ref UsdShadeMaterial_Outputs API. Represents the universal
-                                        renderContext. An output with a universal renderContext is 
-                                        applicable to all possible rendering contexts.
-                                        """
-                }
+                "materialVariant": {"doc": """The variant name of material variation
+                    described on a UsdShadeMaterial.
+                    """},
+                "surface": {"doc": """Describes the <i>surface</i> output 
+                    terminal on a UsdShadeMaterial. It is used to define the 
+                    terminal UsdShadeShader describing the surface of a 
+                    UsdShadeMaterial.
+                    """},
+                "displacement": {"doc": """Describes the <i>displacement</i> output 
+                    terminal on a UsdShadeMaterial. It is used to define the 
+                    terminal UsdShadeShader describing the displacement of a 
+                    UsdShadeMaterial.
+                    """},
+                "volume": {"doc": """Describes the <i>volume</i> output 
+                    terminal on a UsdShadeMaterial. It is used to define the 
+                    terminal UsdShadeShader describing the volume of a 
+                    UsdShadeMaterial.
+                    """},
+                "universalRenderContext": {"value": "", "doc": """Possible value for the "renderContext" parameter
+                    in \\ref UsdShadeMaterial_Outputs API. Represents the universal
+                    renderContext. An output with a universal renderContext is 
+                    applicable to all possible rendering contexts.
+                    """}
             }
         }
     }
 
     outputs: Attribute[namespace] = Attribute(namespace, is_leaf=False)
     outputs.surface = Attribute(token,
-        doc=
-        """Represents the universal "surface" output terminal of a
+        doc="""Represents the universal "surface" output terminal of a
         material.
         """,
         metadata={
@@ -126,8 +115,7 @@ class Material(NodeGraph):
         }
     )
     outputs.displacement = Attribute(token,
-        doc=
-        """Represents the universal "displacement" output terminal of a 
+        doc="""Represents the universal "displacement" output terminal of a 
         material.
         """,
         metadata={
@@ -138,8 +126,7 @@ class Material(NodeGraph):
         }
     )
     outputs.volume = Attribute(token,
-        doc=
-        """Represents the universal "volume" output terminal of a
+        doc="""Represents the universal "volume" output terminal of a
         material.
         """,
         metadata={

@@ -1,0 +1,33 @@
+@startuml
+' ui Classes Inheritance and Properties Diagram
+
+' Abstract base classes
+class NodeGraphNodeAPI {
+    +ui:nodegraph:node:pos: float2
+    +ui:nodegraph:node:stackingOrder: int
+    +ui:nodegraph:node:displayColor: color3f
+    +ui:nodegraph:node:icon: asset
+    +ui:nodegraph:node:expansionState: ExpansionState
+    +ui:nodegraph:node:size: float2
+    +ui:nodegraph:node:docURI: string
+}
+
+class SceneGraphPrimAPI {
+    +ui:displayName: token
+    +ui:displayGroup: token
+}
+
+class AccessibilityAPI {
+    +label: string
+    +description: string
+    +priority: Priority
+}
+
+' Concrete classes
+class Backdrop {
+    +ui:description: token
+}
+
+' Relationships
+
+@enduml

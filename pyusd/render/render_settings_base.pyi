@@ -1,10 +1,15 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
-from ..relationship import Relationship
 from ..gf import float4, int2
 from ..dtypes import token
+from .collection import Collection
+
 
 class RenderSettingsBase(APISchemaBase):
+    """Abstract base class that defines render settings that
+    can be specified on either a RenderSettings prim or a RenderProduct 
+    prim.
+    """
+
 
     class AspectRatioConformPolicy(token):
         ExpandAperture = "expandAperture"

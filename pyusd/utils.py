@@ -302,20 +302,3 @@ def in_annotations(name:str, cls:type)->bool:
                 return True
             
     return False
-
-@typechecked
-def generate_schema(module: ModuleType)->None:
-    from .typed import Typed
-    from .api_schema_base import APISchemaBase
-
-    result_list = []
-    for cls_name in module.__all__:
-        cls = getattr(module, cls_name)
-        if isinstance(cls, type) and issubclass(cls, (Typed, APISchemaBase)):
-            result_list.append(cls.cls_to_str())
-
-    result = "\n".join(result_list)
-    target_file_path = os.path.join(os.path.dirname(module.__file__), "schema_generated.usda")
-    with open(target_file_path, "w") as f:
-        f.write(result)
-

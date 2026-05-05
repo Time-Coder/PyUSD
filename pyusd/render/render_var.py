@@ -1,11 +1,32 @@
 from ..typed import Typed
 from ..attribute import Attribute
-from typing import List
 from ..dtypes import string, token
 from ..common import SchemaKind
 
+
 class RenderVar(Typed):
+    """A UsdRenderVar describes a custom data variable for
+    a render to produce.  The prim describes the source of the data, which
+    can be a shader output or an LPE (Light Path Expression), and also
+    allows encoding of (generally renderer-specific) parameters that
+    configure the renderer for computing the variable.
+    
+    \\note The name of the RenderVar prim drives the name of the data 
+    variable that the renderer will produce.
+    
+    \\note In the future, UsdRender may standardize RenderVar representation
+    for well-known variables under the sourceType `intrinsic`,
+    such as _r_, _g_, _b_, _a_, _z_, or _id_.
+    
+    """
+
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
+
+    meta = {
+        "customData": {
+            "className": "Var"
+        }
+    }
 
     class SourceType(token):
         Raw = "raw"
@@ -18,16 +39,14 @@ class RenderVar(Typed):
 
     sourceName = Attribute(string,
         uniform=True,
-        doc="""
-The renderer should look for an output of this name
+        doc="""The renderer should look for an output of this name
         as the computed value for the RenderVar.
-"""
+        """
     )
 
     sourceType = Attribute(SourceType,
         uniform=True,
         doc="""
-
         Indicates the type of the source.
 
         - "raw": The name should be passed directly to the
@@ -45,6 +64,6 @@ The renderer should look for an output of this name
           but represents a future namespace for UsdRender to provide
           portable baseline RenderVars, such as camera depth, that
           may have varying implementations for each renderer.
-        
-"""
+
+        """
     )

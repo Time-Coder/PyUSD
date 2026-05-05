@@ -1,0 +1,36 @@
+@startuml
+' shade Classes Inheritance and Properties Diagram
+
+' Abstract base classes
+class NodeDefAPI {
+    +info:implementationSource: ImplementationSource
+    +info:id: token
+}
+
+class ConnectableAPI {
+}
+
+class MaterialBindingAPI {
+}
+
+class CoordSysAPI {
+    +binding: Relationship
+}
+
+' Concrete classes
+class NodeGraph {
+}
+
+class Material {
+    +outputs:surface: token
+    +outputs:displacement: token
+    +outputs:volume: token
+}
+
+class Shader {
+}
+
+' Relationships
+NodeGraph <|-- Material
+
+@enduml

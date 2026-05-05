@@ -1,6 +1,5 @@
 from .boundable_light_base import BoundableLightBase
 from ..attribute import Attribute
-from typing import List
 from ..dtypes import namespace
 from ..dtypes import token
 from ..common import SchemaKind
@@ -9,13 +8,15 @@ from ..common import SchemaKind
 class PortalLight(BoundableLightBase):
     """A rectangular portal in the local XY plane that guides sampling
     of a dome light.  Transmits light in the -Z direction.
-    The rectangle is 1 unit in length."""
+    The rectangle is 1 unit in length.
+    """
+
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     meta = {
         "customData": {
             "extraPlugInfo": {
-                "implementsComputeExtent": "None"
+                "implementsComputeExtent": None
             }
         }
     }
@@ -23,7 +24,6 @@ class PortalLight(BoundableLightBase):
     light: Attribute[namespace] = Attribute(namespace, is_leaf=False)
     light.shaderId = Attribute(token,
         uniform=True,
-        value="PortalLight",
         metadata={
             "customData": {
                 "apiSchemaOverride": True

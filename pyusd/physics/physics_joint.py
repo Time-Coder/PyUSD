@@ -1,4 +1,4 @@
-from ..typed import Typed
+from ..geom.imageable import Imageable
 from ..attribute import Attribute
 from ..relationship import Relationship
 from ..dtypes import namespace
@@ -6,7 +6,7 @@ from ..gf import point3f, quatf
 from ..common import SchemaKind
 
 
-class PhysicsJoint(Typed):
+class PhysicsJoint(Imageable):
     """A joint constrains the movement of rigid bodies. Joint can be 
     created between two rigid bodies or between one rigid body and world.
     By default joint primitive defines a D6 joint where all degrees of 

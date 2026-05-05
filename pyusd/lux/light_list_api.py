@@ -1,21 +1,19 @@
-from ..typed import Typed
 from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
-from typing import List
+from ..relationship import Relationship
 from ..dtypes import namespace
 from ..dtypes import token
-from ..relationship import Relationship
 from ..common import SchemaKind
 
 
 class LightListAPI(APISchemaBase):
     """API schema to support discovery and publishing of lights in a scene.
-
+    
     \\section UsdLuxLightListAPI_Discovery Discovering Lights via Traversal
     
     To motivate this API, consider what is required to discover all
     lights in a scene.  We must load all payloads and traverse all prims:
-
+    
     \\code
     01  // Load everything on the stage so we can find all lights,
     02  // including those inside payloads
@@ -30,28 +28,28 @@ class LightListAPI(APISchemaBase):
     11      }
     12  }
     \\endcode
-
+    
     This traversal -- suitably elaborated to handle certain details --
     is the first and simplest thing UsdLuxLightListAPI provides.
     UsdLuxLightListAPI::ComputeLightList() performs this traversal and returns
     all lights in the scene:
-
+    
     \\code
     01  UsdLuxLightListAPI listAPI(stage->GetPseudoRoot());
     02  SdfPathVector lights = listAPI.ComputeLightList();
     \\endcode
-
+    
     \\section UsdLuxLightListAPI_LightList Publishing a Cached Light List
-
+    
     Consider a USD client that needs to quickly discover lights but
     wants to defer loading payloads and traversing the entire scene
     where possible, and is willing to do up-front computation and
     caching to achieve that.
-
+    
     UsdLuxLightListAPI provides a way to cache the computed light list,
     by publishing the list of lights onto prims in the model
     hierarchy.  Consider a big set that contains lights:
-
+    
     \\code
     01  def Xform "BigSetWithLights" (
     02      kind = "assembly"
@@ -66,25 +64,25 @@ class LightListAPI(APISchemaBase):
     11      token lightList:cacheBehavior = "consumeAndContinue";
     12  }
     \\endcode
-
+    
     The lightList relationship encodes a set of lights, and the
     lightList:cacheBehavior property provides fine-grained
     control over how to use that cache.  (See details below.)
-
+    
     The cache can be created by first invoking
     ComputeLightList(ComputeModeIgnoreCache) to pre-compute the list
     and then storing the result with UsdLuxLightListAPI::StoreLightList().
-
+    
     To enable efficient retrieval of the cache, it should be stored
     on a model hierarchy prim.  Furthermore, note that while you can
     use a UsdLuxLightListAPI bound to the pseudo-root prim to query the
     lights (as in the example above) because it will perform a
     traversal over descendants, you cannot store the cache back to the
     pseduo-root prim.
-
+    
     To consult the cached list, we invoke
     ComputeLightList(ComputeModeConsultModelHierarchyCache):
-
+    
     \\code
     01  // Find and load all lights, using lightList cache where available
     02  UsdLuxLightListAPI list(stage->GetPseudoRoot());
@@ -92,21 +90,21 @@ class LightListAPI(APISchemaBase):
     04      UsdLuxLightListAPI::ComputeModeConsultModelHierarchyCache);
     05  stage.LoadAndUnload(lights, SdfPathSet());
     \\endcode
-
+    
     In this mode, ComputeLightList() will traverse the model
     hierarchy, accumulating cached light lists.
-
+    
     \\section UsdLuxLightListAPI_CacheBehavior Controlling Cache Behavior
-
+    
     The lightList:cacheBehavior property gives additional fine-grained
     control over cache behavior:
-
+    
     \\li The fallback value, "ignore", indicates that the lightList should
     be disregarded.  This provides a way to invalidate cache entries.
     Note that unless "ignore" is specified, a lightList with an empty
     list of targets is considered a cache indicating that no lights
     are present.
-
+    
     \\li The value "consumeAndContinue" indicates that the cache should
     be consulted to contribute lights to the scene, and that recursion
     should continue down the model hierarchy in case additional lights
@@ -115,31 +113,32 @@ class LightListAPI(APISchemaBase):
     a large model, such as the BigSetWithLights example above, to be
     published outside the payload, while also allowing referencing and
     layering to add additional lights over that set.
-
+    
     \\li The value "consumeAndHalt" provides a way to terminate recursive
     traversal of the scene for light discovery. The cache will be
     consulted but no descendant prims will be examined.
-
+    
     \\section UsdLuxLightListAPI_Instancing Instancing
-
+    
     Where instances are present, UsdLuxLightListAPI::ComputeLightList() will
     return the instance-unique paths to any lights discovered within
     those instances.  Lights within a UsdGeomPointInstancer will
     not be returned, however, since they cannot be referred to
     solely via paths.
-"""
+    
+    """
+
     schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
 
-    class Cachebehavior(token):
-        Consumeandhalt = "consumeAndHalt"
-        Consumeandcontinue = "consumeAndContinue"
+    class CacheBehavior(token):
+        ConsumeAndHalt = "consumeAndHalt"
+        ConsumeAndContinue = "consumeAndContinue"
         Ignore = "ignore"
 
 
     lightList: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    lightList.cacheBehavior = Attribute(Cachebehavior,
-        doc=
-        """
+    lightList.cacheBehavior = Attribute(CacheBehavior,
+        doc="""
         Controls how the lightList should be interpreted.
         Valid values are:
         - consumeAndHalt: The lightList should be consulted,
@@ -152,8 +151,8 @@ class LightListAPI(APISchemaBase):
         - ignore: The lightList should be entirely ignored.  This
           provides a simple way to temporarily invalidate an existing
           cache.  This is the fallback behavior.
-        
+
         """
     )
 
-    lightList: Relationship = Relationship(doc="Relationship to lights in the scene.")
+    lightList = Relationship(doc="Relationship to lights in the scene.")

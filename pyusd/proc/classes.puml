@@ -1,0 +1,11 @@
+@startuml
+' proc Classes Inheritance and Properties Diagram
+
+' Concrete classes
+class GenerativeProcedural {
+    +proceduralSystem: token
+}
+
+' Relationships
+
+@enduml

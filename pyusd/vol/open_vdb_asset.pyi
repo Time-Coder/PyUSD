@@ -1,0 +1,60 @@
+from .field_asset import FieldAsset
+from ..dtypes import token
+from .radiance import Radiance
+
+
+class OpenVDBAsset(FieldAsset):
+    """OpenVDB field primitive. The FieldAsset filePath attribute must
+    specify a file in the OpenVDB format on disk.
+    """
+
+
+    class FieldDataType(token):
+        Half = "half"
+        Float = "float"
+        Double = "double"
+        Int = "int"
+        Uint = "uint"
+        Int64 = "int64"
+        Half2 = "half2"
+        Float2 = "float2"
+        Double2 = "double2"
+        Int2 = "int2"
+        Half3 = "half3"
+        Float3 = "float3"
+        Double3 = "double3"
+        Int3 = "int3"
+        Matrix3d = "matrix3d"
+        Matrix4d = "matrix4d"
+        Quatd = "quatd"
+        Bool = "bool"
+        Mask = "mask"
+        String = "string"
+
+    class FieldClass(token):
+        LevelSet = "levelSet"
+        FogVolume = "fogVolume"
+        Staggered = "staggered"
+        Unknown = "unknown"
+
+    @property
+    def fieldDataType(self)->Attribute[FieldDataType]:
+        """Token which is used to indicate the data type of an
+                 individual field. Authors use this to tell consumers more
+                 about the field without opening the file on disk. The list of 
+                 allowed tokens reflects the available choices for OpenVDB 
+                 volumes."""
+
+    @fieldDataType.setter
+    def fieldDataType(self, value:FieldDataType)->None: ...
+
+    @property
+    def fieldClass(self)->Attribute[FieldClass]:
+        """Optional token which can be used to indicate the class of
+                 an individual grid. This is a mapping to openvdb::GridClass
+                 where the values are GRID_LEVEL_SET, GRID_FOG_VOLUME, 
+                 GRID_STAGGERED, and GRID_UNKNOWN."""
+
+    @fieldClass.setter
+    def fieldClass(self, value:FieldClass)->None: ...
+
