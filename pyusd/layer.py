@@ -3,7 +3,8 @@ import os
 from typeguard import typechecked
 
 from .prim import Prim
-from .metadata import Metadata
+from .layer_metadata import LayerMetadata
+from .common import Axis
 
 
 class Layer:
@@ -11,8 +12,14 @@ class Layer:
     def __init__(self, file_name:str="")->None:
         self._file_name:str = file_name
         self._root_prims:Dict[str, Prim] = {}
-        self._metadata:Metadata = Metadata({
-            "subLayers": []
+        self._metadata:LayerMetadata = LayerMetadata({
+            "subLayers": [],
+            "defaultPrim": None,
+            "endTimeCode": None,
+            "metersPerUnit": 1,
+            "startTimeCode": 0,
+            "timeCodesPerSecond": 60,
+            "upAxis": Axis.Y
         })
 
     @property
@@ -20,7 +27,7 @@ class Layer:
         return self._file_name
     
     @property
-    def metadata(self)->Metadata:
+    def metadata(self)->LayerMetadata:
         return self._metadata
 
     @typechecked

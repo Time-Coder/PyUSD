@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "PyUSD"
+version = "0.1.0"
+description = "Python USD (Universal Scene Description) library"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "王炳辉", email = "binghui.wang@foxmail.com"}
+]
+dependencies = [
+    "tree-sitter",
+    "tree-sitter-usd",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "black",
+    "flake8",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pyusd*"]

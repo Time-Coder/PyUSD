@@ -3,3 +3,4 @@ workspace
 __pycache__
 _assets
 .lingma
+*.egg-info

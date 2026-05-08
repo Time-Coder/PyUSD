@@ -159,6 +159,14 @@ class Property:
         prop._parent_prim = self._parent_prim
         prop._parent_prop = self
         return prop
+    
+    def update_children(self, prop:Property)->None:
+        for child_name, child in prop._children.items():
+            if child_name not in self._children:
+                self._children[child_name] = child.clone()
+                self._children[child_name]._parent_prop = self
+            else:
+                self._children[child_name].update_children(child)
 
     def __get__(self, instance:Union[Prim, Property], owner)->Property:
         from .prim import Prim

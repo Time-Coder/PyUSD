@@ -1,10 +1,10 @@
 from __future__ import annotations
 from typing import Dict, Union, Optional, List, Any, TYPE_CHECKING
 from typeguard import typechecked
-import copy
 
 from .property import Property
 from .metadata import Metadata
+from .prim_metadata import PrimMetadata
 from .utils import infer_type, in_annotations
 from .sdf import Specifier
 from .common import SchemaKind
@@ -19,7 +19,7 @@ class Prim:
 
     _name: str
     _layer: Optional[Layer]
-    _metadata: Metadata
+    _metadata: PrimMetadata
     _children: Dict[str, Prim]
     _parent: Optional[Prim]
     _props: Dict[str, Property]
@@ -42,7 +42,7 @@ class Prim:
         self._parent:Optional[Prim] = None
         self._children:Dict[str, Prim] = {}
         self._props:Dict[str, Property] = {}
-        self._metadata:Metadata = Metadata({
+        self._metadata:PrimMetadata = PrimMetadata({
             "specifier": Specifier.Def,
             "typeName": self.__class__.__name__,
             "apiSchemas": [],
@@ -59,22 +59,20 @@ class Prim:
 
         self._metadata.update({"doc": self.__class__.__doc__})
 
-        for klass in self.__class__.__mro__:
-            if klass is object:
-                continue
-
+        for klass in reversed(self.__class__.__mro__):
             for name, value in klass.__dict__.items():
                 if not isinstance(value, Property):
                     continue
 
                 value._name = name
 
-                if name in self._props:
-                    continue
-
-                prop = value.clone()
-                prop._parent_prim = self
-                self._props[name] = prop
+                if name not in self._props:
+                    prop = value.clone()
+                    prop._parent_prim = self
+                    self._props[name] = prop
+                else:
+                    prop = self._props[name]
+                    prop.update_children(value)
 
         self._metadata.update(self.meta)
     
@@ -167,9 +165,25 @@ class Prim:
 
         return prop
 
+    @property
+    def prop_names(self)->List[str]:
+        return list(self._props.keys())
+    
+    @property
+    def props(self)->List[Property]:
+        return list(self._props.values())
+
     @typechecked
     def child(self, name:str)->Prim:
         return self._children[name]
+    
+    @property
+    def children(self)->List[Prim]:
+        return list(self._children.values())
+    
+    @property
+    def child_names(self)->List[str]:
+        return list(self._children.keys())
 
     @typechecked
     def add_child(self, prim:Prim)->None:
@@ -218,7 +232,7 @@ class Prim:
         self._layer.remove_root_prim(self)
 
     @property
-    def metadata(self)->Metadata:
+    def metadata(self)->PrimMetadata:
         return self._metadata
 
     @property
@@ -257,11 +271,11 @@ class Prim:
             old_layer.add_root_prim(self)
 
     @property
-    def parent(self)->Prim:
+    def parent(self)->Optional[Prim]:
         return self._parent
     
     @property
-    def layer(self)->Layer:
+    def layer(self)->Optional[Layer]:
         return self._layer
     
     @typechecked
