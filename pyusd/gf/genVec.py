@@ -3,13 +3,13 @@ from __future__ import annotations
 from typing import Set, List, Dict, Union, Any, Optional, Tuple, TYPE_CHECKING, TypeAlias, Callable
 from .helper import generate_getter_swizzles, generate_setter_swizzles, is_number, in_annotations
 from .genType import genType, MathForm, Number
-from abc import abstractmethod
+import ctypes
 
 if TYPE_CHECKING:
     from .genMat import genMat
 
 
-class genVec(genType):
+class genVec(genType, ctypes.Structure):
 
     _attr_index_map:Dict[str, int] = {
         'x': 0,

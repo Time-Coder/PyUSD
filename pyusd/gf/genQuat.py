@@ -7,15 +7,16 @@ from .helper import is_number
 
 from typing import Tuple, Any, Union, TypeAlias
 import math
+import ctypes
 
 
-class genQuat(genType):
+class genQuat(genType, ctypes.Structure):
 
     def __init__(self, *args):
         genType.__init__(self)
-        self._data[0] = 1
 
         if len(args) == 0:
+            ctypes.Structure.__init__(self, [1, 0, 0, 0])
             return
 
         if len(args) == 1:
@@ -23,10 +24,7 @@ class genQuat(genType):
             if not isinstance(arg, genQuat):
                 raise TypeError(f"invalid argument type(s) for {self.__class__.__name__}()")
             
-            self._data[0] = arg._data[0]
-            self._data[1] = arg._data[1]
-            self._data[2] = arg._data[2]
-            self._data[3] = arg._data[3]
+            ctypes.Structure.__init__(self, arg.w, arg.x, arg.y, arg.z)
             return
         
         if len(args) == 2:
@@ -36,17 +34,11 @@ class genQuat(genType):
             if not is_number(w) or not isinstance(v, genVec):
                 raise TypeError(f"invalid argument type(s) for {self.__class__.__name__}()")
             
-            self._data[0] = w
-            self._data[1] = v._data[0]
-            self._data[2] = v._data[1]
-            self._data[3] = v._data[2]
+            ctypes.Structure.__init__(self, w, v.x, v.y, v.z)
             return
 
         if len(args) == 4:
-            self._data[0] = args[0]
-            self._data[1] = args[1]
-            self._data[2] = args[2]
-            self._data[3] = args[3]
+            ctypes.Structure.__init__(self, *args)
             return
 
         raise ValueError(f"invalid arguments for {self.__class__.__name__}()")
@@ -57,53 +49,53 @@ class genQuat(genType):
 
     @property
     def w(self)->float:
-        return self._data[0]
+        return super().w
     
     @w.setter
     def w(self, w:float)->None:
-        self._data[0] = w
+        ctypes.Structure.__setattr__(self, 'w', w)
         self._update_data()
 
     @property
     def x(self)->float:
-        return self._data[1]
+        return super().x
     
     @x.setter
     def x(self, x:float)->None:
-        self._data[1] = x
+        ctypes.Structure.__setattr__(self, 'x', x)
         self._update_data()
 
     @property
     def y(self)->float:
-        return self._data[2]
+        return super().y
     
     @y.setter
     def y(self, y:float)->None:
-        self._data[2] = y
+        ctypes.Structure.__setattr__(self, 'y', y)
         self._update_data()
 
     @property
     def z(self)->float:
-        return self._data[3]
+        return super().z
     
     @z.setter
     def z(self, z:float)->None:
-        self._data[3] = z
+        ctypes.Structure.__setattr__(self, 'z', z)
         self._update_data()
 
     @property
     def xyz(self)->genVec3:
         vec_type = genVec.vec_type(self.dtype, 3)
-        return vec_type(self._data[1], self._data[2], self._data[3])
+        return vec_type(self.x, self.y, self.z)
     
     @xyz.setter
     def xyz(self, xyz:genVec3)->None:
         if not isinstance(xyz, genVec3):
             raise TypeError(f'must be genVec3, not {type(xyz)}')
 
-        self._data[1] = xyz._data[0]
-        self._data[2] = xyz._data[1]
-        self._data[3] = xyz._data[2]
+        ctypes.Structure.__setattr__(self, 'x', xyz.x)
+        ctypes.Structure.__setattr__(self, 'y', xyz.y)
+        ctypes.Structure.__setattr__(self, 'z', xyz.z)
         self._update_data()
 
     @staticmethod
@@ -117,12 +109,29 @@ class genQuat(genType):
     def __len__(self)->int:
         return 4
     
-    def __getitem__(self, index:int)->float:
-        return self._data[index]
+    def __getitem__(self, index:int)->float:        
+        if index == 0:
+            return self.w
+        elif index == 1:
+            return self.x
+        elif index == 2:
+            return self.y
+        elif index == 3:
+            return self.z
+        else:
+            raise IndexError("index out of range")
     
-    def __setitem__(self, index:Union[slice,int], value:Union[genQuat,float])->None:
-        self._data[index] = value
-        self._update_data()
+    def __setitem__(self, index:int, value:float)->None:
+        if index == 0:
+            self.w = value
+        elif index == 1:
+            self.x = value
+        elif index == 2:
+            self.y = value
+        elif index == 3:
+            self.z = value
+        else:
+            raise IndexError("index out of range")
 
     def __iter__(self):
         return iter(self._data)

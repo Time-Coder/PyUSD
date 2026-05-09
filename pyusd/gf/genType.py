@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from typing import List, Dict, Tuple, Union, Any, Optional, Callable, TypeAlias
 import ctypes
 from .helper import from_import, is_number
@@ -16,7 +15,7 @@ class MathForm(Enum):
     Quat = 3
 
 
-class genType(ABC):
+class genType:
 
     __type_order:List[type] = [
         bool, ctypes.c_bool,
@@ -60,14 +59,7 @@ class genType(ABC):
     }
 
     def __init__(self):
-        self._data = (self.dtype * math.prod(self.shape))()
         self._on_changed:Optional[Callable[[], None]] = None
-
-    def __copy__(self)->genType:
-        return self.__class__(*self._data)
-    
-    def __deepcopy__(self, memo)->genType:
-        return self.__class__(*self._data)
 
     def __str__(self)->str:
         return f"{self.__class__.__name__}({', '.join([str(value) for value in self])})"
@@ -87,17 +79,14 @@ class genType(ABC):
         self._on_changed = on_changed
 
     @property
-    @abstractmethod
     def math_form(self)->MathForm:
         pass
 
     @property
-    @abstractmethod
     def dtype(self)->type:
         pass
     
     @property
-    @abstractmethod
     def shape(self)->Tuple[int]:
         pass
 
