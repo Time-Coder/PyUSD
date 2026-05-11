@@ -1,6 +1,5 @@
 from typing import Any
 from enum import ReprEnum
-import copy
 
 
 class double(float):

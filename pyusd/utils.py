@@ -1,7 +1,4 @@
-import os
-from typing import List, Any, Set, get_origin, get_args, Optional
-from types import ModuleType
-from typeguard import typechecked
+from typing import List, Any, get_origin, get_args
 
 import numpy as np
 
@@ -77,9 +74,9 @@ allowed_types = usd_dtypes + (tuple,)
 
 TYPE_PRIORITY = { int: 1, float: 2 }
 NUMPY_TO_PY_TYPE_MAP = {
-    np.int8: int, np.int16: int, np.int32: int, np.int64: int,
-    np.uint8: int, np.uint16: int, np.uint32: int, np.uint64: int,
-    np.float16: float, np.float32: float, np.float64: float,
+    np.int8: int, np.int16: int, np.int32: int, np.int64: int64,
+    np.uint8: uchar, np.uint16: int, np.uint32: int, np.uint64: uint64,
+    np.float16: half, np.float32: float, np.float64: double,
     np.bool_: bool
 }
 
