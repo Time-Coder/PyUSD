@@ -5,6 +5,8 @@ from .genVec2 import Vec2Type
 
 class genMat2(genMat):
 
+    _length_ = 4
+
     @property
     def shape(self)->Tuple[int]:
         return (2, 2)

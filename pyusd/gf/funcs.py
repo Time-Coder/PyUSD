@@ -225,22 +225,22 @@ def determinant(m:genMat)->float:
 
     if m.rows == 4:
         det = 0.0
-        for col in range(4):
+        for row in range(4):
             submatrix_data = []
             for i in range(4):
-                if i == col:
+                if i == row:
                     continue
                 for j in range(1, 4):
                     submatrix_data.append(m[i, j])
             
             import ctypes
-            submatrix_type = genMat.mat_type(ctypes.c_double, 3, 3)
+            submatrix_type = genMat.mat_type(ctypes.c_double, (3, 3))
             submatrix = submatrix_type()
             for i in range(3):
                 for j in range(3):
                     submatrix[i, j] = submatrix_data[i * 3 + j]
             
-            cofactor = ((-1) ** col) * m[col, 0] * determinant(submatrix)
+            cofactor = ((-1) ** row) * m[row, 0] * determinant(submatrix)
             det += cofactor
             
         return det
@@ -315,19 +315,19 @@ def inverse(m:Union[genMat, genQuat])->Union[genMat, genQuat]:
         for i in range(4):
             for j in range(4):
                 submatrix_data = []
-                for col in range(4):
-                    if col == i:
+                for row in range(4):
+                    if row == i:
                         continue
-                    for row in range(4):
-                        if row == j:
+                    for col in range(4):
+                        if col == j:
                             continue
-                        submatrix_data.append(m[col, row])
+                        submatrix_data.append(m[row, col])
                 
-                submatrix_type = genMat.mat_type(ctypes.c_double, 3, 3)
+                submatrix_type = genMat.mat_type(ctypes.c_double, (3, 3))
                 submatrix = submatrix_type()
-                for col in range(3):
-                    for row in range(3):
-                        submatrix[col, row] = submatrix_data[col * 3 + row]
+                for row in range(3):
+                    for col in range(3):
+                        submatrix[row, col] = submatrix_data[row * 3 + col]
                 
                 cofactor = ((-1) ** (i + j)) * determinant(submatrix)
                 result[j, i] = cofactor / det

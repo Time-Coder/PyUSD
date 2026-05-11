@@ -4,8 +4,10 @@ from .double4 import double4
 import ctypes
 
 
-class matrix4d(genMat4, ctypes.c_double*16):
+class matrix4d(genMat4):
     
+    _type_ = ctypes.c_double
+
     @staticmethod
     def subvec_type()->type:
         return double4

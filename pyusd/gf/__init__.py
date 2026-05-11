@@ -44,6 +44,7 @@ from .funcs import (
     matrixCompMult, outerProduct, lessThan, lessThanEqual,
     greaterThan, greaterThanEqual, equal, notEqual, any, all, not_, sizeof
 )
+from .helper import patch_nparray
 
 __all__ = [
     "MathForm",
@@ -92,3 +93,5 @@ __all__ = [
     "matrixCompMult", "outerProduct", "lessThan", "lessThanEqual",
     "greaterThan", "greaterThanEqual", "equal", "notEqual", "any", "all", "not_", "sizeof"
 ]
+
+patch_nparray()

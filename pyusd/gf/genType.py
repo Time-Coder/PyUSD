@@ -90,14 +90,6 @@ class genType:
     def shape(self)->Tuple[int]:
         pass
 
-    def __array__(self, dtype=None):
-        np = importlib.import_module("numpy")
-        
-        if dtype is None:
-            return np.frombuffer(self, dtype=self.dtype)
-        else:
-            return np.frombuffer(self, dtype=self.dtype).astype(dtype)
-
     @staticmethod
     def gen_type(math_form:MathForm, dtype:type, shape:Tuple[int])->type:
         key:Tuple[MathForm, type, int] = (math_form, dtype, shape)

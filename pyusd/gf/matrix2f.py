@@ -4,7 +4,9 @@ from .float2 import float2
 import ctypes
 
 
-class matrix2f(genMat2, ctypes.c_float*4):
+class matrix2f(genMat2):
+
+    _type_ = ctypes.c_float
 
     @staticmethod
     def subvec_type()->type:

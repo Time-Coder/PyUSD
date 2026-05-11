@@ -22,7 +22,10 @@ class genMatIterator:
         return result
 
 
-class genMat(genType):
+class genMat(genType, ctypes.Array):
+
+    _type_ = ctypes.c_double
+    _length_ = 0
 
     def __init__(self, *args):
         genType.__init__(self)
@@ -52,7 +55,7 @@ class genMat(genType):
         
         for i_arg, arg in enumerate(args):
             if is_number(arg):
-                self[i] = arg
+                ctypes.Array.__setitem__(self, i, arg)
 
                 i += 1
                 if i == n_data:
@@ -64,7 +67,7 @@ class genMat(genType):
             elif isinstance(arg, genVec):
                 sub_n_arg: int = len(arg)
                 for sub_i_arg, value in enumerate(arg):
-                    self[i] = value
+                    ctypes.Array.__setitem__(self, i, value)
 
                     i += 1
                     if i == n_data:
@@ -150,7 +153,7 @@ class genMat(genType):
                         for k in range(self.cols):
                             value += self[i, k] * other[k, j]
 
-                        result[j, i] = value
+                        result[i, j] = value
             elif isinstance(result, genVec):
                 for i in range(len(result)):
                     value = 0

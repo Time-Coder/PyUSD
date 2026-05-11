@@ -5,6 +5,10 @@ import importlib
 import os
 import ctypes
 from decimal import Decimal
+from ctypes import Structure
+import copy
+
+import numpy as np
 
 
 _module_map:Dict[str, ModuleType] = {}
@@ -126,3 +130,51 @@ if __name__ == "__main__":
             swizzle_defines:str = generate_swizzle_defines(*vec_inf)
             pyi_in_content = pyi_in_contents[in_file_name].format(basename=basename)
             out_file.write(pyi_in_content + swizzle_defines)
+
+def patch_nparray():
+    if np.array.__module__ != "numpy":
+        return
+
+    np_array = np.array
+
+    def __has_structure(arr)->bool:
+        if isinstance(arr, Structure):
+            return True
+
+        try:
+            for ele in arr:
+                if __has_structure(ele):
+                    return True
+        except:
+            pass
+
+        return False
+
+    def __change_element(arr):
+        try:
+            for i, ele in enumerate(arr):
+                if isinstance(ele, Structure):
+                    arr[i] = np_array(ele)
+                    continue
+
+                if isinstance(ele, tuple):
+                    arr[i] = list(ele)
+
+                __change_element(ele)
+        except:
+            pass
+            
+    def array(*args, **kwargs):
+        obj = args[0]
+
+        if isinstance(obj, Structure) or not __has_structure(obj):
+            return np_array(*args, **kwargs)
+        
+        obj = copy.deepcopy(obj)
+        if isinstance(obj, tuple):
+            obj = list(obj)
+        
+        __change_element(obj)
+        return np_array(obj, *args[1:], **kwargs)
+
+    np.array = array
