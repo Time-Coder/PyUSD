@@ -132,12 +132,6 @@ class genQuat(genType, ctypes.Structure):
             self.z = value
         else:
             raise IndexError("index out of range")
-
-    def __iter__(self):
-        return iter(self._data)
-    
-    def __contains__(self, value:Any)->bool:
-        return (value in self._data)
     
     def _op(self, operator:str, other:Union[float, bool, int, genQuat, genVec])->Union[genQuat, genVec]:
         if operator == "**" or (operator in ["/", "//", "%"] and isinstance(other, genType)):
@@ -192,5 +186,17 @@ class genQuat(genType, ctypes.Structure):
             raise TypeError(f"unsupported operand type(s) for {operator}=: '{self.__class__.__name__}' and '{other.__class__.__name__}'")
 
         return genType._iop(self, operator, other)
+
+    def __iter__(self):
+        for field_name, _ in self._fields_:
+            yield getattr(self, field_name)
+    
+    def __contains__(self, value:Any):
+        for field_name, _ in self._fields_:
+            field_value = getattr(self, field_name)
+            if field_value == value:
+                return True
+            
+        return False
 
 QuatType: TypeAlias = Union[genQuat, Tuple[Number, Number, Number, Number]]

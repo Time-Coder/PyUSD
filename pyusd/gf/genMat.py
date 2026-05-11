@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ctypes
 from typing import Tuple, Union, Any, TypeAlias
 from .genVec import genVec, VecType
 from .genType import genType, MathForm
@@ -13,12 +14,13 @@ class genMatIterator:
         self.__current_index:int = 0
 
     def __next__(self)->genVec:
-        if self.__current_index >= self.__mat.cols:
+        if self.__current_index >= self.__mat.rows:
             raise StopIteration()
 
         result = self.__mat[self.__current_index]
         self.__current_index += 1
         return result
+
 
 class genMat(genType):
 
@@ -29,7 +31,7 @@ class genMat(genType):
             self[i, i] = 1
 
         i: int = 0
-        n_data: int = len(self._data)
+        n_data: int = len(self)
         n_args: int = len(args)
 
         if n_args == 0:
@@ -45,12 +47,12 @@ class genMat(genType):
             if isinstance(arg, genMat):
                 for i in range(self.rows):
                     for j in range(self.cols):
-                        self[j, i] = arg[j, i]
+                        self[i, j] = arg[i, j]
                 return
         
         for i_arg, arg in enumerate(args):
             if is_number(arg):
-                self._data[i] = arg
+                self[i] = arg
 
                 i += 1
                 if i == n_data:
@@ -60,9 +62,9 @@ class genMat(genType):
                     return
 
             elif isinstance(arg, genVec):
-                sub_n_arg: int = len(arg._data)
-                for sub_i_arg, value in enumerate(arg._data):
-                    self._data[i] = value
+                sub_n_arg: int = len(arg)
+                for sub_i_arg, value in enumerate(arg):
+                    self[i] = value
 
                     i += 1
                     if i == n_data:
@@ -88,6 +90,10 @@ class genMat(genType):
     def cols(self)->int:
         return self.shape[0]
     
+    @property
+    def dtype(self)->type:
+        return self._type_
+    
     @staticmethod
     def mat_type(dtype:type, shape:Tuple[int]):
         return genType.gen_type(MathForm.Mat, dtype, shape)
@@ -95,26 +101,29 @@ class genMat(genType):
     def __getitem__(self, index:Union[int,Tuple[int]])->Union[int,bool,float,genVec]:
         if isinstance(index, int):
             result_type = genVec.vec_type(self.dtype, self.rows)
-            result:genVec = result_type(*self._data[self.rows * index : self.rows * (index + 1)])
-            result._mat_start_index = self.rows * index
+            result:genVec = result_type(*(ctypes.Array.__getitem__(self, index*self.cols + j) for j in range(self.rows)))
+            result._mat_start_index = self.cols * index
             result._related_mat = self
             return result
         elif isinstance(index, tuple):
-            return self._data[index[0]*self.rows + index[1]]
+            return ctypes.Array.__getitem__(self, index[0]*self.cols + index[1])
     
     def __setitem__(self, index:Union[int,Tuple[int]], value:Union[float,int,bool,genVec])->None:
         if isinstance(index, int):
-            for i in range(self.rows):
-                self._data[self.rows*index + i] = value[i]
+            for j in range(self.cols):
+                ctypes.Array.__setitem__(self, self.cols*index + j, value[j])
         elif isinstance(index, tuple):
-            self._data[index[0]*self.rows + index[1]] = value
+            ctypes.Array.__setitem__(self, index[0]*self.cols + index[1], value)
 
     def __iter__(self)->genMatIterator:
         return genMatIterator(self)
     
     def __contains__(self, value:Any)->bool:
         if is_number(value):
-            return value in self._data
+            for i in range(len(self)):
+                if self[i] == value:
+                    return True
+            return False
         elif isinstance(value, genVec) and len(value) == self.rows:
             for i in range(self.cols):
                 if self[i] == value:
@@ -139,16 +148,16 @@ class genMat(genType):
                     for j in range(result.cols):
                         value = 0
                         for k in range(self.cols):
-                            value += self[k, i] * other[j, k]
+                            value += self[i, k] * other[k, j]
 
                         result[j, i] = value
             elif isinstance(result, genVec):
                 for i in range(len(result)):
                     value = 0
                     for k in range(self.cols):
-                        value += self[k, i] * other[k]
+                        value += self[i, k] * other[k]
 
-                    result._data[i] = value
+                    result[i] = value
 
             return result
 
@@ -166,7 +175,7 @@ class genMat(genType):
                 raise TypeError(f"unsupported operand type(s) for {operator}=: '{self.__class__.__name__}' and '{other.__class__.__name__}'")
 
             result:genMat = self * other
-            self._data[:] = result._data[:]
+            self[:] = result[:]
             self._update_data()
             return self
             

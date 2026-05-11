@@ -14,8 +14,8 @@ def _single_op(x:genType, op:Callable[[Any,Any], Any], op_name:str)->genType:
         return op(x)
     elif isinstance(x, genType):
         result:genType = x.__class__()
-        for i in range(len(x._data)):
-            result._data[i] = op(x._data[i])
+        for i in range(len(x)):
+            result[i] = op(x[i])
         return result
     else:
         raise TypeError(f"{op_name} not supported for type {x.__class__.__name__}")
@@ -53,21 +53,21 @@ def _bin_op(x:genType, y:genType, op:Callable[[Any,Any], Any], op_name:str)->gen
         return op(x, y)
     elif isinstance(x, genType) and is_number(y):
         result:genType = result_type()
-        for i in range(len(x._data)):
-            result._data[i] = op(x._data[i], y)
+        for i in range(len(x)):
+            result[i] = op(x[i], y)
         return result
     elif is_number(x) and isinstance(y, genType):
         result:genType = result_type()
-        for i in range(len(y._data)):
-            result._data[i] = op(x, y._data[i])
+        for i in range(len(y)):
+            result[i] = op(x, y[i])
         return result
     elif isinstance(x, genType) and isinstance(y, genType):
         if x.math_form != y.math_form or x.shape != y.shape:
             raise TypeError(f"not defined {op_name} between '{x.__class__.__name__}' and '{y.__class__.__name__}'")
 
         result:genType = result_type()
-        for i in range(len(x._data)):
-            result._data[i] = op(x._data[i], y._data[i])
+        for i in range(len(x)):
+            result[i] = op(x[i], y[i])
 
         return result
     else:
@@ -170,8 +170,8 @@ def length(x: genType)->float:
         return abs(x)
     
     sum: float = 0
-    for i in range(len(x._data)):
-        sum += x._data[i] ** 2
+    for i in range(len(x)):
+        sum += x[i] ** 2
 
     return math.sqrt(sum)
 
@@ -186,8 +186,8 @@ def dot(x: genType, y: genType)->float:
         raise TypeError(f"not defined dot between '{x.__class__.__name__}' and '{y.__class__.__name__}'")
 
     sum: float = 0
-    for i in range(len(x._data)):
-        sum += x._data[i] * y._data[i]
+    for i in range(len(x)):
+        sum += x[i] * y[i]
 
     return sum
 
@@ -253,7 +253,7 @@ def transpose(m:genMat)->genMat:
     result:genMat = result_type()
     for i in range(result.rows):
         for j in range(result.cols):
-            result[j, i] = m[i, j]
+            result[i, j] = m[j, i]
 
     return result
 
@@ -343,7 +343,7 @@ def matrixCompMult(x:genMat, y:genMat)->genMat:
 
     for i in range(x.rows):
         for j in range(y.cols):
-            result[j, i] = x[j, i] * y[j, i]
+            result[i, j] = x[i, j] * y[i, j]
 
     return result
 
@@ -357,7 +357,7 @@ def outerProduct(x:genVec, y:genVec)->genMat:
 
     for i in range(len(x)):
         for j in range(len(y)):
-            result[j, i] = x._data[i] * y._data[j]
+            result[i, j] = x[i] * y[j]
 
     return result
 
@@ -383,8 +383,8 @@ def any(x:genType)->bool:
     if not isinstance(x, genType):
         return bool(x)
     
-    for i in range(len(x._data)):
-        if x._data[i]:
+    for i in range(len(x)):
+        if x[i]:
             return True
 
     return False
@@ -393,8 +393,8 @@ def all(x:genType)->bool:
     if not isinstance(x, genType):
         return bool(x)
     
-    for i in range(len(x._data)):
-        if not x._data[i]:
+    for i in range(len(x)):
+        if not x[i]:
             return False
 
     return True
@@ -404,13 +404,10 @@ def not_(x:genType):
         return (not x)
 
     result:genType = genType.gen_type(x.math_form, ctypes.c_bool, x.shape)
-    for i in range(len(x._data)):
-        result._data[i] = not x._data[i]
+    for i in range(len(x)):
+        result[i] = not x[i]
 
     return result
 
 def sizeof(x:genType)->int:
-    return ctypes.sizeof(x._data)
-
-def value_ptr(x:genType):
-    return x._data
+    return ctypes.sizeof(x)

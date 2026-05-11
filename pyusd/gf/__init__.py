@@ -42,7 +42,7 @@ from .funcs import (
     length, normalize, distance, dot, cross, faceforward, reflect, refract,
     transpose, determinant, inverse, trace, conjugate,
     matrixCompMult, outerProduct, lessThan, lessThanEqual,
-    greaterThan, greaterThanEqual, equal, notEqual, any, all, not_, sizeof, value_ptr
+    greaterThan, greaterThanEqual, equal, notEqual, any, all, not_, sizeof
 )
 
 __all__ = [
@@ -90,5 +90,5 @@ __all__ = [
     "length", "normalize", "distance", "dot", "cross", "faceforward", "reflect", "refract",
     "transpose", "determinant", "inverse", "trace", "conjugate",
     "matrixCompMult", "outerProduct", "lessThan", "lessThanEqual",
-    "greaterThan", "greaterThanEqual", "equal", "notEqual", "any", "all", "not_", "sizeof", "value_ptr"
+    "greaterThan", "greaterThanEqual", "equal", "notEqual", "any", "all", "not_", "sizeof"
 ]

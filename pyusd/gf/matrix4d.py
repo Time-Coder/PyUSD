@@ -4,11 +4,7 @@ from .double4 import double4
 import ctypes
 
 
-class matrix4d(genMat4):
-
-    @property
-    def dtype(self)->type:
-        return ctypes.c_double
+class matrix4d(genMat4, ctypes.c_double*16):
     
     @staticmethod
     def subvec_type()->type:

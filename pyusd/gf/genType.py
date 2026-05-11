@@ -94,9 +94,9 @@ class genType:
         np = importlib.import_module("numpy")
         
         if dtype is None:
-            return np.frombuffer(self._data, dtype=self.dtype)
+            return np.frombuffer(self, dtype=self.dtype)
         else:
-            return np.frombuffer(self._data, dtype=self.dtype).astype(dtype)
+            return np.frombuffer(self, dtype=self.dtype).astype(dtype)
 
     @staticmethod
     def gen_type(math_form:MathForm, dtype:type, shape:Tuple[int])->type:
@@ -149,8 +149,8 @@ class genType:
         second_has_negative:bool = False
         if operator == "**":
             if isinstance(value2, genType):
-                for i in range(len(value2._data)):
-                    if value2._data[i] < 0:
+                for i in range(len(value2)):
+                    if value2[i] < 0:
                         second_has_negative = True
                         break
             else:
@@ -175,8 +175,8 @@ class genType:
             result_type = self.gen_type(self.math_form, ctypes.c_int, self.shape)
 
         result:genType = result_type()
-        for i in range(len(result._data)):
-            result._data[i] = ((not self._data[i]) if self.dtype == ctypes.c_bool else -self._data[i])
+        for i in range(len(result)):
+            result[i] = ((not self[i]) if self.dtype == ctypes.c_bool else -self[i])
 
         return result
 
@@ -192,8 +192,8 @@ class genType:
         result:genType = result_type()
         other_is_homo:bool = self._is_homo(other)
         operator_func:Callable[[Any,Any], Any] = self._operator_funcs[operator]
-        for i in range(len(result._data)):
-            result._data[i] = operator_func(self._data[i], other._data[i] if other_is_homo else other)
+        for i in range(len(result)):
+            result[i] = operator_func(self[i], other[i] if other_is_homo else other)
 
         return result
     
@@ -201,8 +201,8 @@ class genType:
         result_type = self._bin_op_type(operator, other, self)
         result:genType = result_type()
         operator_func:Callable[[Any,Any], Any] = self._operator_funcs[operator]
-        for i in range(len(result._data)):
-            result._data[i] = operator_func(other, self._data[i])
+        for i in range(len(result)):
+            result[i] = operator_func(other, self[i])
 
         return result
     
@@ -212,8 +212,8 @@ class genType:
             raise TypeError(f"unsupported operand type(s) for {operator}=: '{self.__class__.__name__}' and '{other.__class__.__name__}'")
         
         operator_func:Callable[[Any,Any], Any] = self._operator_funcs[operator]
-        for i in range(len(self._data)):
-            self._data[i] = operator_func(self._data[i], other._data[i] if other_is_homo else other)
+        for i in range(len(self)):
+            self[i] = operator_func(self[i], other[i] if other_is_homo else other)
 
         self._update_data()
 
@@ -228,8 +228,8 @@ class genType:
             raise TypeError(f"unsupported operand type(s) for {operator}: '{self.__class__.__name__}' and '{other.__class__.__name__}'")
         
         operator_func:Callable[[Any,Any], Any] = self._operator_funcs[operator]
-        for i in range(len(self._data)):
-            result._data[i] = operator_func(self._data[i], other._data[i] if other_is_homo else other)
+        for i in range(len(self)):
+            result[i] = operator_func(self[i], other[i] if other_is_homo else other)
         
         return result
     
@@ -238,8 +238,8 @@ class genType:
         result:genType = btype()
 
         operator_func:Callable[[Any,Any], Any] = self._operator_funcs[operator]
-        for i in range(len(result._data)):
-            result._data[i] = operator_func(other, self._data[i])
+        for i in range(len(result)):
+            result[i] = operator_func(other, self[i])
         
         return result
     
@@ -310,8 +310,8 @@ class genType:
         if not isinstance(other, self.__class__):
             return False
         
-        for i in range(len(self._data)):
-            if self._data[i] != other._data[i]:
+        for i in range(len(self)):
+            if self[i] != other[i]:
                 return False
             
         return True
@@ -323,8 +323,8 @@ class genType:
         if not isinstance(other, self.__class__):
             return True
         
-        for i in range(len(self._data)):
-            if self._data[i] != other._data[i]:
+        for i in range(len(self)):
+            if self[i] != other[i]:
                 return True
             
         return False

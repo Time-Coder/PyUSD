@@ -31,7 +31,6 @@ class genVec(genType, ctypes.Structure):
     __all_total_swizzles:Set[str] = set()
     __namespaces:List[str] = ['xyzw', 'rgba', 'stpq']
 
-    _data: Any
     _related_mat: Optional[genMat]
     _mat_start_index: int
     _on_changed: Optional[Callable[[], None]]
@@ -42,7 +41,7 @@ class genVec(genType, ctypes.Structure):
         self._mat_start_index:int = -1
 
         i: int = 0
-        n_data: int = len(self._data)
+        n_data: int = len(self)
         n_args: int = len(args)
 
         if n_args == 0:
@@ -52,12 +51,12 @@ class genVec(genType, ctypes.Structure):
             arg = args[0]
             if is_number(arg):
                 for i in range(n_data):
-                    self._data[i] = arg
+                    self[i] = arg
                 return
         
         for i_arg, arg in enumerate(args):
             if is_number(arg):
-                self._data[i] = arg
+                self[i] = arg
 
                 i += 1
                 if i == n_data:
@@ -67,9 +66,9 @@ class genVec(genType, ctypes.Structure):
                     return
 
             elif isinstance(arg, genVec):
-                sub_n_arg: int = len(arg._data)
-                for sub_i_arg, value in enumerate(arg._data):
-                    self._data[i] = value
+                sub_n_arg: int = len(arg)
+                for sub_i_arg, value in enumerate(arg):
+                    self[i] = value
 
                     i += 1
                     if i == n_data:
@@ -87,9 +86,8 @@ class genVec(genType, ctypes.Structure):
     def math_form(self)->MathForm:
         return MathForm.Vec
 
-    @abstractmethod
     def __len__(self)->int:
-        pass
+        return len(self._fields_)
 
     @property
     def shape(self)->Tuple[int]:
@@ -107,7 +105,7 @@ class genVec(genType, ctypes.Structure):
                 indices = range(len(self))
 
             for index in indices:
-                self._related_mat._data[self._mat_start_index + index] = self._data[index]
+                self._related_mat[self._mat_start_index + index] = self[index]
 
             self._related_mat._call_on_changed()
 
@@ -116,7 +114,7 @@ class genVec(genType, ctypes.Structure):
             raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
         
         vec_type = self.vec_type(self.dtype, len(name))
-        return vec_type(*(self._data[self._attr_index_map[ch]] for ch in name))
+        return vec_type(*(getattr(self, ch) for ch in name))
 
     def __setattr__(self, name:str, value:Union[float,bool,int,genVec]):
         if hasattr(self.__class__, name) or in_annotations(name, self.__class__):
@@ -140,38 +138,17 @@ class genVec(genType, ctypes.Structure):
         
         for i, ch in enumerate(name):
             index:int = self._attr_index_map[ch]
-            self._data[index] = value[i] if value_is_vec else value
+            ctypes.Structure.__setattr__(self, ch, value[i] if value_is_vec else value)
             update_indices.append(index)
         self._update_data(update_indices)
     
-    def __getitem__(self, index:Union[int,slice])->Union[float,int,bool,genVec]:
-        result = self._data[index]
-        if isinstance(result, list):
-            if len(result) == 1:
-                return result[0]
-            else:
-                result_type = self.vec_type(self.dtype, len(result))
-                return result_type(*result)
-        else:
-            return result
+    def __getitem__(self, index:Union[int, slice])->Union[float,int,bool,genVec]:
+        attr_name:str = 'xyzw'[index]
+        return getattr(self, attr_name)
     
     def __setitem__(self, index:Union[int,slice], value:Union[float,int,bool,genVec])->None:
-        if isinstance(index, int):
-            self._data[index] = value
-            self._update_data([index])
-            return
-
-        start, stop, step = index.indices(len(self))
-        value_is_vec:bool = (not is_number(value))
-        update_indices:List[int] = []
-        for i in range(start, stop, step):
-            self._data[i] = value[i] if value_is_vec else value
-            update_indices.append(i)
-
-        self._update_data(update_indices)
-        
-    def value_ptr(self):
-        return self._data
+        attr_name:str = 'xyzw'[index]
+        setattr(self, attr_name, value)
         
     def __getter_swizzles(self):
         if not self.__class__._all_getter_swizzles:
@@ -203,9 +180,15 @@ class genVec(genType, ctypes.Structure):
         return genVec.__all_total_swizzles
 
     def __iter__(self):
-        return iter(self._data)
+        for field_name, _ in self._fields_:
+            yield getattr(self, field_name)
     
-    def __contains__(self, value:Any)->bool:
-        return (value in self._data)
+    def __contains__(self, value:Any):
+        for field_name, _ in self._fields_:
+            field_value = getattr(self, field_name)
+            if field_value == value:
+                return True
+            
+        return False
 
 VecType: TypeAlias = Union[genVec, Tuple[Number, ...]]
