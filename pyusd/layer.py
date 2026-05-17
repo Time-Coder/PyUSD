@@ -1,7 +1,9 @@
-from typing import Dict, Union
+from __future__ import annotations
+from typing import Dict, Union, Optional, List
 import os
 from typeguard import typechecked
 
+from .sdf import Specifier
 from .prim import Prim
 from .layer_metadata import LayerMetadata
 from .common import Axis
@@ -12,7 +14,9 @@ class Layer:
     def __init__(self, file_name:str="")->None:
         self._file_name:str = file_name
         self._root_prims:Dict[str, Prim] = {}
-        self._metadata:LayerMetadata = LayerMetadata({
+        self._default_prim:Optional[Prim] = None
+        self._sub_layers:List[Layer] = []
+        self._metadata:LayerMetadata = LayerMetadata(self, {
             "subLayers": [],
             "defaultPrim": None,
             "endTimeCode": None,
@@ -29,6 +33,46 @@ class Layer:
     @property
     def metadata(self)->LayerMetadata:
         return self._metadata
+    
+    @property
+    def default_prim(self)->Prim:
+        return self._default_prim
+    
+    @default_prim.setter
+    @typechecked
+    def default_prim(self, prim:Prim)->None:
+        if prim.layer is None or os.path.abspath(self._file_name) != os.path.abspath(prim.layer.file_name):
+            raise ValueError("Prim is not in current layer")
+        
+        if prim.depth != 0:
+            raise ValueError("Default prim must be a root prim")
+        
+        self._default_prim = prim
+        self.metadata.defaultPrim = prim.name
+
+    @typechecked
+    def id(self, rel_layer:Optional[Union[str, Layer]]=None)->str:
+        result:str = "@" + os.path.abspath(self._file_name).replace("\\", "/") + "@"
+        if isinstance(rel_layer, Layer):
+            rel_layer = rel_layer.file_name
+
+        if rel_layer and self is not None:
+            abs_path = os.path.abspath(rel_layer).replace("\\", "/")
+            self_layer_abs_path = os.path.abspath(self.file_name).replace("\\", "/")
+            if abs_path != self_layer_abs_path:
+                abs_folder = os.path.dirname(abs_path)
+                rel_path = os.path.relpath(self_layer_abs_path, abs_folder).replace("\\", "/")
+                result = f"@./{rel_path}@"
+                
+        return result
+
+    @typechecked
+    def include(self, layer:Layer)->None:
+        if layer in self._sub_layers:
+            return
+        
+        self.metadata.subLayers.append(layer.id(self))
+        self._sub_layers.insert(0, layer)
 
     @typechecked
     def __getitem__(self, path:str)->Prim:
@@ -116,7 +160,19 @@ class Layer:
     
     @typechecked
     def def_(self, prim_type:type, path:str)->Prim:
-        prim = prim_type()
+        prim = prim_type(specifier = Specifier.Def)
+        self[path] = prim
+        return prim
+    
+    @typechecked
+    def class_(self, prim_type:type, path:str)->Prim:
+        prim = prim_type(specifier = Specifier.Class)
+        self[path] = prim
+        return prim
+    
+    @typechecked
+    def over_(self, path:str)->Prim:
+        prim = Prim(specifier = Specifier.Over)
         self[path] = prim
         return prim
     

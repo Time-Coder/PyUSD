@@ -49,7 +49,7 @@ class Property:
         self._parent_prim:Optional[Prim] = None
         self._parent_prop:Optional[Property] = None
         self._name:str = name
-        self._metadata:Metadata = Metadata(metadata)
+        self._metadata:Metadata = Metadata(self, metadata)
         self._children:Dict[str, Property] = {}
         self._custom:bool = custom
         self._is_leaf:bool = is_leaf

@@ -78,14 +78,20 @@ class APISchemaBase:
         result = f'class "{type_name}"'
 
         if "meta" in cls.__dict__:
-            metadata = Metadata(cls.meta)
+            metadata = Metadata(cls, cls.meta)
         else:
-            metadata = Metadata()
+            metadata = Metadata(cls)
 
         update_metadata = {}
+        inherits = []
+        for base in cls.__bases__:
+            if not issubclass(base, APISchemaBase):
+                continue
 
-        if cls.__mro__[1] is not object:
-            update_metadata["inherits"] = f"</{cls.__mro__[1].__name__}>"
+            inherits.append(f"</{base.__name__}>")
+
+        if inherits:
+            update_metadata["inherits"] = inherits
 
         if cls.__doc__:
             update_metadata["doc"] = cls.__doc__

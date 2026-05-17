@@ -3,6 +3,7 @@ from .prim import Prim
 from .property import Property
 from .attribute import Attribute
 from .relationship import Relationship
+from .data import Data
 from .dtypes import double, half, uint, uint64, int64, double, string, uchar, opaque, group, asset, timecode, namespace, dictionary, pathExpression
 
 from .typed import Typed
@@ -20,6 +21,7 @@ __all__ = [
     "Attribute",
     "Property",
     "Relationship",
+    "Data",
     "double",
     "half",
     "uint",

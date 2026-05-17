@@ -19,3 +19,4 @@ class Metadata:
 
     @doc.setter
     def doc(self, doc:str)->None: ...
+    

@@ -1,4 +1,5 @@
-from typing import List, Any, get_origin, get_args
+from __future__ import annotations
+from typing import List, Any, get_origin, get_args, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 
@@ -16,6 +17,9 @@ from .gf import (
 )
 
 from .dtypes import double, half, int64, string, token, pathExpression, timecode, uchar, uint, uint64, namespace, asset, dictionary
+
+if TYPE_CHECKING:
+    from .layer import Layer
 
 
 usd_scalar_types = (
@@ -74,15 +78,35 @@ allowed_types = usd_dtypes + (tuple,)
 
 TYPE_PRIORITY = { int: 1, float: 2 }
 NUMPY_TO_PY_TYPE_MAP = {
-    np.int8: int, np.int16: int, np.int32: int, np.int64: int64,
-    np.uint8: uchar, np.uint16: int, np.uint32: int, np.uint64: uint64,
-    np.float16: half, np.float32: float, np.float64: double,
-    np.bool_: bool
+    np.dtype(np.int8): int,
+    np.dtype(np.int16): int,
+    np.dtype(np.int32): int,
+    np.dtype(np.int64): int64,
+    np.dtype(np.uint8): uchar,
+    np.dtype(np.uint16): int,
+    np.dtype(np.uint32): int,
+    np.dtype(np.uint64): uint64,
+    np.dtype(np.float16): half,
+    np.dtype(np.float32): float,
+    np.dtype(np.float64): double,
+    np.dtype(np.bool_): bool,
+    np.dtype(float2): float2,
+    np.dtype(float3): float3,
+    np.dtype(float4): float4,
+    np.dtype(double2): double2,
+    np.dtype(double3): double3,
+    np.dtype(double4): double4,
+    np.dtype(int2): int2,
+    np.dtype(int3): int3,
+    np.dtype(int4): int4,
+    np.dtype(quatf): quatf,
+    np.dtype(quatd): quatd,
 }
 
-def usd_value_str(value:Any, indents:int=0, degenerate_list:bool=False)->str:
+def usd_value_str(value:Any, indents:int=0, degenerate_list:bool=False, rel_layer:Optional[Union[str, Layer]]="", need_quote:bool=True)->str:
     from .gf import genType
     from .prim import Prim
+    from .layer import Layer
 
     tabs = "    " * indents
     next_tabs = "    " * (indents + 1)
@@ -111,7 +135,7 @@ def usd_value_str(value:Any, indents:int=0, degenerate_list:bool=False)->str:
 
         result = "{\n"
         for key, subvalue in value.items():
-            subvalue_str = usd_value_str(subvalue, indents + 1)
+            subvalue_str = usd_value_str(subvalue, indents + 1, degenerate_list=degenerate_list, rel_layer=rel_layer, need_quote=need_quote)
             if isinstance(key, str):
                 result += f"{next_tabs}{usd_type_str(infer_type(subvalue))} {key} = {subvalue_str}\n"
             else:
@@ -132,27 +156,27 @@ def usd_value_str(value:Any, indents:int=0, degenerate_list:bool=False)->str:
         tabs = "    " * indents
         next_tabs = "    " * (indents + 1)
         if len(value) == 1:
-            result = usd_value_str(value[0], 0)
+            result = usd_value_str(value[0], 0, degenerate_list=degenerate_list, rel_layer=rel_layer, need_quote=need_quote)
             if degenerate_list:
                 return result
             else:
                 if "\n" not in result and len(result) < 100:
                     return f"{left_bracket}{result}{right_bracket}"
                 else:
-                    return f"{left_bracket}\n{usd_value_str(value[0], indents+1)}\n{right_bracket}"
+                    return f"{left_bracket}\n{usd_value_str(value[0], indents+1, degenerate_list=degenerate_list, rel_layer=rel_layer, need_quote=need_quote)}\n{right_bracket}"
         else:
-            result = ", ".join([usd_value_str(subvalue, 0) for subvalue in value])
+            result = ", ".join([usd_value_str(subvalue, 0, degenerate_list=degenerate_list, rel_layer=rel_layer, need_quote=need_quote) for subvalue in value])
             if "\n" not in result and len(result) < 100:
                 return f"{left_bracket}{result}{right_bracket}"
              
             result = f"{left_bracket}\n"
-            result += f",\n{next_tabs}".join([usd_value_str(subvalue, indents+1) for subvalue in value])
+            result += f",\n{next_tabs}".join([usd_value_str(subvalue, indents+1, degenerate_list=degenerate_list, rel_layer=rel_layer, need_quote=need_quote) for subvalue in value])
             result += f"\n{tabs}{right_bracket}"
         return result
     elif isinstance(value, asset):
         return f'@{value}@'
-    elif isinstance(value, Prim):
-        return f"<{value.path}>"
+    elif isinstance(value, (Prim, Layer)):
+        return value.id(rel_layer)
     elif isinstance(value, float):
         if value.is_integer():
             return str(int(value))
@@ -165,7 +189,10 @@ def usd_value_str(value:Any, indents:int=0, degenerate_list:bool=False)->str:
         if "\n" in value:
             return f'"""{value}"""'
         else:
-            return f'"{value}"'
+            if need_quote:
+                return f'"{value}"'
+            else:
+                return value
     else:
         return str(value)
     
@@ -237,10 +264,10 @@ def infer_type(data: Any) -> str:
             return first_depth + 1, final_type, None
 
         elif isinstance(item, np.ndarray):
-            py_equiv_type = NUMPY_TO_PY_TYPE_MAP.get(item.dtype.type, item.dtype.type)
+            py_equiv_type = NUMPY_TO_PY_TYPE_MAP.get(item.dtype, item.dtype)
             
             if not issubclass(py_equiv_type, allowed_types):
-                 pass 
+                pass 
             
             return 0, py_equiv_type, item.dtype
 
@@ -256,10 +283,10 @@ def infer_type(data: Any) -> str:
 
     if isinstance(data, np.ndarray):
         if data.dtype == np.object_:
-             pass 
+            pass 
         
         depth, elem_type, dtype_obj = _analyze(data)
-        target_type = NUMPY_TO_PY_TYPE_MAP.get(data.dtype.type, data.dtype.type)
+        target_type = NUMPY_TO_PY_TYPE_MAP.get(data.dtype, data.dtype)
         
         ndim = data.ndim
         result = target_type

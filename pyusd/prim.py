@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Dict, Union, Optional, List, Any, TYPE_CHECKING
 from typeguard import typechecked
+import os
 
 from .property import Property
 from .metadata import Metadata
@@ -23,11 +24,15 @@ class Prim:
     _children: Dict[str, Prim]
     _parent: Optional[Prim]
     _props: Dict[str, Property]
+    _inherits: List[Prim]
+    _references: List[Prim]
+    _payloads: List[Prim]
+    _specializes: List[Prim]
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
     meta: Dict[str, Any] = {}
 
-    def __init__(self, name:str="")->None:
+    def __init__(self, name:str="", specifier:Specifier=Specifier.Def)->None:
         if self.schema_kind in [SchemaKind.Invalid, SchemaKind.AbstractBase, SchemaKind.AbstractTyped]:
             raise TypeError(f"cannot instantiate abstract class {self.__class__.__name__}")
 
@@ -42,8 +47,20 @@ class Prim:
         self._parent:Optional[Prim] = None
         self._children:Dict[str, Prim] = {}
         self._props:Dict[str, Property] = {}
-        self._metadata:PrimMetadata = PrimMetadata({
-            "specifier": Specifier.Def,
+        self._inherits: List[Prim] = []
+        self._references: List[Prim] = []
+        self._payloads: List[Prim] = []
+        self._specializes: List[Prim] = []
+
+        inherits = []
+        for base in self.__class__.__bases__:
+            if not issubclass(base, Prim) or base == Prim:
+                continue
+
+            inherits.append(f"</{base.__name__}>")
+
+        self._metadata:PrimMetadata = PrimMetadata(self, {
+            "specifier": specifier,
             "typeName": self.__class__.__name__,
             "apiSchemas": [],
             "assetInfo": {
@@ -51,13 +68,13 @@ class Prim:
                 "name": None,
                 "payloadAssetDependencies": None,
                 "version": None
-            }
+            },
+            "inherits": inherits,
+            "references": [],
+            "payloads": [],
+            "specializes": [],
+            "doc": self.__class__.__doc__
         })
-
-        if issubclass(self.__class__.__mro__[1], Prim) and self.__class__.__mro__[1] != Prim:
-            self._metadata.update({"inherits": f"</{self.__class__.__mro__[1].__name__}>"})
-
-        self._metadata.update({"doc": self.__class__.__doc__})
 
         for klass in reversed(self.__class__.__mro__):
             for name, value in klass.__dict__.items():
@@ -199,9 +216,85 @@ class Prim:
 
     @typechecked
     def def_(self, prim_type:type, path:str)->Prim:
-        prim = prim_type()
+        prim = prim_type(specifier=Specifier.Def)
         self[path] = prim
         return prim
+    
+    @typechecked
+    def class_(self, prim_type:type, path:str)->Prim:
+        prim = prim_type(specifier=Specifier.Class)
+        self[path] = prim
+        return prim
+    
+    @typechecked
+    def over_(self, path:str)->Prim:
+        prim = Prim(specifier=Specifier.Over)
+        self[path] = prim
+        return prim
+    
+    @typechecked
+    def inherit(self, prim:Union[Prim, Layer])->None:
+        from .layer import Layer
+
+        if isinstance(prim, Layer):
+            if prim.default_prim is None:
+                raise ValueError("inherited layer do not have a defaultPrim")
+            
+            if prim.default_prim in self._references:
+                return
+
+        if prim in self._inherits:
+            return
+        
+        self._inherits.insert(0, prim)
+
+    @typechecked
+    def reference(self, prim:Union[Prim, Layer])->None:
+        from .layer import Layer
+
+        if isinstance(prim, Layer):
+            if prim.default_prim is None:
+                raise ValueError("inherited layer do not have a defaultPrim")
+            
+            if prim.default_prim in self._references:
+                return
+            
+        if prim in self._references:
+            return
+        
+        self._references.insert(0, prim)
+
+    @typechecked
+    def payload(self, prim:Union[Prim, Layer])->None:
+        from .layer import Layer
+
+        if isinstance(prim, Layer):
+            if prim.default_prim is None:
+                raise ValueError("inherited layer do not have a defaultPrim")
+            
+            if prim.default_prim in self._references:
+                return
+            
+        if prim in self._payloads:
+            return
+        
+        self._payloads.insert(0, prim)
+
+    @typechecked
+    def specialize(self, prim:Union[Prim, Layer])->None:
+        from .layer import Layer
+
+        if isinstance(prim, Layer):
+            if prim.default_prim is None:
+                raise ValueError("inherited layer do not have a defaultPrim")
+            
+            if prim.default_prim in self._references:
+                return
+            
+        if prim in self._specializes:
+            return
+        
+        self._specializes.insert(0, prim)
 
     @typechecked
     def remove_child(self, prim:Union[str, Prim])->Prim:
@@ -298,6 +391,24 @@ class Prim:
                     
                 return path
             
+    @typechecked        
+    def id(self, rel_layer:Optional[Union[str, Layer]]=None)->str:
+        from .layer import Layer
+
+        prefix:str = ""
+        if isinstance(rel_layer, Layer):
+            rel_layer = rel_layer.file_name
+
+        if rel_layer and self.layer is not None:
+            abs_path = os.path.abspath(rel_layer).replace("\\", "/")
+            self_layer_abs_path = os.path.abspath(self.layer.file_name).replace("\\", "/")
+            if abs_path != self_layer_abs_path:
+                abs_folder = os.path.dirname(abs_path)
+                rel_path = os.path.relpath(self_layer_abs_path, abs_folder).replace("\\", "/")
+                prefix = f"@./{rel_path}@"
+                
+        return f"{prefix}<{self.path}>"
+
     @property
     def depth(self)->int:
         depth:int = 0
@@ -366,14 +477,20 @@ class Prim:
             result = f'class "{prim_type_name}"'
 
         if "meta" in cls.__dict__:
-            metadata = Metadata(cls.meta)
+            metadata = Metadata(cls, cls.meta)
         else:
-            metadata = Metadata()
+            metadata = Metadata(cls)
 
         update_metadata = {}
+        inherits = []
+        for base in cls.__bases__:
+            if not issubclass(base, Prim) or base == Prim:
+                continue
 
-        if issubclass(cls.__mro__[1], Prim) and cls.__mro__[1] != Prim:
-            update_metadata["inherits"] = f"</{cls.__mro__[1].__name__}>"
+            inherits.append(f"</{base.__name__}>")
+
+        if inherits:
+            update_metadata["inherits"] = inherits
 
         if cls.__doc__:
             update_metadata["doc"] = cls.__doc__

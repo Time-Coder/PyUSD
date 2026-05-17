@@ -9,4 +9,7 @@ class PrimMetadata(Metadata):
     typeName: str
     apiSchemas: List[str]
     assetInfo: Dict[str, Any]
-    inherits: str
+    inherits: List[str]
+    refrences: List[str]
+    payloads: List[str]
+    specializes: List[str]

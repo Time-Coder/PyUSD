@@ -9,12 +9,14 @@ from .dtypes import dictionary
 
 class Metadata:
 
+    _parent: Any
     _builtin_data: Dict[str, Any]
     _custom_data: Dict[str, Any]
     _builtin_is_set: Dict[str, bool]
     _custom_is_set: Dict[str, bool]
 
-    def __init__(self, kwargs:Dict[str, Any]={})->None:
+    def __init__(self, parent:Any=None, kwargs:Dict[str, Any]={})->None:
+        self._parent = parent
         self._builtin_data: Dict[str, Any] = {}
         self._builtin_is_set: Dict[str, bool] = {}
         self._custom_is_set: Dict[str, bool] = {}
@@ -82,7 +84,9 @@ class Metadata:
             self._custom_is_set[name] = True
 
     @typechecked
-    def to_str(self, indents:int=0, full:bool=False)->str:        
+    def to_str(self, indents:int=0, full:bool=False)->str:
+        from .prim import Prim
+
         tabs = "    " * indents
         next_tabs = "    " * (indents + 1)
         next2_tabs = "    " * (indents + 2)
@@ -90,20 +94,45 @@ class Metadata:
         
         builtin_str_list:List[str] = []
         for key, value in self._builtin_data.items():
+            is_ref = key in ["inherits", "references", "payloads", "specializes", "subLayers"]
+            use_ori_value = True
+            ori_value = value
             if not full and not self._builtin_is_set[key]:
-                continue
+                if not is_ref:
+                    continue
+                use_ori_value = False
 
             if value is None:
                 continue
 
             if key == "doc" and isinstance(value, str) and value == "":
                 continue
+            
+            if key == "inherits":
+                value = self._parent._inherits
+            elif key == "references":
+                value = self._parent._references
+            elif key == "payloads":
+                value = self._parent._payloads
+            elif key == "specializes":
+                value = self._parent._specializes
 
-            if key != "inherits":
-                builtin_str_list.append(f"{next_tabs}{key} = {usd_value_str(value, indents+1)}")
+            if is_ref and use_ori_value:
+                value += ori_value
+
+            if (is_ref or key == "subLayers") and not value:
+                continue
+
+            rel_layer = None
+            if self._parent is not None and isinstance(self._parent, Prim) and self._parent.layer is not None:
+                rel_layer = self._parent.layer
+
+            value_str = usd_value_str(value, indents+1, degenerate_list=(is_ref and key != "subLayers"), rel_layer=rel_layer, need_quote=(not is_ref))
+            if is_ref and key != "subLayers":
+                builtin_str_list.append(f"{next_tabs}prepend {key} = {value_str}")
             else:
-                builtin_str_list.append(f"{next_tabs}{key} = {value}")
-
+                builtin_str_list.append(f"{next_tabs}{key} = {value_str}")
+            
         custom_str_list:List[str] = []
         for key, value in self._custom_data.items():
             if not full and not self._custom_is_set[key]:
