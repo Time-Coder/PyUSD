@@ -1,10 +1,10 @@
 from __future__ import annotations
-from typing import Dict, Union, Optional, List
+from typing import Dict, Union, Optional, List, Type
 import os
 from typeguard import typechecked
 
 from .sdf import Specifier
-from .prim import Prim
+from .prim import Prim, PrimType
 from .layer_metadata import LayerMetadata
 from .common import Axis
 
@@ -71,8 +71,14 @@ class Layer:
         if layer in self._sub_layers:
             return
         
-        self.metadata.subLayers.append(layer.id(self))
         self._sub_layers.insert(0, layer)
+
+    @typechecked
+    def uninclude(self, layer:Layer)->None:
+        if layer not in self._sub_layers:
+            return
+        
+        self._sub_layers.remove(layer)
 
     @typechecked
     def __getitem__(self, path:str)->Prim:
@@ -159,13 +165,13 @@ class Layer:
         return prim
     
     @typechecked
-    def def_(self, prim_type:type, path:str)->Prim:
+    def def_(self, prim_type:Type[PrimType], path:str)->PrimType:
         prim = prim_type(specifier = Specifier.Def)
         self[path] = prim
         return prim
     
     @typechecked
-    def class_(self, prim_type:type, path:str)->Prim:
+    def class_(self, prim_type:Type[PrimType], path:str)->PrimType:
         prim = prim_type(specifier = Specifier.Class)
         self[path] = prim
         return prim

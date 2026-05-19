@@ -116,11 +116,13 @@ class Metadata:
                 value = self._parent._payloads
             elif key == "specializes":
                 value = self._parent._specializes
+            elif key == "subLayers":
+                value = self._parent._sub_layers
 
             if is_ref and use_ori_value:
                 value += ori_value
 
-            if (is_ref or key == "subLayers") and not value:
+            if is_ref and not value:
                 continue
 
             rel_layer = None

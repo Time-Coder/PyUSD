@@ -2,7 +2,6 @@ from __future__ import annotations
 from typing import Dict, Any, TYPE_CHECKING, Optional, Union
 from typeguard import typechecked
 from enum import Enum
-import copy
 
 from .metadata import Metadata
 from .utils import infer_type, in_annotations
@@ -46,6 +45,8 @@ class Property:
         if "doc" not in metadata:
             metadata["doc"] = doc
 
+        self.__doc__ = doc
+
         self._parent_prim:Optional[Prim] = None
         self._parent_prop:Optional[Property] = None
         self._name:str = name
@@ -78,6 +79,7 @@ class Property:
     def clone(self)->Property:
         result = Property()
         result.__class__ = self.__class__
+        result.__doc__ = self.__doc__
         result._parent_prim = None
         result._parent_prop = None
         result._name = self._name

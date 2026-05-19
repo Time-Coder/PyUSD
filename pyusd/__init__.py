@@ -1,5 +1,5 @@
 from .layer import Layer
-from .prim import Prim
+from .prim import Prim, PrimType
 from .property import Property
 from .attribute import Attribute
 from .relationship import Relationship
@@ -18,6 +18,7 @@ from .clips_api import ClipsAPI
 __all__ = [
     "Layer",
     "Prim",
+    "PrimType",
     "Attribute",
     "Property",
     "Relationship",

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Any, get_origin, get_args, Optional, Union, TYPE_CHECKING
+from typing import List, Any, get_origin, get_args, Optional, Union, TYPE_CHECKING, Tuple
 
 import numpy as np
 
@@ -107,6 +107,7 @@ def usd_value_str(value:Any, indents:int=0, degenerate_list:bool=False, rel_laye
     from .gf import genType
     from .prim import Prim
     from .layer import Layer
+    from .data import Data
 
     tabs = "    " * indents
     next_tabs = "    " * (indents + 1)
@@ -173,6 +174,8 @@ def usd_value_str(value:Any, indents:int=0, degenerate_list:bool=False, rel_laye
             result += f",\n{next_tabs}".join([usd_value_str(subvalue, indents+1, degenerate_list=degenerate_list, rel_layer=rel_layer, need_quote=need_quote) for subvalue in value])
             result += f"\n{tabs}{right_bracket}"
         return result
+    elif isinstance(value, Data):
+        return usd_value_str(value.value)
     elif isinstance(value, asset):
         return f'@{value}@'
     elif isinstance(value, (Prim, Layer)):
@@ -239,53 +242,59 @@ def analyze_list_type(type_hint):
 
     return current_type, depth
 
-def infer_type(data: Any) -> str:
-    def _analyze(item: Any) -> tuple:
-        if isinstance(item, list):
-            if not item: return 1, Any, None
-            
-            children_results = [_analyze(elem) for elem in item]
-            first_depth, first_type, _ = children_results[0]
-            
-            if any(depth != first_depth for depth, _, _ in children_results):
-                raise TypeError("list dimension not match")
-            
-            child_types = [t for _, t, _ in children_results]
-            unique_types = set(child_types)
-            
-            final_type = None
-            if len(unique_types) == 1:
-                final_type = child_types[0]
-            elif unique_types.issubset({int, float}):
-                final_type = max(unique_types, key=lambda t: TYPE_PRIORITY.get(t, 0))
-            else:
-                raise TypeError(f"list type not compatible: {unique_types}")
-                
-            return first_depth + 1, final_type, None
-
-        elif isinstance(item, np.ndarray):
-            py_equiv_type = NUMPY_TO_PY_TYPE_MAP.get(item.dtype, item.dtype)
-            
-            if not issubclass(py_equiv_type, allowed_types):
-                pass 
-            
-            return 0, py_equiv_type, item.dtype
-
+def _analyze_type(item: Any) -> Tuple[int, type]:
+    if isinstance(item, list):
+        if not item:
+            return 1, Any
+        
+        children_results = [_analyze_type(elem) for elem in item]
+        first_depth, _ = children_results[0]
+        
+        if any(depth != first_depth for depth, _ in children_results):
+            raise TypeError("list dimension not match")
+        
+        child_types = [t for _, t in children_results]
+        unique_types = set(child_types)
+        
+        final_type = None
+        if len(unique_types) == 1:
+            final_type = child_types[0]
+        elif unique_types.issubset({int, float}):
+            final_type = max(unique_types, key=lambda t: TYPE_PRIORITY.get(t, 0))
         else:
-            val_type = type(item)
-            if not issubclass(val_type, allowed_types):
-                raise TypeError(f"not supported type: {val_type}")
+            raise TypeError(f"list type not compatible: {unique_types}")
             
-            if val_type == float:
-                val_type = double
+        return first_depth + 1, final_type
 
-            return 0, val_type, None
+    elif isinstance(item, np.ndarray):
+        py_equiv_type = NUMPY_TO_PY_TYPE_MAP.get(item.dtype, item.dtype)
+        
+        if not issubclass(py_equiv_type, allowed_types):
+            pass 
+        
+        return 0, py_equiv_type
+
+    else:
+        val_type = type(item)
+        if not issubclass(val_type, allowed_types):
+            raise TypeError(f"not supported type: {val_type}")
+        
+        if val_type == float:
+            val_type = double
+
+        return 0, val_type
+
+def infer_type(data: Any) -> type:
+    from .data import Data
+
+    if isinstance(data, Data):
+        return data.type
 
     if isinstance(data, np.ndarray):
         if data.dtype == np.object_:
             pass 
         
-        depth, elem_type, dtype_obj = _analyze(data)
+        depth, _ = _analyze_type(data)
         target_type = NUMPY_TO_PY_TYPE_MAP.get(data.dtype, data.dtype)
         
         ndim = data.ndim
@@ -294,7 +303,7 @@ def infer_type(data: Any) -> str:
             result = List[result]
         return result
 
-    depth, element_type, _ = _analyze(data)
+    depth, element_type = _analyze_type(data)
     
     if depth == 0:
         return element_type
@@ -304,6 +313,7 @@ def infer_type(data: Any) -> str:
         current_type = List[current_type]
         
     return current_type
+
 
 def nest_map(nested_list, func):
     if not isinstance(nested_list, list):

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Dict, Union, Optional, List, Any, TYPE_CHECKING
+from typing import Dict, Union, Optional, List, Any, TYPE_CHECKING, TypeVar, Type
 from typeguard import typechecked
 import os
 
@@ -13,6 +13,8 @@ from .common import SchemaKind
 if TYPE_CHECKING:
     from .layer import Layer
 
+
+PrimType = TypeVar('PrimType', bound='Prim')
 
 class Prim:
 
@@ -28,7 +30,7 @@ class Prim:
     _references: List[Prim]
     _payloads: List[Prim]
     _specializes: List[Prim]
-
+    
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
     meta: Dict[str, Any] = {}
 
@@ -215,13 +217,13 @@ class Prim:
         prim._set_layer(self._layer)
 
     @typechecked
-    def def_(self, prim_type:type, path:str)->Prim:
+    def def_(self, prim_type:Type[PrimType], path:str)->PrimType:
         prim = prim_type(specifier=Specifier.Def)
         self[path] = prim
         return prim
     
     @typechecked
-    def class_(self, prim_type:type, path:str)->Prim:
+    def class_(self, prim_type:Type[PrimType], path:str)->PrimType:
         prim = prim_type(specifier=Specifier.Class)
         self[path] = prim
         return prim
