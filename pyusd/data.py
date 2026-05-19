@@ -85,11 +85,6 @@ class Data(Generic[T]):
         current_dtype, current_array_dim = analyze_list_type(current_type)
         if self._array_dim == current_array_dim and self._dtype == current_dtype:
             return value
-        
-        if not self._fix_type:
-            self._dtype, self._array_dim = current_dtype, current_array_dim
-            self._type = current_type
-            return value
 
         if self._array_dim != current_array_dim:
             raise TypeError(f"cannot convert {current_type} to {self._type}")
