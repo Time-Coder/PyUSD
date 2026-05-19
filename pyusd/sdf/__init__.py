@@ -1,5 +1,6 @@
-from .enums import Specifier
+from .common import Specifier, Purpose
 
 __all__ = [
-    "Specifier"
+    "Specifier",
+    "Purpose"
 ]

@@ -448,9 +448,9 @@ class Prim:
         tabs = "    " * indents
         prim_type_name = self.__class__.__name__
         if prim_type_name in ["Prim", "Typed"]:
-            result = f'{tabs}def "{self.name}"'
+            result = f'{tabs}{self.metadata.specifier} "{self.name}"'
         else:
-            result = f'{tabs}def {prim_type_name} "{self.name}"'
+            result = f'{tabs}{self.metadata.specifier} {prim_type_name} "{self.name}"'
 
         metadata_str = self._metadata.to_str(indents)
         if metadata_str:

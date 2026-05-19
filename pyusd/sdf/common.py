@@ -1,12 +1,13 @@
-from enum import Enum
+from ..dtypes import token
 
 
-class Specifier(Enum):
+class Specifier(token):
     Def = "def"
     Over = "over"
     Class = "class"
 
-class Purpose(Enum):
+
+class Purpose(token):
     Default = "default"
     Public = "public"
     Private = "private"
