@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Dict, Union, Optional, List, Type
+from typing import Dict, Union, Optional, List, Type, Any
 import os
 from typeguard import typechecked
 
@@ -65,16 +65,31 @@ class Layer:
                 result = f"@./{rel_path}@"
                 
         return result
+    
+    def __eq__(self, other:Any)->bool:
+        if not isinstance(other, Layer):
+            return False
+
+        return (self.id() == other.id())
+    
+    def __neq__(self, other:Any)->bool:
+        if not isinstance(other, Layer):
+            return True
+
+        return (self.id() != other.id())
 
     @typechecked
-    def include(self, layer:Layer)->None:
+    def include(self, layer:Layer, prepend:bool=True)->None:
         if layer in self._sub_layers:
             return
         
-        self._sub_layers.insert(0, layer)
+        if prepend:
+            self._sub_layers.insert(0, layer)
+        else:
+            self._sub_layers.append(layer)
 
     @typechecked
-    def uninclude(self, layer:Layer)->None:
+    def remove_include(self, layer:Layer)->None:
         if layer not in self._sub_layers:
             return
         

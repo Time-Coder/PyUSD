@@ -235,68 +235,72 @@ class Prim:
         return prim
     
     @typechecked
-    def inherit(self, prim:Union[Prim, Layer])->None:
-        from .layer import Layer
-
-        if isinstance(prim, Layer):
-            if prim.default_prim is None:
-                raise ValueError("inherited layer do not have a defaultPrim")
-            
-            if prim.default_prim in self._references:
-                return
-
+    def inherit(self, prim:Union[Prim, Layer], prepend:bool=True)->None:
         if prim in self._inherits:
             return
         
-        self._inherits.insert(0, prim)
+        if prepend:
+            self._inherits.insert(0, prim)
+        else:
+            self._inherits.append(prim)
 
     @typechecked
-    def reference(self, prim:Union[Prim, Layer])->None:
-        from .layer import Layer
+    def remove_inherit(self, prim:Union[Prim, Layer])->None:
+        if prim not in self._inherits:
+            return
+        
+        self._inherits.remove(prim)
 
-        if isinstance(prim, Layer):
-            if prim.default_prim is None:
-                raise ValueError("inherited layer do not have a defaultPrim")
-            
-            if prim.default_prim in self._references:
-                return
-            
+    @typechecked
+    def reference(self, prim:Union[Prim, Layer], prepend:bool=True)->None:            
         if prim in self._references:
             return
         
-        self._references.insert(0, prim)
+        if prepend:
+            self._references.insert(0, prim)
+        else:
+            self._references.append(prim)
 
     @typechecked
-    def payload(self, prim:Union[Prim, Layer])->None:
-        from .layer import Layer
+    def remove_reference(self, prim:Union[Prim, Layer])->None:            
+        if prim not in self._references:
+            return
+        
+        self._references.remove(prim)
 
-        if isinstance(prim, Layer):
-            if prim.default_prim is None:
-                raise ValueError("inherited layer do not have a defaultPrim")
-            
-            if prim.default_prim in self._references:
-                return
-            
+    @typechecked
+    def payload(self, prim:Union[Prim, Layer], prepend:bool=True)->None:            
         if prim in self._payloads:
             return
         
-        self._payloads.insert(0, prim)
+        if prepend:
+            self._payloads.insert(0, prim)
+        else:
+            self._payloads.append(prim)
 
     @typechecked
-    def specialize(self, prim:Union[Prim, Layer])->None:
-        from .layer import Layer
+    def remove_payload(self, prim:Union[Prim, Layer])->None:            
+        if prim not in self._payloads:
+            return
+        
+        self._payloads.remove(prim)
 
-        if isinstance(prim, Layer):
-            if prim.default_prim is None:
-                raise ValueError("inherited layer do not have a defaultPrim")
-            
-            if prim.default_prim in self._references:
-                return
-            
+    @typechecked
+    def specialize(self, prim:Union[Prim, Layer], prepend:bool=True)->None:            
         if prim in self._specializes:
             return
         
-        self._specializes.insert(0, prim)
+        if prepend:
+            self._specializes.insert(0, prim)
+        else:
+            self._specializes.append(prim)
+
+    @typechecked
+    def remove_specialize(self, prim:Union[Prim, Layer])->None:            
+        if prim not in self._specializes:
+            return
+        
+        self._specializes.remove(prim)
 
     @typechecked
     def remove_child(self, prim:Union[str, Prim])->Prim:
@@ -392,24 +396,26 @@ class Prim:
                     path = "/" + path
                     
                 return path
-            
-    @typechecked        
+    
+    @typechecked
     def id(self, rel_layer:Optional[Union[str, Layer]]=None)->str:
-        from .layer import Layer
-
         prefix:str = ""
-        if isinstance(rel_layer, Layer):
-            rel_layer = rel_layer.file_name
-
-        if rel_layer and self.layer is not None:
-            abs_path = os.path.abspath(rel_layer).replace("\\", "/")
-            self_layer_abs_path = os.path.abspath(self.layer.file_name).replace("\\", "/")
-            if abs_path != self_layer_abs_path:
-                abs_folder = os.path.dirname(abs_path)
-                rel_path = os.path.relpath(self_layer_abs_path, abs_folder).replace("\\", "/")
-                prefix = f"@./{rel_path}@"
+        if self.layer is not None:
+            prefix = self.layer.id(rel_layer)
                 
         return f"{prefix}<{self.path}>"
+
+    def __eq__(self, other:Any)->bool:
+        if not isinstance(other, Prim):
+            return False
+
+        return (self.id() == other.id())
+    
+    def __neq__(self, other:Any)->bool:
+        if not isinstance(other, Prim):
+            return True
+
+        return (self.id() != other.id())
 
     @property
     def depth(self)->int:
