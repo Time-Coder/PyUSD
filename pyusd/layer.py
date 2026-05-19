@@ -67,16 +67,20 @@ class Layer:
         return result
     
     def __eq__(self, other:Any)->bool:
-        if not isinstance(other, Layer):
+        if isinstance(other, Layer):
+            return (self.id() == other.id())
+        elif isinstance(other, str):
+            return (self.id().strip("@") == os.path.abspath(other.strip("@")).replace("\\", "/"))
+        else:
             return False
-
-        return (self.id() == other.id())
     
     def __neq__(self, other:Any)->bool:
-        if not isinstance(other, Layer):
+        if isinstance(other, Layer):
+            return (self.id() != other.id())
+        elif isinstance(other, str):
+            return (self.id().strip("@") != os.path.abspath(other.strip("@")).replace("\\", "/"))
+        else:
             return True
-
-        return (self.id() != other.id())
 
     @typechecked
     def include(self, layer:Layer, prepend:bool=True)->None:

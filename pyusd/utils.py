@@ -1,5 +1,7 @@
 from __future__ import annotations
 from typing import List, Any, get_origin, get_args, Optional, Union, TYPE_CHECKING, Tuple
+import re
+import os
 
 import numpy as np
 
@@ -102,6 +104,19 @@ NUMPY_TO_PY_TYPE_MAP = {
     np.dtype(quatf): quatf,
     np.dtype(quatd): quatd,
 }
+
+def _to_abs(match: re.Match):
+    relative_path = match.group(1)
+    absolute_path = os.path.abspath(relative_path).replace("\\", "/")
+    return f"@{absolute_path}@"
+
+asset_pattern = re.compile(r"@(.*?)@")
+
+def abspath(text):
+    if "@" not in text:
+        return os.path.abspath(text).replace("\\", "/")
+    
+    return asset_pattern.sub(_to_abs, text)
 
 def usd_value_str(value:Any, indents:int=0, degenerate_list:bool=False, rel_layer:Optional[Union[str, Layer]]="", need_quote:bool=True)->str:
     from .gf import genType

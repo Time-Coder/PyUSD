@@ -6,7 +6,7 @@ import os
 from .property import Property
 from .metadata import Metadata
 from .prim_metadata import PrimMetadata
-from .utils import infer_type, in_annotations
+from .utils import infer_type, in_annotations, abspath
 from .sdf import Specifier
 from .common import SchemaKind
 
@@ -406,16 +406,20 @@ class Prim:
         return f"{prefix}<{self.path}>"
 
     def __eq__(self, other:Any)->bool:
-        if not isinstance(other, Prim):
+        if isinstance(other, Prim):
+            return (self.id() == other.id())
+        elif isinstance(other, str):
+            return (self.id() == abspath(other))
+        else:
             return False
-
-        return (self.id() == other.id())
     
     def __neq__(self, other:Any)->bool:
-        if not isinstance(other, Prim):
+        if isinstance(other, Prim):
+            return (self.id() != other.id())
+        elif isinstance(other, str):
+            return (self.id() != abspath(other))
+        else:
             return True
-
-        return (self.id() != other.id())
 
     @property
     def depth(self)->int:

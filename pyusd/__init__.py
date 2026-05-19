@@ -13,6 +13,7 @@ from .color_space_api import ColorSpaceAPI
 from .color_space_definition_api import ColorSpaceDefinitionAPI
 from .collection_api import CollectionAPI
 from .clips_api import ClipsAPI
+from .utils import abspath
 
 
 __all__ = [
@@ -44,5 +45,6 @@ __all__ = [
     "ColorSpaceAPI",
     "ColorSpaceDefinitionAPI",
     "CollectionAPI",
-    "ClipsAPI"
+    "ClipsAPI",
+    "abspath"
 ]
