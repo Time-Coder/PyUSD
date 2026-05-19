@@ -76,7 +76,7 @@ class Property:
 
         self._metadata.update(self.meta)
 
-    def clone(self)->Property:
+    def clone(self, clone_child:bool=True)->Property:
         result = Property()
         result.__class__ = self.__class__
         result.__doc__ = self.__doc__
@@ -88,9 +88,10 @@ class Property:
         result._custom = self._custom
         result._is_leaf = self._is_leaf
         result._value_state = self._value_state
-        for name, child in self._children.items():
-            result._children[name] = child.clone()
-            result._children[name]._parent_prop = result
+        if clone_child:
+            for name, child in self._children.items():
+                result._children[name] = child.clone()
+                result._children[name]._parent_prop = result
 
         return result
 

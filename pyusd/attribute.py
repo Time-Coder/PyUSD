@@ -33,8 +33,8 @@ class Attribute(Property, Data[T]):
         self._uniform:bool = uniform
         self._fix_type:bool = fix_type
 
-    def clone(self)->Attribute[T]:
-        result = Property.clone(self)
+    def clone(self, clone_children:bool=True)->Attribute[T]:
+        result = Property.clone(self, clone_children)
         result._type = self._type
         result._dtype = self._dtype
         result._array_dim = self._array_dim

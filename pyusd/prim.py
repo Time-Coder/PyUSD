@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Dict, Union, Optional, List, Any, TYPE_CHECKING, TypeVar, Type
 from typeguard import typechecked
-import os
+from itertools import chain
 
 from .property import Property
 from .metadata import Metadata
@@ -95,12 +95,81 @@ class Prim:
 
         self._metadata.update(self.meta)
     
-    def create_prop(self, prop:Property)->Property:
+    def create_prop(self, prop:Property)->Property:            
         self._props[prop.name] = prop
         prop._parent_prim = self
         prop._parent_prop = None
         return prop
+    
+    def _has_prop(self, name:str)->bool:
+        names = name.split(":")
+        name = names[0]
 
+        if name not in self._props:
+            return False
+        
+        prop = self._props[name]
+        for name in names[1:]:
+            if name not in prop._children:
+                return False
+            prop = prop._children[name]
+        
+        return True
+
+    def has_prop(self, name:str, recursive:bool=True)->bool:
+        if self._has_prop(name):
+            return True
+        
+        if recursive:
+            for prim in chain(self._inherits, self._references, self._payloads, self._specializes):
+                if isinstance(prim, Layer):
+                    prim = prim.default_prim
+                    if prim is None:
+                        continue
+
+                if prim.has_prop(name, recursive):
+                    return True
+                
+        return False
+    
+    def _prop(self, name)->Property:
+        names = name.split(":")
+        name = names[0]
+
+        if name not in self._props:
+            raise KeyError(name)
+        
+        prop = self._props[name]
+        for name in names[1:]:
+            if name not in prop._children:
+                raise KeyError(name)
+            
+            prop = prop._children[name]
+        
+        return prop
+
+    def prop(self, name:str, recursive:bool=True)->Property:
+        from .layer import Layer
+
+        try:
+            return self._prop(name)
+        except KeyError:
+            pass
+        
+        if recursive:
+            for prim in chain(self._inherits, self._references, self._payloads, self._specializes):
+                if isinstance(prim, Layer):
+                    prim = prim.default_prim
+                    if prim is None:
+                        continue
+
+                try:
+                    return prim.prop(name, recursive)
+                except KeyError:
+                    pass
+                
+        raise KeyError(name)
+    
     def _getitem(self, path_items:List[str])->Prim:
         prim = self
         for path_item in path_items:            
@@ -166,23 +235,6 @@ class Prim:
         
         path_items = path.split("/")
         self._delitem(path_items)
-
-    @typechecked
-    def prop(self, name:str)->Property:
-        prop_names = name.split(":")
-        prop_name = prop_names[0]
-        if prop_name not in self._props:
-            self.create_prop(Property(prop_name, custom=True, is_leaf=False))
-
-        prop = self._props[prop_name]
-
-        for prop_name in prop_names:
-            if prop_name not in prop._children:
-                prop.create_prop(Property(prop_name, custom=True, is_leaf=False))
-
-            prop = prop._children[prop_name]
-
-        return prop
 
     @property
     def prop_names(self)->List[str]:
@@ -532,10 +584,13 @@ class Prim:
         return result
 
     def __getattr__(self, name:str)->Property:
-        if name not in self._props:
-            self.create_prop(Property(name, custom=True, is_leaf=False))
-
-        return self._props[name]
+        if name in self._props:
+            return self._props[name]
+        
+        try:
+            return self.create_prop(self.prop(name, True).clone(False))
+        except KeyError:
+            return self.create_prop(Property(name, custom=True, is_leaf=False))
 
     def __setattr__(self, name: str, value: Any) -> None:
         if hasattr(self.__class__, name) or in_annotations(name, self.__class__):
@@ -545,7 +600,7 @@ class Prim:
         from .attribute import Attribute
         from .relationship import Relationship
 
-        is_rel:bool = (isinstance(value, Prim) or (isinstance(value, list) and all(isinstance(item, Prim) for item in value)) or isinstance(value, Relationship))
+        is_rel:bool = (isinstance(value, Prim) or (isinstance(value, list) and len(value) > 0 and all(isinstance(item, Prim) for item in value)) or isinstance(value, Relationship))
         if name in self._props:
             prop = self._props[name]
             if isinstance(prop, Attribute) and is_rel:
@@ -577,6 +632,12 @@ class Prim:
                 self.create_prop(cloned_value)
 
             return
+        
+        if name not in self._props:
+            try:
+                self.create_prop(self.prop(name, True).clone(False))
+            except KeyError:
+                pass
 
         if name not in self._props:
             if is_rel:

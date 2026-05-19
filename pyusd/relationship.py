@@ -26,8 +26,8 @@ class Relationship(Property):
 
         return self._value_state
 
-    def clone(self)->Relationship:
-        result = Property.clone(self)
+    def clone(self, clone_children:bool=True)->Relationship:
+        result = Property.clone(self, clone_children)
         result._targets = copy.copy(self._targets)
         return result
 
