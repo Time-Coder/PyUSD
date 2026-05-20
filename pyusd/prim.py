@@ -9,6 +9,8 @@ from .prim_metadata import PrimMetadata
 from .utils import infer_type, in_annotations, abspath
 from .sdf import Specifier
 from .common import SchemaKind
+from .api_schema_base import APISchemaBase
+from .model_api import ModelAPI
 
 if TYPE_CHECKING:
     from .layer import Layer
@@ -53,6 +55,7 @@ class Prim:
         self._references: List[Prim] = []
         self._payloads: List[Prim] = []
         self._specializes: List[Prim] = []
+        self._apis: Dict[str, APISchemaBase] = {}
 
         inherits = []
         for base in self.__class__.__bases__:
@@ -95,6 +98,15 @@ class Prim:
 
         self._metadata.update(self.meta)
     
+    @property
+    def specifier(self)->Specifier:
+        return self._metadata.specifier
+    
+    @specifier.setter
+    @typechecked
+    def specifier(self, specifier:Specifier)->None:
+        self._metadata.specifier = specifier
+
     def create_prop(self, prop:Property)->Property:            
         self._props[prop.name] = prop
         prop._parent_prim = self
@@ -116,23 +128,33 @@ class Prim:
         
         return True
 
-    def has_prop(self, name:str, recursive:bool=True)->bool:
+    def has_prop(self, name:str, recursive:bool=True, specialize:bool=True)->bool:
         if self._has_prop(name):
             return True
         
         if recursive:
-            for prim in chain(self._inherits, self._references, self._payloads, self._specializes):
+            for prim in chain(self._inherits, self._references, self._payloads):
                 if isinstance(prim, Layer):
                     prim = prim.default_prim
                     if prim is None:
                         continue
 
-                if prim.has_prop(name, recursive):
+                if prim.has_prop(name, recursive, False):
                     return True
+                
+            if specialize:
+                for prim in self._specializes:
+                    if isinstance(prim, Layer):
+                        prim = prim.default_prim
+                        if prim is None:
+                            continue
+
+                    if prim.has_prop(name, recursive, True):
+                        return True
                 
         return False
     
-    def _prop(self, name)->Property:
+    def _prop(self, name:str)->Property:
         names = name.split(":")
         name = names[0]
 
@@ -148,7 +170,7 @@ class Prim:
         
         return prop
 
-    def prop(self, name:str, recursive:bool=True)->Property:
+    def prop(self, name:str, recursive:bool=True, specialize:bool=True)->Property:
         from .layer import Layer
 
         try:
@@ -157,16 +179,28 @@ class Prim:
             pass
         
         if recursive:
-            for prim in chain(self._inherits, self._references, self._payloads, self._specializes):
+            for prim in chain(self._inherits, self._references, self._payloads):
                 if isinstance(prim, Layer):
                     prim = prim.default_prim
                     if prim is None:
                         continue
 
                 try:
-                    return prim.prop(name, recursive)
+                    return prim.prop(name, recursive, False)
                 except KeyError:
                     pass
+
+            if specialize:
+                for prim in self._specializes:
+                    if isinstance(prim, Layer):
+                        prim = prim.default_prim
+                        if prim is None:
+                            continue
+
+                    try:
+                        return prim.prop(name, recursive, True)
+                    except KeyError:
+                        pass
                 
         raise KeyError(name)
     
@@ -192,9 +226,10 @@ class Prim:
         
         path_items = path_items[:-1]
         parent_prim = self
+        specifier = (Specifier.Def if prim.specifier != Specifier.Over else Specifier.Over)
         for path_item in path_items:
             if path_item not in parent_prim._children:
-                new_prim = Prim(path_item)
+                new_prim = Prim(path_item, specifier=specifier)
                 new_prim._set_layer(self._layer)
                 new_prim._parent = parent_prim
                 parent_prim._children[path_item] = new_prim
@@ -275,8 +310,8 @@ class Prim:
         return prim
     
     @typechecked
-    def class_(self, prim_type:Type[PrimType], path:str)->PrimType:
-        prim = prim_type(specifier=Specifier.Class)
+    def class_(self, path:str)->Prim:
+        prim = Prim(specifier=Specifier.Class)
         self[path] = prim
         return prim
     
@@ -500,9 +535,9 @@ class Prim:
         tabs = "    " * indents
         prim_type_name = self.__class__.__name__
         if prim_type_name in ["Prim", "Typed"]:
-            result = f'{tabs}{self.metadata.specifier} "{self.name}"'
+            result = f'{tabs}{self.specifier} "{self.name}"'
         else:
-            result = f'{tabs}{self.metadata.specifier} {prim_type_name} "{self.name}"'
+            result = f'{tabs}{self.specifier} {prim_type_name} "{self.name}"'
 
         metadata_str = self._metadata.to_str(indents)
         if metadata_str:
@@ -646,3 +681,10 @@ class Prim:
                 self.create_prop(Attribute(infer_type(value), name, uniform=False, custom=True, is_leaf=False, fix_type=False))
 
         self._props[name].set(value)
+
+    @property
+    def model_api(self)->ModelAPI:
+        if "model_api" not in self._apis:
+            self._apis["model_api"] = ModelAPI(self)
+            
+        return self._apis["model_api"]

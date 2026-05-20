@@ -1,7 +1,11 @@
+from typing import TYPE_CHECKING
+
 from .property import Property
 from .common import SchemaKind
 from .metadata import Metadata
 
+if TYPE_CHECKING:
+    from .prim import Prim
 
 class APISchemaBase:
     """The base class for all \\em API schemas.
@@ -69,8 +73,10 @@ class APISchemaBase:
         }
     }
 
-    def __init__(self)->None:
-        self.metadata.apiSchemas.append(self.__class__.__name__)
+    def __init__(self, prim:Prim)->None:
+        self._prim = prim
+        if self.__class__.__name__ not in prim.metadata.apiSchemas:
+            prim.metadata.apiSchemas.insert(0, self.__class__.__name__)
     
     @classmethod
     def cls_to_str(cls)->str:

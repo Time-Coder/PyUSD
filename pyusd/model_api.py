@@ -39,12 +39,12 @@ class ModelAPI(APISchemaBase):
 
     @property
     def kind(self)->Kind:
-        return self.metadata.kind
+        return self._prim.metadata.kind
     
     @kind.setter
     @typechecked
     def kind(self, kind:Kind):
-        self.metadata.kind = kind
+        self._prim.metadata.kind = kind
 
     @typechecked
     def is_kind(self, base_kind:Kind, validation:KindValidation=KindValidation.KindValidationModelHierarchy)->bool:
@@ -69,13 +69,13 @@ class ModelAPI(APISchemaBase):
     def is_model(self)->bool:
         """Return true if this prim represents a model, based on its kind
         metadata."""
-        return self.metadata.kind == Kind.Model
+        return self._prim.metadata.kind == Kind.Model
 
     @property
     def is_group(self)->bool:
         """Return true if this prim represents a model group, based on its kind
         metadata."""
-        return self.metadata.kind == Kind.Group
+        return self._prim.metadata.kind == Kind.Group
     
     @property
     def asset_identifier(self)->Optional[asset]:
@@ -85,7 +85,7 @@ class ModelAPI(APISchemaBase):
         The asset identifier can be used to resolve the model's root layer via 
         the asset resolver plugin."""
 
-        return self.metadata.assetInfo.identifier
+        return self._prim.metadata.assetInfo.identifier
     
     @asset_identifier.setter
     @typechecked
@@ -97,7 +97,7 @@ class ModelAPI(APISchemaBase):
         if not isinstance(identifier, asset):
             identifier = asset(identifier)
 
-        self.metadata.assetInfo.identifier = identifier
+        self._prim.metadata.assetInfo.identifier = identifier
     
     @property
     def asset_name(self)->Optional[str]:
@@ -105,7 +105,7 @@ class ModelAPI(APISchemaBase):
         
         The asset name is the name of the asset, as would be used in a database 
         query."""
-        return self.metadata.assetInfo.name
+        return self._prim.metadata.assetInfo.name
     
     @asset_name.setter
     @typechecked
@@ -114,7 +114,7 @@ class ModelAPI(APISchemaBase):
         
         \\sa GetAssetName()"""
 
-        self.metadata.assetInfo.name = asset_name
+        self._prim.metadata.assetInfo.name = asset_name
     
     @property
     def asset_version(self)->Optional[str]:
@@ -129,7 +129,7 @@ class ModelAPI(APISchemaBase):
         that newer version may be the one that is resolved when the UsdStage is 
         opened."""
 
-        return self.metadata.assetInfo.version
+        return self._prim.metadata.assetInfo.version
     
     @asset_version.setter
     def asset_version(self, asset_version:str)->None:
@@ -137,7 +137,7 @@ class ModelAPI(APISchemaBase):
         
         \\sa GetAssetVersion()"""
 
-        self.metadata.assetInfo.version = asset_version
+        self._prim.metadata.assetInfo.version = asset_version
     
     @property
     def payload_asset_dependencies(self)->Optional[List[asset]]:
@@ -149,7 +149,7 @@ class ModelAPI(APISchemaBase):
         list is compiled and set at the root of the model. This enables 
         efficient dependency analysis without the need to include the model's 
         payload."""
-        return self.metadata.assetInfo.payloadAssetDependencies
+        return self._prim.metadata.assetInfo.payloadAssetDependencies
     
     @payload_asset_dependencies.setter
     def payload_asset_dependencies(self, asset_dependencies:List[asset])->None:
@@ -158,7 +158,7 @@ class ModelAPI(APISchemaBase):
         
         \\sa GetPayloadAssetDependencies()"""
 
-        self.metadata.assetInfo.payloadAssetDependencies = asset_dependencies
+        self._prim.metadata.assetInfo.payloadAssetDependencies = asset_dependencies
     
     @property
     def asset_info(self)->Dict[str, Any]:
@@ -171,7 +171,7 @@ class ModelAPI(APISchemaBase):
         The elements of this dictionary are composed element-wise, and are 
         nestable."""
 
-        return self.metadata.assetInfo
+        return self._prim.metadata.assetInfo
     
     @asset_info.setter
     @typechecked
@@ -179,4 +179,4 @@ class ModelAPI(APISchemaBase):
         """Sets the model's assetInfo dictionary to \\p info in the current edit 
         target."""
 
-        self.metadata.assetInfo = info
+        self._prim.metadata.assetInfo = info

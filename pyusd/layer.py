@@ -129,8 +129,9 @@ class Layer:
             return
         
         path_items = path_items[1:]
+        specifier = (Specifier.Def if prim.specifier != Specifier.Over else Specifier.Over)
         if root_name not in self._root_prims:
-            parent_prim = Prim(root_name)
+            parent_prim = Prim(root_name, specifier=specifier)
             parent_prim._set_layer(self)
             self._root_prims[root_name] = parent_prim
         parent_prim = self._root_prims[root_name]
@@ -190,8 +191,8 @@ class Layer:
         return prim
     
     @typechecked
-    def class_(self, prim_type:Type[PrimType], path:str)->PrimType:
-        prim = prim_type(specifier = Specifier.Class)
+    def class_(self, path:str)->Prim:
+        prim = Prim(specifier = Specifier.Class)
         self[path] = prim
         return prim
     
@@ -209,11 +210,13 @@ class Layer:
         return f'Layer("{self.file_name}")'
     
     def to_str(self)->str:
-        result = "#usda 1.0\n\n"
+        result = "#usda 1.0\n"
 
         metadata_str = self._metadata.to_str()
         if metadata_str:
-            result += metadata_str + "\n\n"
+            result += metadata_str + "\n"
+
+        result += "\n"
 
         prims_str_list = []
         for prim in self._root_prims.values():
