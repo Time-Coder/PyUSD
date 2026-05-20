@@ -14,6 +14,7 @@ from .color_space_definition_api import ColorSpaceDefinitionAPI
 from .collection_api import CollectionAPI
 from .clips_api import ClipsAPI
 from .utils import abspath
+from .common import SchemaKind, Kind, Axis
 
 
 __all__ = [
@@ -46,5 +47,8 @@ __all__ = [
     "ColorSpaceDefinitionAPI",
     "CollectionAPI",
     "ClipsAPI",
-    "abspath"
+    "abspath",
+    "SchemaKind",
+    "Kind",
+    "Axis"
 ]

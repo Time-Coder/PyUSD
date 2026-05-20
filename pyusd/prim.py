@@ -32,6 +32,7 @@ class Prim:
     _references: List[Prim]
     _payloads: List[Prim]
     _specializes: List[Prim]
+    _apis: Dict[str, APISchemaBase]
     
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
     meta: Dict[str, Any] = {}

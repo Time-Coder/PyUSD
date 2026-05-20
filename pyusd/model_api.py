@@ -28,6 +28,7 @@ class ModelAPI(APISchemaBase):
     schema_kind = SchemaKind.NonAppliedAPI
 
     meta = {
+        "kind": None,
         "customData": {
             "apiSchemaType": "nonApplied"
         }
