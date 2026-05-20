@@ -59,7 +59,7 @@ class Prim:
 
         inherits = []
         for base in self.__class__.__bases__:
-            if not issubclass(base, Prim) or base == Prim:
+            if not issubclass(base, Prim) or base is Prim:
                 continue
 
             inherits.append(f"</{base.__name__}>")
@@ -82,21 +82,10 @@ class Prim:
         })
 
         for klass in reversed(self.__class__.__mro__):
-            for name, value in klass.__dict__.items():
-                if not isinstance(value, Property):
-                    continue
+            if klass is Prim or not issubclass(klass, Prim):
+                continue
 
-                value._name = name
-
-                if name not in self._props:
-                    prop = value.clone()
-                    prop._parent_prim = self
-                    self._props[name] = prop
-                else:
-                    prop = self._props[name]
-                    prop.update_children(value)
-
-        self._metadata.update(self.meta)
+            self.update_from_class(klass)
     
     @property
     def specifier(self)->Specifier:
@@ -106,6 +95,25 @@ class Prim:
     @typechecked
     def specifier(self, specifier:Specifier)->None:
         self._metadata.specifier = specifier
+
+    def update_from_class(self, cls:type)->None:        
+        for name, value in cls.__dict__.items():
+            if name == "meta":
+                self._metadata.update(value)
+                continue
+
+            if not isinstance(value, Property):
+                continue
+
+            value._name = name
+
+            if name not in self._props:
+                prop = value.clone()
+                prop._parent_prim = self
+                self._props[name] = prop
+            else:
+                prop = self._props[name]
+                prop.update_children(value)
 
     def create_prop(self, prop:Property)->Property:            
         self._props[prop.name] = prop
@@ -686,5 +694,5 @@ class Prim:
     def model_api(self)->ModelAPI:
         if "model_api" not in self._apis:
             self._apis["model_api"] = ModelAPI(self)
-            
+
         return self._apis["model_api"]

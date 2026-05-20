@@ -77,6 +77,7 @@ class APISchemaBase:
         self._prim = prim
         if self.__class__.__name__ not in prim.metadata.apiSchemas:
             prim.metadata.apiSchemas.insert(0, self.__class__.__name__)
+            prim.update_from_class(self.__class__)
     
     @classmethod
     def cls_to_str(cls)->str:
