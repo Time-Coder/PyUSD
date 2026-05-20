@@ -27,31 +27,31 @@ class NodeDefAPI(APISchemaBase):
     
     """
 
-    schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
+    schema_kind: SchemaKind = SchemaKind.SingleApplyAPI
 
     meta = {
         "customData": {
             "apiSchemaType": "singleApply",
-            "extraIncludes": """
+            "extraIncludes": '''
     #include "pxr/usd/sdr/declare.h"
     #include "pxr/usd/sdr/shaderNode.h"
-        """,
+        ''',
             "schemaTokens": {
-                "universalSourceType": {"value": "", "doc": """Possible value for the "sourceType" parameter 
+                "universalSourceType": {"value": "", "doc": '''Possible value for the "sourceType" parameter 
                     in \\ref UsdShadeNodeDefAPI_ImplementationSource API. Represents 
                     the universal or fallback source type.
-                    """},
-                "sdrMetadata": {"doc": """Dictionary valued metadata key authored on
+                    '''},
+                "sdrMetadata": {"doc": '''Dictionary valued metadata key authored on
                     Shader prims with implementationSource value of sourceAsset or 
                     sourceCode to pass along metadata to the shader parser or 
                     compiler. It is also used to author metadata on shader 
                     properties in a UsdShade-based shader definition file.
-                    """},
-                "subIdentifier": {"doc": """This identifier is used in conjunction with a
+                    '''},
+                "subIdentifier": {"doc": '''This identifier is used in conjunction with a
                     specific source asset to indicate a particular definition within
                     the source asset, if the source asset specifies more than one
                     shader node definition.
-                    """}
+                    '''}
             }
         }
     }

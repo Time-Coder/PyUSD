@@ -19,7 +19,7 @@ class ParticleFieldPositionBaseAPI(APISchemaBase):
     
     """
 
-    schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
+    schema_kind: SchemaKind = SchemaKind.SingleApplyAPI
 
     meta = {
         "customData": {

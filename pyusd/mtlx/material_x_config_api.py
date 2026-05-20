@@ -20,7 +20,7 @@ class MaterialXConfigAPI(APISchemaBase):
 
     meta = {
         "customData": {
-            "apiSchemaCanOnlyApplyTo": None
+            "apiSchemaCanOnlyApplyTo": ["Material"]
         }
     }
 

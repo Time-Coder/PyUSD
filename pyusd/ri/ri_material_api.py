@@ -19,11 +19,11 @@ class RiMaterialAPI(APISchemaBase):
     meta = {
         "customData": {
             "className": "MaterialAPI",
-            "extraIncludes": """
+            "extraIncludes": '''
     #include "pxr/usd/usdShade/input.h"
     #include "pxr/usd/usdShade/output.h"
     #include "pxr/usd/usdShade/material.h"
-    """
+    '''
         }
     }
 

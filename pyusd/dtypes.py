@@ -85,12 +85,29 @@ class dictionary(dict):
     def __setattr__(self, name:str, value:Any)->None:
         self[name] = value
 
+    def update_one(self, key:str, value:Any)->None:
+        list_op = ""
+        if key.startswith("prepend "):
+            list_op = "prepend"
+        elif key.startswith("append "):
+            list_op = "append"
+        if list_op:
+            key = key[len(list_op):].strip()
+            if not isinstance(value, list):
+                value = [value]
+
+        if value is None and key in self and self[key] is not None:
+            return
+
+        if key in self and isinstance(self[key], dict) and isinstance(value, dict):
+            dictionary.update(self[key], value)
+        elif list_op == "prepend":
+            self[key][:0] = value
+        elif list_op == "append":
+            self[key].extend(value)
+        else:
+            self[key] = value
+
     def update(self, kwargs:Dict[str, Any])->None:
         for key, value in kwargs.items():
-            if value is None and key in self and self[key] is not None:
-                pass
-            else:
-                if key in self and isinstance(self[key], dict) and isinstance(value, dict):
-                    dictionary.update(self[key], value)
-                else:
-                    self[key] = value
+            self.update_one(key, value)

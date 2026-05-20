@@ -13,7 +13,7 @@ class SemanticsLabelsAPI(APISchemaBase):
     inheritance of semantics.
     """
 
-    schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
+    schema_kind: SchemaKind = SchemaKind.MultipleApplyAPI
 
     meta = {
         "customData": {

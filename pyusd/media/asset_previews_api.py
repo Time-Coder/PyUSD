@@ -40,30 +40,30 @@ class AssetPreviewsAPI(APISchemaBase):
         
     """
 
-    schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
+    schema_kind: SchemaKind = SchemaKind.SingleApplyAPI
 
     meta = {
         "customData": {
             "apiSchemaType": "singleApply",
-            "extraIncludes": """
+            "extraIncludes": '''
     #include "pxr/usd/sdf/types.h"
-        """,
+        ''',
             "schemaTokens": {
-                "previews": {"doc": """Dictionary key in the assetInfo dictionary
+                "previews": {"doc": '''Dictionary key in the assetInfo dictionary
                     for asset previews sub-dictionary.
-                    """},
-                "thumbnails": {"doc": """Dictionary key in the assetInfo["previews"] 
+                    '''},
+                "thumbnails": {"doc": '''Dictionary key in the assetInfo["previews"] 
                     dictionary for thumbnails previews sub-dictionary.
-                    """},
-                "defaultImage": {"doc": """Dictionary key in a Thumbnails dictionary for
+                    '''},
+                "defaultImage": {"doc": '''Dictionary key in a Thumbnails dictionary for
                     the default thumbnail image.
-                    """},
-                "previewThumbnails": {"value": "previews:thumbnails", "doc": """Full key in the assetInfo dictionary for
+                    '''},
+                "previewThumbnails": {"value": "previews:thumbnails", "doc": '''Full key in the assetInfo dictionary for
                     thumbnails previews dictionary.
-                    """},
-                "previewThumbnailsDefault": {"value": "previews:thumbnails:default", "doc": """Full key in the assetInfo dictionary for
+                    '''},
+                "previewThumbnailsDefault": {"value": "previews:thumbnails:default", "doc": '''Full key in the assetInfo dictionary for
                     the "default" thumbnails in the previews dictionary.
-                    """}
+                    '''}
             }
         }
     }

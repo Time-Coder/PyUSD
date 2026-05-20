@@ -14,7 +14,8 @@ class NonboundableLightBase(APISchemaBase):
 
     meta = {
         "customData": {
-            "extraIncludes": "#include "pxr/usd/usdLux/lightAPI.h" ",
-            "reflectedAPISchemas": None
-        }
+            "extraIncludes": '''#include "pxr/usd/usdLux/lightAPI.h" ''',
+            "reflectedAPISchemas": ["LightAPI"]
+        },
+        "prepend apiSchemas": ["LightAPI"]
     }

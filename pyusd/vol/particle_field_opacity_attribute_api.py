@@ -29,12 +29,12 @@ class ParticleFieldOpacityAttributeAPI(APISchemaBase):
     
     """
 
-    schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
+    schema_kind: SchemaKind = SchemaKind.SingleApplyAPI
 
     meta = {
         "customData": {
             "apiSchemaType": "singleApply",
-            "apiSchemaCanOnlyApplyTo": None
+            "apiSchemaCanOnlyApplyTo": ["ParticleField"]
         }
     }
 

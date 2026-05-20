@@ -15,8 +15,9 @@ class PluginLightFilter(LightFilter):
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     meta = {
+        "prepend apiSchemas": ["NodeDefAPI"],
         "customData": {
-            "extraIncludes": """
-    #include "pxr/usd/usdShade/nodeDefAPI.h" """
+            "extraIncludes": '''
+    #include "pxr/usd/usdShade/nodeDefAPI.h" '''
         }
     }

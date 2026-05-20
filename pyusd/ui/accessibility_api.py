@@ -46,7 +46,7 @@ class AccessibilityAPI(APISchemaBase):
     decide how best to surface information to users.
     """
 
-    schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
+    schema_kind: SchemaKind = SchemaKind.MultipleApplyAPI
 
     meta = {
         "customData": {

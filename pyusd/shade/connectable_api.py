@@ -30,11 +30,11 @@ class ConnectableAPI(APISchemaBase):
     meta = {
         "customData": {
             "apiSchemaType": "nonApplied",
-            "extraIncludes": """'''
+            "extraIncludes": '''
     #include "pxr/usd/usd/typed.h"
     #include "pxr/usd/usdShade/input.h"
     #include "pxr/usd/usdShade/output.h"
     #include "pxr/usd/usdShade/tokens.h"
-    #include "pxr/usd/usdShade/types.h"'''"""
+    #include "pxr/usd/usdShade/types.h"'''
         }
     }

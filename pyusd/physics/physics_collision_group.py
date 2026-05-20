@@ -22,9 +22,10 @@ class PhysicsCollisionGroup(Typed):
     meta = {
         "customData": {
             "className": "CollisionGroup",
-            "extraIncludes": """
-    #include "pxr/usd/usd/collectionAPI.h" """
-        }
+            "extraIncludes": '''
+    #include "pxr/usd/usd/collectionAPI.h" '''
+        },
+        "prepend apiSchemas": ["CollectionAPI:colliders"]
     }
 
     physics: Attribute[namespace] = Attribute(namespace, is_leaf=False)

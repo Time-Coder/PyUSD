@@ -20,8 +20,8 @@ class StatementsAPI(APISchemaBase):
 
     meta = {
         "customData": {
-            "extraIncludes": """
+            "extraIncludes": '''
     #include "pxr/usd/usdGeom/primvarsAPI.h"
-    """
+    '''
         }
     }

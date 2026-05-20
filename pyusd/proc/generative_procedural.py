@@ -22,6 +22,11 @@ class GenerativeProcedural(Boundable):
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
+    meta = {
+        "customData": {
+        }
+    }
+
     proceduralSystem = Attribute(token,
         doc="""The name or convention of the system responsible for evaluating
         the procedural.

@@ -93,9 +93,10 @@ class RenderPass(Typed):
     meta = {
         "customData": {
             "className": "Pass",
-            "extraIncludes": """
-    #include "pxr/usd/usd/collectionAPI.h" """
-        }
+            "extraIncludes": '''
+    #include "pxr/usd/usd/collectionAPI.h" '''
+        },
+        "prepend apiSchemas": ["CollectionAPI:renderVisibility", "CollectionAPI:cameraVisibility", "CollectionAPI:prune", "CollectionAPI:matte"]
     }
 
     collection: Attribute[namespace] = Attribute(namespace, is_leaf=False)

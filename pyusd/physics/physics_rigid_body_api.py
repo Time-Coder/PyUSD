@@ -20,9 +20,9 @@ class PhysicsRigidBodyAPI(APISchemaBase):
     meta = {
         "customData": {
             "className": "RigidBodyAPI",
-            "extraIncludes": """
+            "extraIncludes": '''
     #include "pxr/base/gf/matrix3f.h"
-    #include "pxr/base/gf/quatf.h" """
+    #include "pxr/base/gf/quatf.h" '''
         }
     }
 

@@ -13,9 +13,9 @@ class ShapingAPI(APISchemaBase):
 
     meta = {
         "customData": {
-            "extraIncludes": """
+            "extraIncludes": '''
     #include "pxr/usd/usdShade/input.h"
-    #include "pxr/usd/usdShade/output.h" """
+    #include "pxr/usd/usdShade/output.h" '''
         }
     }
 

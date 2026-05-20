@@ -14,7 +14,7 @@ class PhysicsLimitAPI(APISchemaBase):
     the high limit, motion along this axis is considered locked.
     """
 
-    schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
+    schema_kind: SchemaKind = SchemaKind.MultipleApplyAPI
 
     meta = {
         "customData": {

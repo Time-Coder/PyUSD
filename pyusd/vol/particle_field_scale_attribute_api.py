@@ -27,12 +27,12 @@ class ParticleFieldScaleAttributeAPI(APISchemaBase):
     scale should be applied to the kernel.
     """
 
-    schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
+    schema_kind: SchemaKind = SchemaKind.SingleApplyAPI
 
     meta = {
         "customData": {
             "apiSchemaType": "singleApply",
-            "apiSchemaCanOnlyApplyTo": None
+            "apiSchemaCanOnlyApplyTo": ["ParticleField"]
         }
     }
 

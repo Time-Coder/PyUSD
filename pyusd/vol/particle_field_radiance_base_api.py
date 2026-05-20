@@ -10,7 +10,7 @@ class ParticleFieldRadianceBaseAPI(APISchemaBase):
     that a radiance definition is present for a ParticleField
     """
 
-    schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
+    schema_kind: SchemaKind = SchemaKind.SingleApplyAPI
 
     meta = {
         "customData": {

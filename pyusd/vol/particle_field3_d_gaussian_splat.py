@@ -21,16 +21,17 @@ class ParticleField3DGaussianSplat(ParticleField):
 
     meta = {
         "customData": {
-            "extraIncludes": """'''
+            "extraIncludes": '''
     #include "pxr/usd/usdVol/particleFieldPositionAttributeAPI.h"
     #include "pxr/usd/usdVol/particleFieldOrientationAttributeAPI.h"
     #include "pxr/usd/usdVol/particleFieldScaleAttributeAPI.h"
     #include "pxr/usd/usdVol/particleFieldOpacityAttributeAPI.h"
     #include "pxr/usd/usdVol/particleFieldKernelGaussianEllipsoidAPI.h"
     #include "pxr/usd/usdVol/particleFieldSphericalHarmonicsAttributeAPI.h"
-            '''""",
-            "reflectedAPISchemas": None
-        }
+            ''',
+            "reflectedAPISchemas": ["ParticleFieldPositionAttributeAPI", "ParticleFieldOrientationAttributeAPI", "ParticleFieldScaleAttributeAPI", "ParticleFieldOpacityAttributeAPI", "ParticleFieldKernelGaussianEllipsoidAPI", "ParticleFieldSphericalHarmonicsAttributeAPI"]
+        },
+        "prepend apiSchemas": ["ParticleFieldPositionAttributeAPI", "ParticleFieldOrientationAttributeAPI", "ParticleFieldScaleAttributeAPI", "ParticleFieldOpacityAttributeAPI", "ParticleFieldKernelGaussianEllipsoidAPI", "ParticleFieldSphericalHarmonicsAttributeAPI"]
     }
 
     class ProjectionModeHint(token):

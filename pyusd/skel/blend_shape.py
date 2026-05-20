@@ -18,9 +18,9 @@ class BlendShape(Typed):
 
     meta = {
         "customData": {
-            "extraIncludes": """
+            "extraIncludes": '''
     #include "pxr/base/tf/span.h"
-    #include "pxr/usd/usdSkel/inbetweenShape.h" """
+    #include "pxr/usd/usdSkel/inbetweenShape.h" '''
         }
     }
 

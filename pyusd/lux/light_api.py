@@ -84,11 +84,12 @@ class LightAPI(APISchemaBase):
             "extraPlugInfo": {
                 "providesUsdShadeConnectableAPIBehavior": None
             },
-            "extraIncludes": """
+            "extraIncludes": '''
     #include "pxr/usd/usd/collectionAPI.h"
     #include "pxr/usd/usdShade/input.h"
-    #include "pxr/usd/usdShade/output.h" """
-        }
+    #include "pxr/usd/usdShade/output.h" '''
+        },
+        "prepend apiSchemas": ["CollectionAPI:lightLink", "CollectionAPI:shadowLink"]
     }
 
     class MaterialSyncMode(token):

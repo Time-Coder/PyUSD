@@ -29,13 +29,13 @@ class NodeGraph(Typed):
             "extraPlugInfo": {
                 "providesUsdShadeConnectableAPIBehavior": None
             },
-            "extraIncludes": """'''
+            "extraIncludes": '''
     #include <utility>
     #include "pxr/usd/usd/editTarget.h"
     #include "pxr/usd/usd/relationship.h"
     #include "pxr/usd/usdShade/input.h"
     #include "pxr/usd/usdShade/output.h"
     #include "pxr/usd/usdShade/shader.h"
-    #include "pxr/usd/usdShade/connectableAPIBehavior.h"'''"""
+    #include "pxr/usd/usdShade/connectableAPIBehavior.h"'''
         }
     }

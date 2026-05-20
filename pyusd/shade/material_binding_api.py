@@ -99,20 +99,20 @@ class MaterialBindingAPI(APISchemaBase):
 
     meta = {
         "customData": {
-            "extraIncludes": """
+            "extraIncludes": '''
     #include "pxr/usd/usd/collectionAPI.h"
     #include "pxr/usd/usdGeom/subset.h"
     #include "pxr/usd/usdShade/material.h"
-    #include <tbb/concurrent_unordered_map.h>""",
+    #include <tbb/concurrent_unordered_map.h>''',
             "schemaTokens": {
-                "materialBinding": {"value": "material:binding", "doc": """
+                "materialBinding": {"value": "material:binding", "doc": '''
                     The relationship name on non-shading prims to
                     denote a binding to a UsdShadeMaterial.
-                    """},
-                "materialBindingCollection": {"value": "material:binding:collection", "doc": """ 
+                    '''},
+                "materialBindingCollection": {"value": "material:binding:collection", "doc": ''' 
                     The relationship name on non-shading prims to
                     denote a collection-based binding to a UsdShadeMaterial.
-                    """},
+                    '''},
                 "allPurpose": {"value": "", "doc": """Possible value for the 'materialPurpose' parameter
                     in the various methods available in UsdShadeMaterialBindingAPI.
                     Its value is empty and its purpose is to represent a general 
@@ -121,11 +121,11 @@ class MaterialBindingAPI(APISchemaBase):
                     """},
                 "preview": {"doc": """Possible value for the 'materialPurpose' 
                     parameter in UsdShadeMaterialBindingAPI, to be used when the 
-                    render is in service of a goal other than a high fidelity "full"
+                    render is in service of a goal other than a high fidelity \"full\"
                     render (such as scene manipulation, modeling, or realtime 
                     playback). Latency and speed are generally of greater concern 
                     for preview renders, therefore preview materials are generally 
-                    designed to be "lighterweight" compared to full materials.
+                    designed to be \"lighterweight\" compared to full materials.
                     """},
                 "full": {"doc": """Possible value for the 'materialPurpose'
                     parameter in UsdShadeMaterialBindingAPI, to be used when the
@@ -133,10 +133,10 @@ class MaterialBindingAPI(APISchemaBase):
                     representation of a scene, considering all lighting and material
                     information, at highest fidelity.
                     """},
-                "bindMaterialAs": {"doc": """Token valued metadata key authored on a material 
+                "bindMaterialAs": {"doc": '''Token valued metadata key authored on a material 
                     binding relationship to indicate the strength of the binding 
                     relative to bindings authored on descendants.
-                    """},
+                    '''},
                 "weakerThanDescendants": {"doc": """Possible value for 'bindMaterialAs' metadata on the 
                     collection-based material binding relationship. Indicates 
                     that the binding represented by the relationship is weaker than 
@@ -149,7 +149,7 @@ class MaterialBindingAPI(APISchemaBase):
                     metadata's default value. Clients should pass this in for the 
                     'bindingStrength' argument to UsdShadeMaterialBindingAPI::Bind(),
                     if they want to author the default value (weakerThanDescendants)
-                    sparsely. The value "fallbackStrength" never gets authored 
+                    sparsely. The value \"fallbackStrength\" never gets authored 
                     into scene description."""}
             }
         }

@@ -30,19 +30,18 @@ class ParticleFieldSphericalHarmonicsAttributeAPI(APISchemaBase):
     
     """
 
-    schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
+    schema_kind: SchemaKind = SchemaKind.SingleApplyAPI
 
     meta = {
         "customData": {
             "apiSchemaType": "singleApply",
-            "apiSchemaCanOnlyApplyTo": """'''
+            "apiSchemaCanOnlyApplyTo": ["ParticleField"],
+            "extraIncludes": '''
     #include "pxr/usd/usdVol/particleFieldRadianceBaseAPI.h"
-            '''""",
-            "extraIncludes": """'''
-    #include "pxr/usd/usdVol/particleFieldRadianceBaseAPI.h"
-            '''""",
-            "reflectedAPISchemas": None
-        }
+            ''',
+            "reflectedAPISchemas": ["ParticleFieldRadianceBaseAPI"]
+        },
+        "prepend apiSchemas": ["ParticleFieldRadianceBaseAPI"]
     }
 
     radiance: Attribute[namespace] = Attribute(namespace, is_leaf=False)

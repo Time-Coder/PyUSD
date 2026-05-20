@@ -32,15 +32,16 @@ class Shader(Typed):
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     meta = {
+        "prepend apiSchemas": ["NodeDefAPI"],
         "customData": {
             "extraPlugInfo": {
                 "providesUsdShadeConnectableAPIBehavior": None
             },
-            "extraIncludes": """'''
+            "extraIncludes": '''
     #include "pxr/usd/usdShade/input.h"
     #include "pxr/usd/usdShade/output.h"
     #include "pxr/usd/usdShade/tokens.h"
     #include "pxr/usd/sdr/declare.h"
-    #include "pxr/usd/sdr/shaderNode.h"'''"""
+    #include "pxr/usd/sdr/shaderNode.h"'''
         }
     }

@@ -33,11 +33,12 @@ class LightFilter(Xformable):
             "extraPlugInfo": {
                 "providesUsdShadeConnectableAPIBehavior": None
             },
-            "extraIncludes": """
+            "extraIncludes": '''
     #include "pxr/usd/usd/collectionAPI.h"
     #include "pxr/usd/usdShade/input.h"
-    #include "pxr/usd/usdShade/output.h" """
-        }
+    #include "pxr/usd/usdShade/output.h" '''
+        },
+        "prepend apiSchemas": ["CollectionAPI:filterLink"]
     }
 
     collection: Attribute[namespace] = Attribute(namespace, is_leaf=False)

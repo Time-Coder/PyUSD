@@ -70,34 +70,34 @@ class Material(NodeGraph):
             "extraPlugInfo": {
                 "providesUsdShadeConnectableAPIBehavior": None
             },
-            "extraIncludes": """'''
+            "extraIncludes": '''
     #include "pxr/usd/usd/variantSets.h"
     #include "pxr/usd/usdGeom/subset.h"
-    #include "pxr/usd/usdShade/connectableAPI.h"'''""",
+    #include "pxr/usd/usdShade/connectableAPI.h"''',
             "schemaTokens": {
-                "materialVariant": {"doc": """The variant name of material variation
+                "materialVariant": {"doc": '''The variant name of material variation
                     described on a UsdShadeMaterial.
-                    """},
-                "surface": {"doc": """Describes the <i>surface</i> output 
+                    '''},
+                "surface": {"doc": '''Describes the <i>surface</i> output 
                     terminal on a UsdShadeMaterial. It is used to define the 
                     terminal UsdShadeShader describing the surface of a 
                     UsdShadeMaterial.
-                    """},
-                "displacement": {"doc": """Describes the <i>displacement</i> output 
+                    '''},
+                "displacement": {"doc": '''Describes the <i>displacement</i> output 
                     terminal on a UsdShadeMaterial. It is used to define the 
                     terminal UsdShadeShader describing the displacement of a 
                     UsdShadeMaterial.
-                    """},
-                "volume": {"doc": """Describes the <i>volume</i> output 
+                    '''},
+                "volume": {"doc": '''Describes the <i>volume</i> output 
                     terminal on a UsdShadeMaterial. It is used to define the 
                     terminal UsdShadeShader describing the volume of a 
                     UsdShadeMaterial.
-                    """},
-                "universalRenderContext": {"value": "", "doc": """Possible value for the "renderContext" parameter
+                    '''},
+                "universalRenderContext": {"value": "", "doc": '''Possible value for the "renderContext" parameter
                     in \\ref UsdShadeMaterial_Outputs API. Represents the universal
                     renderContext. An output with a universal renderContext is 
                     applicable to all possible rendering contexts.
-                    """}
+                    '''}
             }
         }
     }

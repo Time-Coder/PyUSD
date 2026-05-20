@@ -18,19 +18,18 @@ class ParticleFieldPositionAttributeAPI(APISchemaBase):
     provided then the ParticleField has no particles.
     """
 
-    schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
+    schema_kind: SchemaKind = SchemaKind.SingleApplyAPI
 
     meta = {
         "customData": {
             "apiSchemaType": "singleApply",
-            "apiSchemaCanOnlyApplyTo": """
+            "apiSchemaCanOnlyApplyTo": ["ParticleField"],
+            "extraIncludes": '''
                 #include "pxr/usd/usdVol/particleFieldPositionBaseAPI.h"
-            """,
-            "extraIncludes": """
-                #include "pxr/usd/usdVol/particleFieldPositionBaseAPI.h"
-            """,
-            "reflectedAPISchemas": None
-        }
+            ''',
+            "reflectedAPISchemas": ["ParticleFieldPositionBaseAPI"]
+        },
+        "prepend apiSchemas": ["ParticleFieldPositionBaseAPI"]
     }
 
     positions = Attribute(List[point3f], doc="Defines the position for each particle in local space.")

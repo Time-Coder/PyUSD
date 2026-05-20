@@ -20,6 +20,10 @@ class MeshLightAPI(APISchemaBase):
 
     schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
 
+    meta = {
+        "prepend apiSchemas": ["LightAPI"]
+    }
+
     light: Attribute[namespace] = Attribute(namespace, is_leaf=False)
     light.shaderId = Attribute(token,
         uniform=True,

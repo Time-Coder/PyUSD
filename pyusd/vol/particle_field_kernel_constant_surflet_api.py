@@ -16,17 +16,16 @@ class ParticleFieldKernelConstantSurfletAPI(APISchemaBase):
     
     """
 
-    schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
+    schema_kind: SchemaKind = SchemaKind.SingleApplyAPI
 
     meta = {
         "customData": {
             "apiSchemaType": "singleApply",
-            "apiSchemaCanOnlyApplyTo": """'''
+            "apiSchemaCanOnlyApplyTo": ["ParticleField"],
+            "extraIncludes": '''
     #include "pxr/usd/usdVol/particleFieldKernelBaseAPI.h"
-            '''""",
-            "extraIncludes": """'''
-    #include "pxr/usd/usdVol/particleFieldKernelBaseAPI.h"
-            '''""",
-            "reflectedAPISchemas": None
-        }
+            ''',
+            "reflectedAPISchemas": ["ParticleFieldKernelBaseAPI"]
+        },
+        "prepend apiSchemas": ["ParticleFieldKernelBaseAPI"]
     }

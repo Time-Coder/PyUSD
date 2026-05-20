@@ -21,8 +21,8 @@ class Skeleton(Boundable):
             "extraPlugInfo": {
                 "implementsComputeExtent": True
             },
-            "extraIncludes": """
-    #include "pxr/usd/usdSkel/topology.h" """
+            "extraIncludes": '''
+    #include "pxr/usd/usdSkel/topology.h" '''
         }
     }
 

@@ -348,19 +348,35 @@ class CodeGenerator:
         """解析元数据"""
         for child in node.named_children:
             if child.type == 'metadata_assignment':
+                orderer = ''
                 key = ''
                 value = None
                 value_dict = None
                 value_path = None
+                value_list = None
                 for assign_child in child.named_children:
-                    if assign_child.type == 'identifier':
+                    if assign_child.type == 'orderer':
+                        orderer = assign_child.text.decode('utf-8')
+                    elif assign_child.type == 'identifier':
                         key = assign_child.text.decode('utf-8')
                     elif assign_child.type == 'string':
-                        value = assign_child.text.decode('utf-8').strip('"')
+                        text = assign_child.text.decode('utf-8')
+                        # 处理三引号字符串
+                        if text.startswith("'''") and text.endswith("'''"):
+                            value = text[3:-3]
+                        elif text.startswith('"""') and text.endswith('"""'):
+                            value = text[3:-3]
+                        else:
+                            value = text.strip('"')
                     elif assign_child.type == 'dictionary':
                         value_dict = self._parse_usd_dictionary(assign_child)
                     elif assign_child.type == 'arc_path':
                         value_path = assign_child.text.decode('utf-8')
+                    elif assign_child.type == 'list':
+                        value_list = self._parse_usd_list(assign_child)
+                
+                # 组合 orderer 和 key
+                full_key = f"{orderer} {key}" if orderer else key
                 
                 if key == 'documentation' or key == 'doc':
                     info['doc'] = value or ''
@@ -373,6 +389,23 @@ class CodeGenerator:
                 elif key == 'inherits' and value_path:
                     # inherits 可以是单个路径或路径列表
                     info['inherits'].append(value_path)
+                elif full_key == 'prepend apiSchemas' and value_list:
+                    info['api_schemas'] = value_list
+                    # 同时保存到 metadata，保留完整的 key
+                    if not info.get('metadata'):
+                        info['metadata'] = {}
+                    info['metadata'][full_key] = value_list
+                else:
+                    # 其他所有字段都保存到 metadata
+                    if value is not None or value_dict is not None or value_list is not None:
+                        if not info.get('metadata'):
+                            info['metadata'] = {}
+                        if value_dict is not None:
+                            info['metadata'][full_key] = value_dict
+                        elif value_list is not None:
+                            info['metadata'][full_key] = value_list
+                        elif value is not None:
+                            info['metadata'][full_key] = value
             elif child.type == 'attribute_assignment':
                 self._parse_attribute_assignment(child, info)
     
@@ -594,6 +627,10 @@ class CodeGenerator:
                     result.append(float(text))
         return result
     
+    def _parse_usd_list(self, node: Node) -> List[Any]:
+        """解析 USD 列表（与 array 类似）"""
+        return self._parse_usd_array(node)
+    
     def _parse_usd_dictionary(self, node: Node) -> Dict[str, Any]:
         """解析 USD 格式的字典"""
         result = {}
@@ -606,7 +643,14 @@ class CodeGenerator:
                     if item_child.type == 'identifier':
                         key = item_child.text.decode('utf-8')
                     elif item_child.type == 'string':
-                        value = item_child.text.decode('utf-8').strip('"')
+                        text = item_child.text.decode('utf-8')
+                        # 处理三引号字符串
+                        if text.startswith("'''") and text.endswith("'''"):
+                            value = text[3:-3]
+                        elif text.startswith('"""') and text.endswith('"""'):
+                            value = text[3:-3]
+                        else:
+                            value = text.strip('"')
                     elif item_child.type == 'bool':
                         value = item_child.text.decode('utf-8') == 'true'
                     elif item_child.type == 'int':
@@ -636,7 +680,14 @@ class CodeGenerator:
                     if next_sibling.type == 'identifier' and not key:
                         key = next_sibling.text.decode('utf-8')
                     elif next_sibling.type == 'string' and key and value is None:
-                        value = next_sibling.text.decode('utf-8').strip('"')
+                        text = next_sibling.text.decode('utf-8')
+                        # 处理三引号字符串
+                        if text.startswith("'''") and text.endswith("'''"):
+                            value = text[3:-3]
+                        elif text.startswith('"""') and text.endswith('"""'):
+                            value = text[3:-3]
+                        else:
+                            value = text.strip('"')
                         break
                     elif next_sibling.type == 'bool' and key and value is None:
                         value = next_sibling.text.decode('utf-8') == 'true'
@@ -655,6 +706,9 @@ class CodeGenerator:
                         break
                     elif next_sibling.type == 'array' and key and value is None:
                         value = self._parse_usd_array(next_sibling)
+                        break
+                    elif next_sibling.type == 'list' and key and value is None:
+                        value = self._parse_usd_list(next_sibling)
                         break
                     elif next_sibling.type == 'dictionary' and key and value is None:
                         value = self._parse_usd_dictionary(next_sibling)
@@ -725,11 +779,11 @@ class CodeGenerator:
         # API schemas
         if kind == 'class' and not has_explicit_name:
             api_schema_type = class_info.get('custom_data', {}).get('apiSchemaType', '')
-            if api_schema_type == 'nonAppliedAPI':
+            if api_schema_type == 'nonApplied' or api_schema_type == 'nonAppliedAPI':
                 return 'SchemaKind.NonAppliedAPI'
-            elif api_schema_type == 'singleApplyAPI':
+            elif api_schema_type == 'singleApply' or api_schema_type == 'singleApplyAPI':
                 return 'SchemaKind.SingleApplyAPI'
-            elif api_schema_type == 'multipleApplyAPI':
+            elif api_schema_type == 'multipleApply' or api_schema_type == 'multipleApplyAPI':
                 return 'SchemaKind.MultipleApplyAPI'
             return 'SchemaKind.NonAppliedAPI'
         
@@ -1554,9 +1608,15 @@ class CodeGenerator:
                 return "float('-inf')"
             return str(value)
         elif isinstance(value, str):
-            if '\n' in value:
-                # 多行字符串，使用三引号
-                return f'"""{value}"""'
+            if '\n' in value or '"' in value:
+                # 多行字符串或包含双引号
+                if "'" not in value:
+                    # 不包含单引号，使用三单引号
+                    return f"'''{value}'''"
+                else:
+                    # 包含单引号，使用三双引号（需要转义内部的双引号）
+                    escaped = value.replace('"', '\\"')
+                    return f'"""{escaped}"""'
             else:
                 return f'"{value}"'
         elif isinstance(value, list):

@@ -23,10 +23,10 @@ class SkelBindingAPI(APISchemaBase):
     meta = {
         "customData": {
             "className": "BindingAPI",
-            "extraIncludes": """
+            "extraIncludes": '''
     #include "pxr/base/tf/span.h"
     #include "pxr/usd/usdGeom/primvar.h"
-    #include "pxr/usd/usdSkel/skeleton.h" """
+    #include "pxr/usd/usdSkel/skeleton.h" '''
         }
     }
 

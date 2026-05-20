@@ -31,14 +31,14 @@ class CoordSysAPI(APISchemaBase):
     
     """
 
-    schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
+    schema_kind: SchemaKind = SchemaKind.MultipleApplyAPI
 
     meta = {
         "customData": {
             "apiSchemaType": "multipleApply",
             "propertyNamespacePrefix": "coordSys",
-            "extraIncludes": """'''
-    #include "pxr/usd/usdGeom/xformable.h"'''"""
+            "extraIncludes": '''
+    #include "pxr/usd/usdGeom/xformable.h"'''
         }
     }
 
