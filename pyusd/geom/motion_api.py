@@ -18,7 +18,7 @@ class MotionAPI(APISchemaBase):
     
     """
     
-    schema_kind = SchemaKind.MultipleApplyAPI
+    schema_kind = SchemaKind.SingleApplyAPI
 
     motion: Attribute[namespace] = Attribute(namespace, is_leaf=False)
     motion.blurScale = Attribute(float, "blurScale", value=1.0, doc=

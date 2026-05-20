@@ -38,7 +38,7 @@ class VisibilityAPI(APISchemaBase):
     values that result from the attributes introduced by this schema.
     """
     
-    schema_kind = SchemaKind.MultipleApplyAPI
+    schema_kind = SchemaKind.SingleApplyAPI
 
     meta = {
         "customData": {

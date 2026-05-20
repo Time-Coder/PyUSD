@@ -97,7 +97,15 @@ class Prim:
     def specifier(self, specifier:Specifier)->None:
         self._metadata.specifier = specifier
 
-    def update_from_class(self, cls:type, instance_name:str)->None:        
+    def update_from_class(self, cls:type, instance_name:str="")->None:
+        prefix = ""
+        start_prop = None
+        if instance_name:
+            prefix = cls.meta["customData"]["propertyNamespacePrefix"]
+            if prefix not in self._props:
+                prefix_prop = self.create_prop(Property(prefix, is_leaf=False))
+                start_prop = prefix_prop.create_prop(Property(instance_name, is_leaf=False))
+
         for name, value in cls.__dict__.items():
             if name == "meta":
                 self._metadata.update(value)
@@ -108,13 +116,22 @@ class Prim:
 
             value._name = name
 
-            if name not in self._props:
-                prop = value.clone()
-                prop._parent_prim = self
-                self._props[name] = prop
+            if instance_name:
+                if name not in start_prop._children:
+                    prop = value.clone()
+                    prop._parent_prop = start_prop
+                    start_prop._children[name] = prop
+                else:
+                    prop = start_prop._children[name]
+                    prop.update_children(value)
             else:
-                prop = self._props[name]
-                prop.update_children(value)
+                if name not in self._props:
+                    prop = value.clone()
+                    prop._parent_prim = self
+                    self._props[name] = prop
+                else:
+                    prop = self._props[name]
+                    prop.update_children(value)
 
     def create_prop(self, prop:Property)->Property:            
         self._props[prop.name] = prop

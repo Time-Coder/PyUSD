@@ -56,7 +56,7 @@ class Layer:
         if isinstance(rel_layer, Layer):
             rel_layer = rel_layer.file_name
 
-        if rel_layer and self is not None:
+        if rel_layer:
             abs_path = os.path.abspath(rel_layer).replace("\\", "/")
             self_layer_abs_path = os.path.abspath(self.file_name).replace("\\", "/")
             if abs_path != self_layer_abs_path:

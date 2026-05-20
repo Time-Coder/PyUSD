@@ -92,6 +92,7 @@ class Metadata:
     @typechecked
     def to_str(self, indents:int=0, full:bool=False)->str:
         from .prim import Prim
+        from .layer import Layer
 
         tabs = "    " * indents
         next_tabs = "    " * (indents + 1)
@@ -132,8 +133,11 @@ class Metadata:
                 continue
 
             rel_layer = None
-            if self._parent is not None and isinstance(self._parent, Prim) and self._parent.layer is not None:
-                rel_layer = self._parent.layer
+            if self._parent is not None:
+                if isinstance(self._parent, Prim) and self._parent.layer is not None:
+                    rel_layer = self._parent.layer
+                elif isinstance(self._parent, Layer):
+                    rel_layer = self._parent
 
             value_str = usd_value_str(value, indents+1, degenerate_list=(is_ref and key != "subLayers"), rel_layer=rel_layer, need_quote=(not is_ref))
             if is_ref and key != "subLayers":
