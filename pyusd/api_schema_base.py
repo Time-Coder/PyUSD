@@ -73,12 +73,30 @@ class APISchemaBase:
         }
     }
 
-    def __init__(self, prim:Prim)->None:
+    def __init__(self, prim:Prim, instance_name:str="")->None:
         self._prim = prim
-        if self.__class__.__name__ not in prim.metadata.apiSchemas:
-            prim.metadata.apiSchemas.insert(0, self.__class__.__name__)
+
+        cls_name = self.__class__.__name__
+        if self.schema_kind == SchemaKind.SingleApplyAPI:
+            if cls_name in prim.metadata.apiSchemas:
+                return
+            
+            prim.metadata.apiSchemas.insert(0, cls_name)
             prim.update_from_class(self.__class__)
-    
+        elif self.schema_kind == SchemaKind.MultipleApplyAPI:
+            if not instance_name:
+                raise RuntimeError(f"MultipleApplyAPI '{cls_name}' requires an instance_name")
+            
+            if not instance_name.isidentifier():
+                raise ValueError(f'"{instance_name}" is not a valid name')
+            
+            api_name = f"{cls_name}:{instance_name}"
+            if api_name in prim.metadata.apiSchemas:
+                return
+            
+            prim.metadata.apiSchemas.insert(0, api_name)
+            prim.update_from_class(self.__class__, instance_name)
+            
     @classmethod
     def cls_to_str(cls)->str:
         type_name = cls.__name__

@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from .prim import Prim
     from .attribute import Attribute
     from .relationship import Relationship
+    from .api_schema_base import APISchemaBase
 
 
 class Property:
@@ -171,21 +172,26 @@ class Property:
             else:
                 self._children[child_name].update_children(child)
 
-    def __get__(self, instance:Union[Prim, Property], owner)->Property:
+    def __get__(self, instance:Union[Prim, Property, APISchemaBase], owner)->Property:
         from .prim import Prim
+        from .api_schema_base import APISchemaBase
 
         if isinstance(instance, Prim):
             return instance._props[self._name]
         elif isinstance(instance, Property):
             return instance._children[self._name]
-        
-    def __set__(self, instance, prims:Prim):
+        elif isinstance(instance, APISchemaBase):
+            return instance._prim._props[self._name]
+    
+    def __set__(self, instance, value:Any):
         from .prim import Prim
 
         if isinstance(instance, Prim):
-            instance._props[self._name].set(prims)
+            instance._props[self._name].set(value)
         elif isinstance(instance, Property):
-            instance._children[self._name].set(prims)
+            instance._children[self._name].set(value)
+        elif isinstance(instance, APISchemaBase):
+            instance._prim._props[self._name].set(value)
 
     def __getattr__(self, name:str)->Property:
         if name not in self._children:

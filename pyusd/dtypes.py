@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Dict
 from enum import ReprEnum
 
 
@@ -84,3 +84,13 @@ class dictionary(dict):
     
     def __setattr__(self, name:str, value:Any)->None:
         self[name] = value
+
+    def update(self, kwargs:Dict[str, Any])->None:
+        for key, value in kwargs.items():
+            if value is None and key in self and self[key] is not None:
+                pass
+            else:
+                if key in self and isinstance(self[key], dict) and isinstance(value, dict):
+                    dictionary.update(self[key], value)
+                else:
+                    self[key] = value

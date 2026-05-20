@@ -97,7 +97,7 @@ class Prim:
     def specifier(self, specifier:Specifier)->None:
         self._metadata.specifier = specifier
 
-    def update_from_class(self, cls:type)->None:        
+    def update_from_class(self, cls:type, instance_name:str)->None:        
         for name, value in cls.__dict__.items():
             if name == "meta":
                 self._metadata.update(value)

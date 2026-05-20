@@ -50,12 +50,28 @@ class Metadata:
     def update(self, kwargs:Dict[str, Any])->None:
         for key, value in kwargs.items():
             if key == "customData":
-                self._custom_data.update(value)
-                for sub_key in self._custom_data.keys():
-                    self._custom_is_set[sub_key] = False
+                for sub_key, sub_value in value.items():
+                    if sub_value is None and sub_key in self._custom_data and self._custom_data[sub_key] is not None:
+                        pass
+                    else:
+                        if sub_key in self._custom_data and isinstance(self._custom_data[sub_key], dict):
+                            dictionary.update(self._custom_data[sub_key], sub_value)
+                        else:
+                            self._custom_data[sub_key] = sub_value
+
+                    if sub_key not in self._custom_is_set:
+                        self._custom_is_set[sub_key] = False
             else:
-                self._builtin_data[key] = value
-                self._builtin_is_set[key] = False
+                if value is None and key in self._builtin_data and self._builtin_data[key] is not None:
+                    pass
+                else:
+                    if key in self._builtin_data and isinstance(self._builtin_data[key], dict) and isinstance(value, dict):
+                        dictionary.update(self._builtin_data[key], value)
+                    else:
+                        self._builtin_data[key] = value
+
+                if key not in self._builtin_is_set:
+                    self._builtin_is_set[key] = False
 
     @property
     def customData(self)->dictionary:
