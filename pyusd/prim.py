@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Dict, Union, Optional, List, Any, TYPE_CHECKING, TypeVar, Type
+from typing import Dict, Union, Optional, List, Any, TYPE_CHECKING, TypeVar, Type, Tuple
 from typeguard import typechecked
 from itertools import chain
 
@@ -10,7 +10,7 @@ from .utils import infer_type, in_annotations, abspath
 from .sdf import Specifier
 from .common import SchemaKind
 from .api_schema_base import APISchemaBase
-from .model_api import ModelAPI
+from .api_wrapper import APIWrapper
 
 if TYPE_CHECKING:
     from .layer import Layer
@@ -32,10 +32,13 @@ class Prim:
     _references: List[Prim]
     _payloads: List[Prim]
     _specializes: List[Prim]
-    _apis: Dict[str, APISchemaBase]
+    _apis: Dict[Tuple[str, str], APISchemaBase]
+    _api_wrappers: Dict[str, APIWrapper]
     
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
     meta: Dict[str, Any] = {}
+
+    _all_api_schemas: Dict[str, Type[APISchemaBase]] = {}
 
     def __init__(self, name:str="", specifier:Specifier=Specifier.Def)->None:
         if self.schema_kind in [SchemaKind.Invalid, SchemaKind.AbstractBase, SchemaKind.AbstractTyped]:
@@ -56,7 +59,8 @@ class Prim:
         self._references: List[Prim] = []
         self._payloads: List[Prim] = []
         self._specializes: List[Prim] = []
-        self._apis: Dict[str, APISchemaBase] = {}
+        self._apis: Dict[Tuple[str, str], APISchemaBase] = {}
+        self._api_wrappers: Dict[str, APIWrapper] = {}
 
         inherits = []
         for base in self.__class__.__bases__:
@@ -86,7 +90,7 @@ class Prim:
             if klass is Prim or not issubclass(klass, Prim):
                 continue
 
-            self.update_from_class(klass)
+            self._fetch_from_class(klass)
     
     @property
     def specifier(self)->Specifier:
@@ -97,14 +101,17 @@ class Prim:
     def specifier(self, specifier:Specifier)->None:
         self._metadata.specifier = specifier
 
-    def update_from_class(self, cls:type, instance_name:str="")->None:
+    def _fetch_from_class(self, cls:Union[Type[Prim], Type[APISchemaBase]], instance_name:str="")->None:
         prefix = ""
         start_prop = None
         if instance_name:
             prefix = cls.meta["customData"]["propertyNamespacePrefix"]
             if prefix not in self._props:
                 prefix_prop = self.create_prop(Property(prefix, is_leaf=False))
-                start_prop = prefix_prop.create_prop(Property(instance_name, is_leaf=False))
+            else:
+                prefix_prop = self._props[prefix]
+
+            start_prop = prefix_prop.create_prop(Property(instance_name, is_leaf=False))
 
         for name, value in cls.__dict__.items():
             if name == "meta":
@@ -644,10 +651,28 @@ class Prim:
         result += f'}}\n'
         return result
 
-    def __getattr__(self, name:str)->Property:
+    def __getattr__(self, name:str)->Union[Property, APISchemaBase, APIWrapper]:
         if name in self._props:
             return self._props[name]
         
+        if name.endswith("_api"):
+            if (name, "") in self._apis:
+                return self._apis[name, ""]
+        
+            api_type = APISchemaBase.schema(name)
+            if "customData" in api_type.meta and "apiSchemaCanOnlyApplyTo" in api_type.meta["customData"]:
+                allowed_types = api_type.meta["customData"]["apiSchemaCanOnlyApplyTo"]
+                if not any(cls_name in allowed_types for cls_name in self.__mro__):
+                    raise ValueError(f"{api_type.__name__} cannot applied to {self.__class__.__name__}")
+
+            if api_type.schema_kind != SchemaKind.MultipleApplyAPI:
+                self._apis[name, ""] = api_type(self)
+                return self._apis[name, ""]
+            else:
+                if name not in self._api_wrappers:
+                    self._api_wrappers[name] = APIWrapper(name, api_type, self)
+                return self._api_wrappers[name]
+
         try:
             return self.create_prop(self.prop(name, True).clone(False))
         except KeyError:
@@ -707,10 +732,3 @@ class Prim:
                 self.create_prop(Attribute(infer_type(value), name, uniform=False, custom=True, is_leaf=False, fix_type=False))
 
         self._props[name].set(value)
-
-    @property
-    def model_api(self)->ModelAPI:
-        if "model_api" not in self._apis:
-            self._apis["model_api"] = ModelAPI(self)
-
-        return self._apis["model_api"]

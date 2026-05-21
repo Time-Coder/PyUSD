@@ -351,3 +351,14 @@ def in_annotations(name:str, cls:type)->bool:
                 return True
             
     return False
+
+
+def camel_to_snake(name: str) -> str:
+    s1 = re.sub(r'([A-Z]+)([A-Z][a-z])', r'\1_\2', name)
+    s2 = re.sub(r'([a-z\d])([A-Z])', r'\1_\2', s1)
+    return s2.lower()
+
+
+def snake_to_pascal(name: str) -> str:
+    name = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', name)
+    return ''.join(word.capitalize() for word in name.split('_'))

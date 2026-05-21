@@ -1,9 +1,10 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Type, Dict, Optional
 
 from .property import Property
 from .common import SchemaKind
 from .metadata import Metadata
+from .utils import camel_to_snake
 
 if TYPE_CHECKING:
     from .prim import Prim
@@ -74,8 +75,13 @@ class APISchemaBase:
         }
     }
 
+    _all_schemas: Optional[List[APISchemaBase]] = None
+    _all_schemas_dict: Optional[Dict[str, APISchemaBase]] = None
+
     def __init__(self, prim:Prim, instance_name:str="")->None:
         self._prim = prim
+        self._instance_name = instance_name
+        self._namespace_prefix = ""
 
         cls_name = self.__class__.__name__
         if self.schema_kind == SchemaKind.SingleApplyAPI:
@@ -83,7 +89,7 @@ class APISchemaBase:
                 return
             
             prim.metadata.apiSchemas.insert(0, cls_name)
-            prim.update_from_class(self.__class__)
+            prim._fetch_from_class(self.__class__)
         elif self.schema_kind == SchemaKind.MultipleApplyAPI:
             if not instance_name:
                 raise RuntimeError(f"MultipleApplyAPI '{cls_name}' requires an instance_name")
@@ -91,13 +97,63 @@ class APISchemaBase:
             if not instance_name.isidentifier():
                 raise ValueError(f'"{instance_name}" is not a valid name')
             
+            self._namespace_prefix = self.meta["customData"]["propertyNamespacePrefix"]
+
             api_name = f"{cls_name}:{instance_name}"
             if api_name in prim.metadata.apiSchemas:
                 return
             
             prim.metadata.apiSchemas.insert(0, api_name)
-            prim.update_from_class(self.__class__, instance_name)
+            prim._fetch_from_class(self.__class__, instance_name)
             
+    @staticmethod
+    def all_schemas()->List[Type[APISchemaBase]]:
+        APISchemaBase._fetch_builtin_schemas()
+        return APISchemaBase._all_schemas
+    
+    @staticmethod
+    def schema(name:str)->Type[APISchemaBase]:
+        APISchemaBase._fetch_builtin_schemas()
+        return APISchemaBase._all_schemas_dict[name]
+    
+    @staticmethod
+    def _fetch_builtin_schemas()->None:
+        if APISchemaBase._all_schemas:
+            return
+        
+        from .model_api import ModelAPI
+        from .clips_api import ClipsAPI
+        from .collection_api import CollectionAPI
+        from .color_space_api import ColorSpaceAPI
+        from .color_space_definition_api import ColorSpaceDefinitionAPI
+
+        APISchemaBase._all_schemas = [ModelAPI, ClipsAPI, CollectionAPI, ColorSpaceAPI, ColorSpaceDefinitionAPI]
+        APISchemaBase._all_schemas_dict = {
+            "model_api": ModelAPI,
+            "clips_api": ClipsAPI,
+            "collection_api": CollectionAPI,
+            "color_space_api": ColorSpaceAPI,
+            "color_space_definition_api": ColorSpaceDefinitionAPI
+        }
+
+        from . import geom, lux, media, mtlx, physics, proc, render, ri, semantics, shade, skel, ui, vol
+        for module in [geom, lux, media, mtlx, physics, proc, render, ri, semantics, shade, skel, ui, vol]:
+            for schema_name in module.__all__:
+                if schema_name.endswith("API"):
+                    cls = getattr(module, schema_name)
+                    APISchemaBase._all_schemas.append(cls)
+                    APISchemaBase._all_schemas_dict[camel_to_snake(schema_name)] = cls
+
+    @staticmethod
+    def register_schema(cls:Type[APISchemaBase])->None:
+        APISchemaBase._fetch_builtin_schemas()
+        if not issubclass(cls, APISchemaBase):
+            raise TypeError(f"{cls.__name__} is not a subclass of APISchemaBase")
+
+        if cls not in APISchemaBase._all_schemas:
+            APISchemaBase._all_schemas.append(cls)
+            APISchemaBase._all_schemas_dict[camel_to_snake(cls.__name__)] = cls
+
     @classmethod
     def cls_to_str(cls)->str:
         type_name = cls.__name__

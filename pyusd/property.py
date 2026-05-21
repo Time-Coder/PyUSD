@@ -5,6 +5,7 @@ from enum import Enum
 
 from .metadata import Metadata
 from .utils import infer_type, in_annotations
+from .common import SchemaKind
 
 if TYPE_CHECKING:
     from .prim import Prim
@@ -181,7 +182,12 @@ class Property:
         elif isinstance(instance, Property):
             return instance._children[self._name]
         elif isinstance(instance, APISchemaBase):
-            return instance._prim._props[self._name]
+            if instance.schema_kind == SchemaKind.MultipleApplyAPI:
+                prefix_prop = instance._prim._props[instance._namespace_prefix]
+                start_prop = prefix_prop._children[instance._instance_name]
+                return start_prop._children[self._name]
+            else:
+                return instance._prim._props[self._name]
     
     def __set__(self, instance, value:Any):
         from .prim import Prim
