@@ -1,5 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..gf import float3, quatf
+from ..gf import float3, point3f, quatf
 from ..dtypes import namespace
 from .physics import Physics
 

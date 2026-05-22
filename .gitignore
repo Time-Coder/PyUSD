@@ -4,3 +4,4 @@ __pycache__
 _assets
 .lingma
 *.egg-info
+result.json

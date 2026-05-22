@@ -2,7 +2,7 @@ from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
 from typing import List
 from ..dtypes import namespace
-from ..gf import float3
+from ..gf import float3, half3
 from ..common import SchemaKind
 
 

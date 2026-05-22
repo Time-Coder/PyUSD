@@ -39,6 +39,7 @@ from .quath import quath
 
 from .alias import (
     color3h, color3f, color3d,
+    color4h, color4f, color4d,
     point3h, point3f, point3d,
     vector3h, vector3f, vector3d,
     texCoord2f, texCoord2h, texCoord2d,

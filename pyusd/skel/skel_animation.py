@@ -1,7 +1,7 @@
 from ..typed import Typed
 from ..attribute import Attribute
 from typing import List
-from ..gf import float3, quatf
+from ..gf import float3, half3, quatf
 from ..dtypes import token
 from ..common import SchemaKind
 

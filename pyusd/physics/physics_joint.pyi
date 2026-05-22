@@ -1,5 +1,5 @@
 from ..geom.imageable import Imageable
-from ..gf import quatf
+from ..gf import point3f, quatf
 from ..dtypes import namespace
 from .physics import Physics
 

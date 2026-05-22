@@ -1,5 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..gf import float2
+from ..gf import color3f, float2
 from ..dtypes import asset, namespace, string, token
 from .ui import Ui
 

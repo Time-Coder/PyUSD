@@ -6,19 +6,24 @@ import os
 import numpy as np
 
 from .gf import (
-    double2, double3, double4,
-    vector3d, color3d, color4d,
-    float2, float3, float4,
-    vector3f, color3f, color4f,
-    texCoord2d, texCoord3d,
-    texCoord2f, texCoord3f,
-    point3f, point3d, normal3d, normal3f,
     int2, int3, int4,
-    matrix2d, matrix3d, matrix4d, frame4d,
-    quath, quatf, quatd, MathForm
+    half2, half3, half4,
+    float2, float3, float4,
+    double2, double3, double4,
+    matrix2d, matrix3d, matrix4d,
+    quath, quatf, quatd,
+
+    color3h, color3f, color3d,
+    color4h, color4f, color4d,
+    point3h, point3f, point3d,
+    normal3h, normal3f, normal3d,
+    vector3h, vector3f, vector3d,
+    texCoord2f, texCoord2h, texCoord2d,
+    texCoord3f, texCoord3h, texCoord3d,
+    frame4d, MathForm
 )
 
-from .dtypes import double, half, int64, string, token, pathExpression, timecode, uchar, uint, uint64, namespace, asset, dictionary
+from .dtypes import double, half, int64, string, token, pathExpression, timecode, uchar, uint, uint64, namespace, asset, dictionary, opaque, group
 
 if TYPE_CHECKING:
     from .layer import Layer
@@ -39,31 +44,31 @@ usd_scalar_types = (
     timecode,
     uchar,
     uint,
-    uint64
+    uint64,
+    opaque,
+    group
 )
 
 usd_vector_types = (
-    double2, texCoord2d,
-    double3, color3d, vector3d, point3d, normal3d, texCoord3d,
-    double4, color4d, 
-    float2, texCoord2f,
-    float3, vector3f, point3f, normal3f, texCoord3f, color3f,
-    float4, color4f,
-    int2,
-    int3,
-    int4
+    int2, int3, int4,
+    half2, half3, half4,
+    float2, float3, float4,
+    double2, double3, double4,
+    color3h, color3f, color3d,
+    color4h, color4f, color4d,
+    point3h, point3f, point3d,
+    normal3h, normal3f, normal3d,
+    vector3h, vector3f, vector3d,
+    texCoord2f, texCoord2h, texCoord2d,
+    texCoord3f, texCoord3h, texCoord3d,
 )
 
 usd_matrix_types = (
-    matrix2d,
-    matrix3d,
-    matrix4d, frame4d
+    matrix2d, matrix3d, matrix4d, frame4d
 )
 
 usd_quat_types = (
-    quath,
-    quatf,
-    quatd
+    quath, quatf, quatd
 )
 
 usd_dtypes = (

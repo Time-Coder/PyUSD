@@ -84,7 +84,10 @@ class APISchemaBase:
         self._namespace_prefix = ""
 
         cls_name = self.__class__.__name__
-        if self.schema_kind == SchemaKind.SingleApplyAPI:
+        if self.schema_kind == SchemaKind.NonAppliedAPI:
+            if (camel_to_snake(self.__class__.__name__), "") not in prim._apis:
+                prim._fetch_from_class(self.__class__)
+        elif self.schema_kind == SchemaKind.SingleApplyAPI:
             if cls_name in prim.metadata.apiSchemas:
                 return
             
@@ -102,7 +105,7 @@ class APISchemaBase:
             api_name = f"{cls_name}:{instance_name}"
             if api_name in prim.metadata.apiSchemas:
                 return
-            
+
             prim.metadata.apiSchemas.insert(0, api_name)
             prim._fetch_from_class(self.__class__, instance_name)
             

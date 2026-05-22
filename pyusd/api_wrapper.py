@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Type, TYPE_CHECKING
 
 from .api_schema_base import APISchemaBase

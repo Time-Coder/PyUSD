@@ -1,4 +1,5 @@
 from ..api_schema_base import APISchemaBase
+from ..gf import point3f, point3h
 from .radiance import Radiance
 
 

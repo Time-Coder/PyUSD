@@ -1,4 +1,5 @@
 from ..api_schema_base import APISchemaBase
+from ..gf import color3f
 from ..dtypes import asset, namespace
 from .collection import Collection
 from .inputs import Inputs

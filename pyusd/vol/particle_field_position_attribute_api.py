@@ -1,7 +1,7 @@
 from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
 from typing import List
-from ..gf import point3f
+from ..gf import point3f, point3h
 from ..common import SchemaKind
 
 

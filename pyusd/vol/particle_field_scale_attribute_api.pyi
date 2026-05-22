@@ -1,5 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..gf import float3
+from ..gf import float3, half3
 from .radiance import Radiance
 
 

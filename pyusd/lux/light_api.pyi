@@ -1,4 +1,5 @@
 from ..api_schema_base import APISchemaBase
+from ..gf import color3f
 from ..dtypes import namespace, token
 from .collection import Collection
 from .inputs import Inputs
@@ -87,8 +88,8 @@ class LightAPI(APISchemaBase):
     def light(self) -> Light: ...
 
     @property
-    def collection(self) -> Collection: ...
+    def inputs(self) -> Inputs: ...
 
     @property
-    def inputs(self) -> Inputs: ...
+    def collection(self) -> Collection: ...
 

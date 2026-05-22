@@ -1,5 +1,5 @@
 from ..typed import Typed
-from ..gf import float3, quatf
+from ..gf import float3, half3, quatf
 from ..dtypes import token
 from .primvars import Primvars
 from .skel import Skel

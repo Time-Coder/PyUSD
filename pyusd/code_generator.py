@@ -1,9 +1,3 @@
-"""
-USD Schema 代码生成器
-
-通过解析 schema.usda 文件自动生成 Python 类。
-"""
-
 import os
 from typing import List, Dict, Any, Set, Tuple
 from tree_sitter import Node
@@ -12,16 +6,25 @@ from types import ModuleType
 
 
 class CodeGenerator:
-    """USD Schema 代码生成器
-    
-    解析 schema.usda 文件并生成对应的 Python 类文件。
-    
-    Attributes:
-        schema_path: schema.usda 文件的路径
-        schema_dir: schema 文件所在目录
-        classes_info: 存储所有类的信息
-        class_names: 类名列表
-    """
+
+    gf_types = {
+        "int2", "int3", "int4",
+        "half2", "half3", "half4",
+        "float2", "float3", "float4",
+        "double2", "double3", "double4",
+        "matrix2f", "matrix3f", "matrix4f",
+        "matrix2d", "matrix3d", "matrix4d",
+        "quatf", "quatd", "quath",
+        "color3h", "color3f", "color3d",
+        "color4h", "color4f", "color4d",
+        "texCoord2h", "texCoord2f", "texCoord2d",
+        "texCoord3h", "texCoord3f", "texCoord3d", 
+        "normal3h", "normal3f", "normal3d",
+        "point3h", "point3f", "point3d",
+        "vector3h", "vector3f", "vector3d",
+        "frame4d"
+    }
+    dtypes_types = {'double', 'half', 'int64', 'string', 'token', 'pathExpression', 'timecode', 'uchar', 'uint', 'uint64', 'namespace', 'asset', 'dictionary', 'opaque', 'group'}
     
     def __init__(self, schema_path: str):
         """初始化代码生成器
@@ -851,23 +854,8 @@ class CodeGenerator:
                 py_type = self._usd_type_to_python_type(member['type'])
                 self._collect_needed_types(py_type, needed_types)
         
-        # 添加 gf 和 dtypes 导入
-        gf_types = {
-            'double2', 'double3', 'double4',
-            'vector3d', 'color3d', 'color4d',
-            'float2', 'float3', 'float4',
-            'vector3f', 'color3f', 'color4f',
-            'texCoord2d', 'texCoord3d',
-            'texCoord2f', 'texCoord3f',
-            'point3f', 'point3d', 'normal3d', 'normal3f',
-            'int2', 'int3', 'int4',
-            'matrix2d', 'matrix3d', 'matrix4d', 'frame4d',
-            'quath', 'quatf', 'quatd',
-        }
-        dtypes_types = {'double', 'half', 'int64', 'string', 'token', 'pathExpression', 'timecode', 'uchar', 'uint', 'uint64', 'asset', 'dictionary'}
-        
-        gf_imports = sorted(needed_types & gf_types)
-        dtypes_imports = sorted(needed_types & dtypes_types)
+        gf_imports = sorted(needed_types & self.gf_types)
+        dtypes_imports = sorted(needed_types & self.dtypes_types)
         
         if gf_imports:
             imports.append(f"from ..gf import {', '.join(gf_imports)}")
@@ -951,15 +939,8 @@ class CodeGenerator:
             if has_allowed_tokens:
                 needed_types.add('token')
             
-            # 生成 gf 和 dtypes 导入
-            gf_types = {'matrix2d', 'matrix3d', 'matrix4d', 'matrix2f', 'matrix3f', 'matrix4f',
-                       'quatd', 'quatf', 'quath', 'double2', 'double3', 'double4',
-                       'float2', 'float3', 'float4', 'int2', 'int3', 'int4',
-                       'half', 'vector3f', 'vector3d'}
-            dtypes_types = {'token', 'namespace', 'string', 'asset', 'timecode', 'dictionary'}
-            
-            gf_imports = sorted(needed_types & gf_types)
-            dtypes_imports = sorted(needed_types & dtypes_types)
+            gf_imports = sorted(needed_types & self.gf_types)
+            dtypes_imports = sorted(needed_types & self.dtypes_types)
             
             if gf_imports:
                 imports.append(f"from ..gf import {', '.join(gf_imports)}")
@@ -1040,27 +1021,11 @@ class CodeGenerator:
             if has_allowed_tokens:
                 needed_types.add('token')
             
-            # 添加 gf 类型导入
-            gf_types = {
-                'double2', 'double3', 'double4',
-                'vector3d', 'color3d', 'color4d',
-                'float2', 'float3', 'float4',
-                'vector3f', 'color3f', 'color4f',
-                'texCoord2d', 'texCoord3d',
-                'texCoord2f', 'texCoord3f',
-                'point3f', 'point3d', 'normal3d', 'normal3f',
-                'int2', 'int3', 'int4',
-                'matrix2d', 'matrix3d', 'matrix4d', 'frame4d',
-                'quath', 'quatf', 'quatd',
-            }
-            
-            needed_gf_types = needed_types & gf_types
+            needed_gf_types = needed_types & self.gf_types
             if needed_gf_types:
                 imports.append(f"from ..gf import {', '.join(sorted(needed_gf_types))}")
             
-            # 添加 dtypes 导入
-            dtypes_types = {'double', 'half', 'int64', 'string', 'token', 'pathExpression', 'timecode', 'uchar', 'uint', 'uint64', 'asset', 'dictionary', 'namespace'}
-            needed_dtype_types = needed_types & dtypes_types
+            needed_dtype_types = needed_types & self.dtypes_types
             if needed_dtype_types:
                 imports.append(f"from ..dtypes import {', '.join(sorted(needed_dtype_types))}")
         
