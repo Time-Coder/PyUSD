@@ -11,7 +11,3 @@ class matrix4d(genMat4):
     @staticmethod
     def subvec_type()->type:
         return double4
-    
-
-class frame4d(matrix4d):
-    pass

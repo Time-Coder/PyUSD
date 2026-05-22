@@ -13,13 +13,17 @@ from .int2 import int2
 from .int3 import int3
 from .int4 import int4
 
-from .float2 import float2, texCoord2f
-from .float3 import float3, color3f, normal3f, point3f, vector3f, texCoord3f
-from .float4 import float4, color4f
+from .half2 import half2
+from .half3 import half3
+from .half4 import half4
 
-from .double2 import double2, texCoord2d
-from .double3 import double3, color3d, normal3d, point3d, vector3d, texCoord3d
-from .double4 import double4, color4d
+from .float2 import float2
+from .float3 import float3
+from .float4 import float4
+
+from .double2 import double2
+from .double3 import double3
+from .double4 import double4
 
 from .matrix2f import matrix2f
 from .matrix3f import matrix3f
@@ -27,11 +31,21 @@ from .matrix4f import matrix4f
 
 from .matrix2d import matrix2d
 from .matrix3d import matrix3d
-from .matrix4d import matrix4d, frame4d
+from .matrix4d import matrix4d
 
 from .quatf import quatf
 from .quatd import quatd
 from .quath import quath
+
+from .alias import (
+    color3h, color3f, color3d,
+    point3h, point3f, point3d,
+    vector3h, vector3f, vector3d,
+    texCoord2f, texCoord2h, texCoord2d,
+    texCoord3f, texCoord3h, texCoord3d,
+    normal3h, normal3f, normal3d,
+    frame4d
+)
 
 from .funcs import (
     abs, sign, floor, ceil, trunc, round, roundEven, fract, mod,
@@ -58,31 +72,22 @@ __all__ = [
     "genMat3", "Mat3Type",
     "genMat4", "Mat4Type",
     "genQuat", "QuatType",
-    "int2",
-    "int3",
-    "int4",
-    "float2",
-    "float3",
-    "float4",
-    "double2",
-    "double3",
-    "double4",
-    "matrix2f",
-    "matrix3f",
-    "matrix4f",
-    "matrix2d",
-    "matrix3d",
-    "matrix4d",
-    "quatf",
-    "quatd",
-    "quath",
-    "texCoord2f",
-    "color3f", "normal3f", "point3f", "vector3f", "texCoord3f",
-    "color4f",
-    "texCoord2d",
-    "color3d", "normal3d", "point3d", "vector3d", "texCoord3d",
-    "color4d",
+    "int2", "int3", "int4",
+    "half2", "half3", "half4",
+    "float2", "float3", "float4",
+    "double2", "double3", "double4",
+    "matrix2f", "matrix3f", "matrix4f",
+    "matrix2d", "matrix3d", "matrix4d",
+    "quatf", "quatd", "quath",
+    "color3h", "color3f", "color3d",
+    "color4h", "color4f", "color4d",
+    "texCoord2h", "texCoord2f", "texCoord2d",
+    "texCoord3h", "texCoord3f", "texCoord3d", 
+    "normal3h", "normal3f", "normal3d",
+    "point3h", "point3f", "point3d",
+    "vector3h", "vector3f", "vector3d",
     "frame4d",
+
     "abs", "sign", "floor", "ceil", "trunc", "round", "roundEven", "fract", "mod",
     "min", "max", "clamp", "mix", "step", "smoothstep", "sqrt", "inversesqrt",
     "pow", "exp", "exp2", "exp10", "log", "log2", "log10",
