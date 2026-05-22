@@ -191,13 +191,19 @@ class Property:
     
     def __set__(self, instance, value:Any):
         from .prim import Prim
+        from .api_schema_base import APISchemaBase
 
         if isinstance(instance, Prim):
             instance._props[self._name].set(value)
         elif isinstance(instance, Property):
             instance._children[self._name].set(value)
         elif isinstance(instance, APISchemaBase):
-            instance._prim._props[self._name].set(value)
+            if instance.schema_kind == SchemaKind.MultipleApplyAPI:
+                prefix_prop = instance._prim._props[instance._namespace_prefix]
+                start_prop = prefix_prop._children[instance._instance_name]
+                start_prop._children[self._name].set(value)
+            else:
+                instance._prim._props[self._name].set(value)
 
     def __getattr__(self, name:str)->Property:
         if name not in self._children:
