@@ -1,5 +1,6 @@
 import os
-from typing import List, Dict, Any, Set, Tuple
+import re
+from typing import List, Dict, Any, Set, Tuple, Optional
 from tree_sitter import Node
 from typeguard import typechecked
 from types import ModuleType
@@ -117,6 +118,46 @@ class CodeGenerator:
             base_class = self._determine_base_class(class_info)
             _, imported_token_classes = self._generate_token_classes(class_info['attributes'])
             self._regenerate_pyi_file(class_name, class_info, base_class, imported_token_classes)
+
+    def add_api_interfaces(self) -> None:
+        """Add parsed API schema accessors to the package root prim.pyi file.
+
+        Single-apply and non-applied API schemas are exposed as properties,
+        while multiple-apply API schemas are exposed as methods accepting an
+        instance name. Existing accessors are left untouched.
+        """
+        if not self._parsed:
+            self.parse()
+
+        prim_pyi_path = self._find_root_prim_pyi()
+        if prim_pyi_path is None:
+            raise FileNotFoundError("Unable to find prim.pyi from schema directory")
+
+        with open(prim_pyi_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        api_infos = self._collect_api_interface_infos(prim_pyi_path)
+        missing_imports = [
+            import_stmt
+            for _, _, import_stmt, _ in api_infos
+            if not self._has_imported_class(content, import_stmt)
+        ]
+        missing_interfaces = [
+            self._format_prim_api_interface(method_name, class_name, schema_kind)
+            for method_name, class_name, _, schema_kind in api_infos
+            if not self._has_prim_api_interface(content, method_name)
+        ]
+
+        if not missing_imports and not missing_interfaces:
+            return
+
+        if missing_imports:
+            content = self._insert_imports(content, missing_imports)
+        if missing_interfaces:
+            content = content.rstrip() + "\n\n" + "\n\n".join(missing_interfaces) + "\n"
+
+        with open(prim_pyi_path, 'w', encoding='utf-8') as f:
+            f.write(content)
     
     def generate_all(self) -> None:
         """生成所有文件（.py、.pyi 和 __init__.py）
@@ -268,7 +309,108 @@ class CodeGenerator:
         target_file_path = os.path.join(os.path.dirname(module.__file__), "schema_generated.usda")
         with open(target_file_path, "w") as f:
             f.write(result)
-    
+
+    def _find_root_prim_pyi(self) -> Optional[str]:
+        current_dir = os.path.abspath(self.schema_dir)
+
+        while True:
+            candidate = os.path.join(current_dir, 'prim.pyi')
+            if os.path.isfile(candidate):
+                return candidate
+
+            parent_dir = os.path.dirname(current_dir)
+            if parent_dir == current_dir:
+                return None
+            current_dir = parent_dir
+
+    def _collect_api_interface_infos(self, prim_pyi_path: str) -> List[Tuple[str, str, str, str]]:
+        result = []
+        seen_methods = set()
+        prim_dir = os.path.dirname(os.path.abspath(prim_pyi_path))
+        schema_dir = os.path.abspath(self.schema_dir)
+        rel_module_dir = os.path.relpath(schema_dir, prim_dir)
+        module_prefix_parts = [] if rel_module_dir == '.' else rel_module_dir.split(os.sep)
+
+        for class_name in self.class_names:
+            class_info = self.classes_info[class_name]
+            if not self._is_api_schema_info(class_name, class_info):
+                continue
+
+            method_name = self._camel_to_snake(class_name)
+            if method_name in seen_methods:
+                continue
+
+            module_name = self._camel_to_snake(class_name)
+            module_path = '.'.join([''] + module_prefix_parts + [module_name])
+            import_stmt = f"from {module_path} import {class_name}"
+            schema_kind = self._determine_schema_kind(class_info)
+            result.append((method_name, class_name, import_stmt, schema_kind))
+            seen_methods.add(method_name)
+
+        return result
+
+    def _is_api_schema_info(self, class_name: str, class_info: Dict[str, Any]) -> bool:
+        if class_name == 'APISchemaBase':
+            return False
+
+        inherits = {
+            parent.lstrip('</').rstrip('>')
+            for parent in class_info.get('inherits', [])
+        }
+        if 'APISchemaBase' in inherits:
+            return True
+
+        api_schema_type = class_info.get('custom_data', {}).get('apiSchemaType', '')
+        if api_schema_type in {
+            'nonApplied',
+            'nonAppliedAPI',
+            'singleApply',
+            'singleApplyAPI',
+            'multipleApply',
+            'multipleApplyAPI',
+        }:
+            return True
+
+        return (
+            class_info.get('kind') == 'class'
+            and not class_info.get('has_explicit_name')
+            and class_name.endswith('API')
+        )
+
+    def _has_imported_class(self, content: str, import_stmt: str) -> bool:
+        class_name = import_stmt.rsplit(' import ', 1)[1]
+        pattern = rf"^from\s+\S+\s+import\s+.*\b{re.escape(class_name)}\b"
+        return re.search(pattern, content, flags=re.MULTILINE) is not None
+
+    def _has_prim_api_interface(self, content: str, method_name: str) -> bool:
+        pattern = rf"^\s+def\s+{re.escape(method_name)}\s*\("
+        return re.search(pattern, content, flags=re.MULTILINE) is not None
+
+    def _format_prim_api_interface(self, method_name: str, class_name: str, schema_kind: str) -> str:
+        if schema_kind == 'SchemaKind.MultipleApplyAPI':
+            return f"    def {method_name}(self, instance_name:str)->{class_name}: ..."
+
+        return "\n".join([
+            "    @property",
+            f"    def {method_name}(self)->{class_name}: ...",
+        ])
+
+    def _insert_imports(self, content: str, import_statements: List[str]) -> str:
+        unique_imports = []
+        for import_stmt in import_statements:
+            if import_stmt not in unique_imports:
+                unique_imports.append(import_stmt)
+
+        lines = content.splitlines()
+        insert_at = 0
+        for index, line in enumerate(lines):
+            if line.startswith('from ') or line.startswith('import '):
+                insert_at = index + 1
+
+        lines[insert_at:insert_at] = unique_imports
+        line_ending = '\n' if content.endswith('\n') else ''
+        return '\n'.join(lines) + line_ending
+
     def _collect_all_namespace_members(self) -> Dict[str, List[Dict[str, Any]]]:
         """收集所有类的命名空间成员"""
         namespace_members = {}

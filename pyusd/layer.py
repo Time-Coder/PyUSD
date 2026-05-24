@@ -7,6 +7,8 @@ from .sdf import Specifier
 from .prim import Prim, PrimType
 from .layer_metadata import LayerMetadata
 from .common import Axis
+from .metadata import Metadata
+from .usda_parser import UsdaParser
 
 
 class Layer:
@@ -237,3 +239,63 @@ class Layer:
 
         with open(abs_file_name, "w") as f:
             f.write(self.to_str())
+
+    def load(self)->None:
+        from tree_sitter import Language, Parser
+        import tree_sitter_usd
+
+        if not self._file_name:
+            raise ValueError("Layer has no file name")
+
+        with open(self._file_name, "rb") as f:
+            code = f.read()
+
+        parser = Parser(Language(tree_sitter_usd.language()))
+        tree = parser.parse(code)
+
+        self._root_prims.clear()
+        self._default_prim = None
+        self._sub_layers.clear()
+        self._metadata = LayerMetadata(self, {
+            "subLayers": [],
+            "defaultPrim": None,
+            "endTimeCode": None,
+            "metersPerUnit": 1,
+            "startTimeCode": 0,
+            "timeCodesPerSecond": 60,
+            "upAxis": Axis.Y
+        })
+
+        pending_default_prim = None
+        for child in tree.root_node.named_children:
+            if child.type == "metadata":
+                metadata = UsdaParser.load_metadata_assignments(child)
+                pending_default_prim = metadata.pop("defaultPrim", pending_default_prim)
+                sub_layers = metadata.pop("subLayers", None)
+                if sub_layers is not None:
+                    self._sub_layers = [
+                        Layer(self._resolve_asset_path(str(item).strip("@")))
+                        for item in self._as_list(sub_layers)
+                    ]
+                    self._metadata._builtin_is_set["subLayers"] = True
+
+                for key, value in metadata.items():
+                    Metadata._set_authored(self._metadata, key, value)
+            elif child.type == "prim_definition":
+                self.add_root_prim(Prim._load(child))
+
+        if pending_default_prim:
+            self._default_prim = self._root_prims.get(str(pending_default_prim))
+            Metadata._set_authored(self._metadata, "defaultPrim", pending_default_prim)
+
+    def _resolve_asset_path(self, path:str)->str:
+        if os.path.isabs(path):
+            return path
+        return os.path.abspath(os.path.join(os.path.dirname(self._file_name), path))
+
+    def _as_list(self, value:Any)->List[Any]:
+        if value is None:
+            return []
+        if isinstance(value, list):
+            return value
+        return [value]

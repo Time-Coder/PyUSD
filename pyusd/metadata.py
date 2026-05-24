@@ -1,10 +1,14 @@
 from __future__ import annotations
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional, TYPE_CHECKING
 from typeguard import typechecked
 import copy
 
 from .utils import usd_value_str, infer_type, usd_type_str, in_annotations
 from .dtypes import dictionary
+from .usda_parser import UsdaParser
+
+if TYPE_CHECKING:
+    from tree_sitter import Node
 
 
 class Metadata:
@@ -45,6 +49,27 @@ class Metadata:
         result._builtin_is_set = copy.deepcopy(self._builtin_is_set)
         result._custom_is_set = copy.deepcopy(self._custom_is_set)
         return result
+
+    @staticmethod
+    def _load(node:Node, parent:Any=None, defaults:Optional[Dict[str, Any]]=None)->Metadata:
+        if defaults is None:
+            defaults = {}
+
+        result = Metadata(parent, defaults)
+        for key, value in UsdaParser.load_metadata_assignments(node).items():
+            Metadata._set_authored(result, key, value)
+
+        return result
+
+    @staticmethod
+    def _set_authored(metadata:Metadata, key:str, value:Any)->None:
+        clean_key = key.split(" ", 1)[1] if key.startswith(("prepend ", "append ")) else key
+        metadata.update({key: value})
+        if clean_key in metadata._builtin_data:
+            metadata._builtin_is_set[clean_key] = True
+        else:
+            metadata._custom_data[clean_key] = value
+            metadata._custom_is_set[clean_key] = True
 
     @typechecked
     def update(self, kwargs:Dict[str, Any])->None:
@@ -137,7 +162,10 @@ class Metadata:
                 value = self._parent._sub_layers
 
             if is_ref and use_ori_value:
-                value += ori_value
+                if isinstance(value, dict) and isinstance(ori_value, dict):
+                    value.update(ori_value)
+                else:
+                    value += ori_value
 
             if is_ref and not value:
                 continue

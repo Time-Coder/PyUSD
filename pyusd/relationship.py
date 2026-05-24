@@ -5,9 +5,11 @@ import copy
 
 from .property import Property
 from .utils import usd_value_str
+from .usda_parser import UsdaParser
 
 if TYPE_CHECKING:
     from .prim import Prim
+    from tree_sitter import Node
 
 
 class Relationship(Property):
@@ -18,6 +20,35 @@ class Relationship(Property):
     def __init__(self, name:str="", doc:str="", metadata:Optional[Dict[str, Any]]=None, custom:bool=False, is_leaf:bool=True)->None:
         Property.__init__(self, name, doc=doc, metadata=metadata, custom=custom, is_leaf=is_leaf)
         self._targets:List[Prim] = []
+
+    @staticmethod
+    def _load(node:Node)->Relationship:
+        name = ""
+        metadata = {}
+        custom = False
+        targets = []
+
+        for child in node.named_children:
+            if child.type in ["identifier", "qualified_identifier"]:
+                name = UsdaParser.node_text(child)
+            elif child.type == "custom":
+                custom = True
+            elif child.type == "metadata":
+                metadata = UsdaParser.load_metadata_assignments(child)
+            elif child.type in ["prim_path", "arc_path", "list", "list_proxy"]:
+                value = UsdaParser.load_value(child)
+                targets = value if isinstance(value, list) else [value]
+
+        prop = Relationship(name=name, metadata=metadata, custom=custom)
+        if targets:
+            prop._targets = targets
+            prop._value_state = Property.ValueState.Authored
+        else:
+            prop._value_state = Property.ValueState.NotAuthored
+        from .metadata import Metadata
+        for key, value in metadata.items():
+            Metadata._set_authored(prop._metadata, key, value)
+        return prop
 
     @property
     def value_state(self)->Property.ValueState:

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Dict, Any, TypeVar, Optional
+from typing import Dict, Any, TypeVar, Optional, List, TYPE_CHECKING
 from typeguard import typechecked
 import copy
 
@@ -7,6 +7,10 @@ from .data import Data
 from .property import Property
 from .dtypes import namespace, token
 from .utils import usd_value_str, in_annotations
+from .usda_parser import UsdaParser
+
+if TYPE_CHECKING:
+    from tree_sitter import Node
 
 
 T = TypeVar('T')
@@ -17,7 +21,7 @@ class Attribute(Property, Data[T]):
     _fix_type: bool
 
     @typechecked
-    def __init__(self, value_type:type, *, name:str="", value:Optional[T]=None, doc:str="", metadata:Optional[Dict[str, Any]]=None, is_leaf:bool=True, uniform:bool=False, custom:bool=False, fix_type:bool=True)->None:
+    def __init__(self, value_type:type, name:str="", *, value:Optional[T]=None, doc:str="", metadata:Optional[Dict[str, Any]]=None, is_leaf:bool=True, uniform:bool=False, custom:bool=False, fix_type:bool=True)->None:
         if metadata is None:
             metadata = {}
         
@@ -32,6 +36,70 @@ class Attribute(Property, Data[T]):
         self._time_samples:Dict[float, T] = {}
         self._uniform:bool = uniform
         self._fix_type:bool = fix_type
+
+    @staticmethod
+    def _load(node:Node)->Attribute:
+        type_name = "token"
+        name = ""
+        value = None
+        has_value = False
+        metadata = {}
+        uniform = False
+        custom = False
+
+        for child in node.named_children:
+            if child.type == "attribute_type":
+                type_name = UsdaParser.node_text(child)
+            elif child.type in ["identifier", "qualified_identifier"]:
+                name = UsdaParser.node_text(child)
+            elif child.type == "uniform":
+                uniform = True
+            elif child.type == "custom":
+                custom = True
+            elif child.type == "metadata":
+                metadata = UsdaParser.load_metadata_assignments(child)
+            elif UsdaParser.is_value_node(child):
+                value = UsdaParser.load_value(child)
+                has_value = True
+
+        prop = Attribute(Attribute._usd_type(type_name), name=name, value=None, metadata=metadata, uniform=uniform, custom=custom, fix_type=False)
+        prop._value = value
+        prop._value_state = Property.ValueState.Authored if has_value else Property.ValueState.NotAuthored
+        from .metadata import Metadata
+        for key, authored_value in metadata.items():
+            Metadata._set_authored(prop._metadata, key, authored_value)
+        return prop
+
+    @staticmethod
+    def _usd_type(type_name:str)->type:
+        array_dim = type_name.count("[]")
+        base_name = type_name.replace("[]", "")
+        base_type = tuple if base_name == "tuple" else Attribute._usd_type_registry().get(base_name, str)
+
+        result = base_type
+        for _ in range(array_dim):
+            result = List[result]
+        return result
+
+    @classmethod
+    def _usd_type_registry(cls)->Dict[str, type]:
+        if not hasattr(cls, "_LOAD_USD_TYPES"):
+            from . import dtypes, gf
+            registry = {
+                "bool": bool,
+                "int": int,
+                "float": float,
+                "string": str,
+                "token": str,
+                "dictionary": dict,
+            }
+            for module in [dtypes, gf]:
+                for name in dir(module):
+                    value = getattr(module, name)
+                    if isinstance(value, type):
+                        registry[name] = value
+            cls._LOAD_USD_TYPES = registry
+        return cls._LOAD_USD_TYPES
 
     def clone(self, clone_children:bool=True)->Attribute[T]:
         result = Property.clone(self, clone_children)
