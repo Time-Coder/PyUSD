@@ -1,6 +1,8 @@
 from .render_settings_base import RenderSettingsBase
+from ..attribute import Attribute
+from ..relationship import Relationship
+from typing import List
 from ..dtypes import token
-from .collection import Collection
 
 
 class RenderSettings(RenderSettingsBase):

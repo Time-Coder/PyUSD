@@ -1,4 +1,5 @@
 from ..geom.boundable import Boundable
+from ..attribute import Attribute
 from ..dtypes import token
 
 

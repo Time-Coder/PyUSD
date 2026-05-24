@@ -1,7 +1,5 @@
 from ..attribute import Attribute
-from ..relationship import Relationship
 from ..dtypes import string
-from typing import List
 
 
 class Config(Attribute):

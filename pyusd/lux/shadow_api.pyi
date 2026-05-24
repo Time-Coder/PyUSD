@@ -1,11 +1,7 @@
 from ..api_schema_base import APISchemaBase
+from ..attribute import Attribute
 from ..gf import color3f
-from ..dtypes import namespace
-from .collection import Collection
 from .inputs import Inputs
-from .light import Light
-from .light_filter import LightFilter
-from .light_list import LightList
 
 
 class ShadowAPI(APISchemaBase):

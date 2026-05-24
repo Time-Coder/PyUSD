@@ -1,7 +1,7 @@
 from ..typed import Typed
+from ..attribute import Attribute
+from typing import List
 from ..gf import vector3f
-from .primvars import Primvars
-from .skel import Skel
 
 
 class BlendShape(Typed):

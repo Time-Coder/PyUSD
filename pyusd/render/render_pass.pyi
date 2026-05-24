@@ -1,5 +1,8 @@
 from ..typed import Typed
-from ..dtypes import asset, namespace, string, token
+from ..attribute import Attribute
+from ..relationship import Relationship
+from typing import List
+from ..dtypes import asset, string, token
 from .collection import Collection
 
 

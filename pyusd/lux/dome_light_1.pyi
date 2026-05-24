@@ -1,10 +1,9 @@
 from .nonboundable_light_base import NonboundableLightBase
-from ..dtypes import asset, namespace, token
-from .collection import Collection
+from ..attribute import Attribute
+from ..relationship import Relationship
+from ..dtypes import asset, token
 from .inputs import Inputs
 from .light import Light
-from .light_filter import LightFilter
-from .light_list import LightList
 
 
 class DomeLight_1(NonboundableLightBase):

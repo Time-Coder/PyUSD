@@ -1,5 +1,6 @@
 from ..api_schema_base import APISchemaBase
-from ..dtypes import namespace, token
+from ..attribute import Attribute
+from ..dtypes import token
 from .outputs import Outputs
 
 

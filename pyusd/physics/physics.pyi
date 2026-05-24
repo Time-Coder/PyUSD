@@ -2,7 +2,6 @@ from ..attribute import Attribute
 from ..relationship import Relationship
 from ..gf import float3, point3f, quatf, vector3f
 from ..dtypes import string, token
-from typing import List
 
 
 class Physics(Attribute):

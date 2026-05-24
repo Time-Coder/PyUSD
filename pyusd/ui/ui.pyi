@@ -1,8 +1,6 @@
 from ..attribute import Attribute
-from ..relationship import Relationship
 from ..gf import color3f, float2
 from ..dtypes import asset, string, token
-from typing import List
 
 
 class Ui(Attribute):

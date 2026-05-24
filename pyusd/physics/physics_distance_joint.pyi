@@ -1,5 +1,5 @@
 from .physics_joint import PhysicsJoint
-from ..dtypes import namespace
+from ..attribute import Attribute
 from .physics import Physics
 
 

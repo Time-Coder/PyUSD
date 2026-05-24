@@ -1,6 +1,4 @@
 from ..attribute import Attribute
-from ..relationship import Relationship
-from typing import List
 
 
 class Collection(Attribute):

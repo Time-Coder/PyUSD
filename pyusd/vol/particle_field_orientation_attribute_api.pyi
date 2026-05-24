@@ -1,6 +1,7 @@
 from ..api_schema_base import APISchemaBase
+from ..attribute import Attribute
+from typing import List
 from ..gf import quatf, quath
-from .radiance import Radiance
 
 
 class ParticleFieldOrientationAttributeAPI(APISchemaBase):

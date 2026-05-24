@@ -1,9 +1,4 @@
 from ..geom.xformable import Xformable
-from .collection import Collection
-from .inputs import Inputs
-from .light import Light
-from .light_filter import LightFilter
-from .light_list import LightList
 
 
 class PluginLight(Xformable):

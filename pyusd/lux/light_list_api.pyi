@@ -1,9 +1,7 @@
 from ..api_schema_base import APISchemaBase
-from ..dtypes import namespace, token
-from .collection import Collection
-from .inputs import Inputs
-from .light import Light
-from .light_filter import LightFilter
+from ..attribute import Attribute
+from ..relationship import Relationship
+from ..dtypes import token
 from .light_list import LightList
 
 

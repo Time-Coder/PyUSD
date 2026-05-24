@@ -133,31 +133,24 @@ class CodeGenerator:
         if prim_pyi_path is None:
             raise FileNotFoundError("Unable to find prim.pyi from schema directory")
 
-        with open(prim_pyi_path, 'r', encoding='utf-8') as f:
-            content = f.read()
+        updates: Dict[str, List[Tuple[str, str, str, str]]] = {}
+        for method_name, class_name, _, schema_kind in self._collect_api_interface_infos(prim_pyi_path):
+            class_info = self.classes_info[class_name]
+            api_targets = self._get_api_schema_apply_targets(class_info)
+            target_paths = (
+                [self._find_schema_pyi_for_class(target, prim_pyi_path) for target in api_targets]
+                if api_targets else [prim_pyi_path]
+            )
 
-        api_infos = self._collect_api_interface_infos(prim_pyi_path)
-        missing_imports = [
-            import_stmt
-            for _, _, import_stmt, _ in api_infos
-            if not self._has_imported_class(content, import_stmt)
-        ]
-        missing_interfaces = [
-            self._format_prim_api_interface(method_name, class_name, schema_kind)
-            for method_name, class_name, _, schema_kind in api_infos
-            if not self._has_prim_api_interface(content, method_name)
-        ]
+            for target_path in target_paths:
+                if target_path is None:
+                    continue
 
-        if not missing_imports and not missing_interfaces:
-            return
+                import_stmt = self._make_api_import_statement(target_path, class_name)
+                updates.setdefault(target_path, []).append((method_name, class_name, import_stmt, schema_kind))
 
-        if missing_imports:
-            content = self._insert_imports(content, missing_imports)
-        if missing_interfaces:
-            content = content.rstrip() + "\n\n" + "\n\n".join(missing_interfaces) + "\n"
-
-        with open(prim_pyi_path, 'w', encoding='utf-8') as f:
-            f.write(content)
+        for target_path, api_infos in updates.items():
+            self._add_api_interfaces_to_pyi(target_path, api_infos)
     
     def generate_all(self) -> None:
         """生成所有文件（.py、.pyi 和 __init__.py）
@@ -168,6 +161,7 @@ class CodeGenerator:
         self.generate_pyi()
         self.generate_init_file()
         self.generate_puml()
+        self.add_api_interfaces()
     
     def generate_puml(self, output_file: str = None) -> None:
         """生成 PlantUML 格式的类图
@@ -348,6 +342,100 @@ class CodeGenerator:
             seen_methods.add(method_name)
 
         return result
+
+    def _get_api_schema_apply_targets(self, class_info: Dict[str, Any]) -> List[str]:
+        custom_data = class_info.get('custom_data', {})
+        targets = custom_data.get('apiSchemaCanOnlyApplyTo')
+
+        if isinstance(targets, str):
+            return [targets]
+        if isinstance(targets, list):
+            return [target for target in targets if isinstance(target, str)]
+        return []
+
+    def _find_schema_pyi_for_class(self, class_name: str, prim_pyi_path: str) -> Optional[str]:
+        if class_name == 'Prim':
+            return prim_pyi_path
+
+        search_names = self._schema_class_name_candidates(class_name)
+        search_dirs = [
+            os.path.abspath(self.schema_dir),
+            os.path.dirname(os.path.abspath(prim_pyi_path)),
+        ]
+
+        for search_dir in search_dirs:
+            for candidate_name in search_names:
+                candidate = os.path.join(search_dir, self._camel_to_snake(candidate_name) + '.pyi')
+                if os.path.isfile(candidate):
+                    return candidate
+
+        root_dir = os.path.dirname(os.path.abspath(prim_pyi_path))
+        for current_dir, dir_names, file_names in os.walk(root_dir):
+            dir_names[:] = [name for name in dir_names if name != '__pycache__']
+            for candidate_name in search_names:
+                file_name = self._camel_to_snake(candidate_name) + '.pyi'
+                if file_name in file_names:
+                    return os.path.join(current_dir, file_name)
+
+        return None
+
+    def _schema_class_name_candidates(self, class_name: str) -> List[str]:
+        candidates = [class_name]
+
+        for known_class_name in self.class_names:
+            if class_name.endswith(known_class_name) and known_class_name not in candidates:
+                candidates.append(known_class_name)
+
+        if class_name.startswith('Usd') and len(class_name) > 3:
+            stripped = class_name[3:]
+            for known_class_name in self.class_names:
+                if stripped.endswith(known_class_name) and known_class_name not in candidates:
+                    candidates.append(known_class_name)
+
+        return candidates
+
+    def _make_api_import_statement(self, target_pyi_path: str, class_name: str) -> str:
+        target_dir = os.path.dirname(os.path.abspath(target_pyi_path))
+        schema_dir = os.path.abspath(self.schema_dir)
+        rel_module_dir = os.path.relpath(schema_dir, target_dir)
+        module_name = self._camel_to_snake(class_name)
+
+        if rel_module_dir == '.':
+            module_path = f".{module_name}"
+        else:
+            parts = rel_module_dir.split(os.sep)
+            up_count = sum(1 for part in parts if part == '..')
+            down_parts = [part for part in parts if part not in ('..', '.')]
+            dot_prefix = '.' * (up_count + 1)
+            module_tail = '.'.join(down_parts + [module_name])
+            module_path = dot_prefix + module_tail
+
+        return f"from {module_path} import {class_name}"
+
+    def _add_api_interfaces_to_pyi(self, pyi_path: str, api_infos: List[Tuple[str, str, str, str]]) -> None:
+        with open(pyi_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        missing_imports = []
+        missing_interfaces = []
+
+        for method_name, class_name, import_stmt, schema_kind in api_infos:
+            if self._has_prim_api_interface(content, method_name):
+                continue
+            if not self._has_imported_class(content, import_stmt):
+                missing_imports.append(import_stmt)
+            missing_interfaces.append(self._format_prim_api_interface(method_name, class_name, schema_kind))
+
+        if not missing_imports and not missing_interfaces:
+            return
+
+        if missing_imports:
+            content = self._insert_imports(content, missing_imports)
+        if missing_interfaces:
+            content = content.rstrip() + "\n\n" + "\n\n".join(missing_interfaces) + "\n"
+
+        with open(pyi_path, 'w', encoding='utf-8') as f:
+            f.write(content)
 
     def _is_api_schema_info(self, class_name: str, class_info: Dict[str, Any]) -> bool:
         if class_name == 'APISchemaBase':
@@ -988,7 +1076,9 @@ class CodeGenerator:
         lines = []
         
         # 收集需要的导入
-        imports = ["from ..attribute import Attribute", "from ..relationship import Relationship"]
+        imports = ["from ..attribute import Attribute"]
+        if any('type' not in member for member in members):
+            imports.append("from ..relationship import Relationship")
         needed_types = set()
         
         for member in members:
@@ -1004,7 +1094,8 @@ class CodeGenerator:
         if dtypes_imports:
             imports.append(f"from ..dtypes import {', '.join(dtypes_imports)}")
         
-        imports.append("from typing import List")
+        if any(member.get('type', '').endswith('[]') for member in members if 'type' in member):
+            imports.append("from typing import List")
         
         # 类声明
         lines.append("\n".join(imports))
@@ -1028,6 +1119,21 @@ class CodeGenerator:
                 lines.extend(self._generate_pyi_relationship_signature(ns_prefix, member))
         
         return "\n".join(lines)
+
+    def _collect_class_namespace_prefixes(self, class_info: Dict[str, Any]) -> Set[str]:
+        prefixes = set()
+
+        for attr in class_info['attributes']:
+            full_name = attr.get('full_name', attr['name'])
+            if ':' in full_name:
+                prefixes.add(full_name.split(':')[0])
+
+        for rel in class_info['relationships']:
+            full_name = rel.get('full_name', rel['name'])
+            if ':' in full_name:
+                prefixes.add(full_name.split(':')[0])
+
+        return prefixes
     
     def _generate_pyi_imports(self, base_class: str, class_info: Dict[str, Any], imported_token_classes: List[str], generated_ns_files: Set[str] = None) -> str:
         """生成 .pyi 文件的导入语句"""
@@ -1060,8 +1166,13 @@ class CodeGenerator:
             else:
                 imports.append(f"from .{self._camel_to_snake(base_class)} import {base_class}")
         
-        # 添加常用导入（.pyi 文件不需要 Attribute 和 Relationship）
+        # 添加常用导入
         if class_info['attributes'] or class_info['relationships']:
+            if class_info['attributes']:
+                imports.append("from ..attribute import Attribute")
+            if class_info['relationships']:
+                imports.append("from ..relationship import Relationship")
+
             # 收集所有需要的类型
             needed_types = set()
             for attr in class_info['attributes']:
@@ -1071,10 +1182,8 @@ class CodeGenerator:
                     py_type = class_name
                 self._collect_needed_types(py_type, needed_types)
             
-            # 检查是否需要 namespace 类型
-            has_namespace = any(attr.get('full_name', '').count(':') > 0 for attr in class_info['attributes'])
-            if has_namespace:
-                needed_types.add('namespace')
+            if any(attr['type'].endswith('[]') for attr in class_info['attributes']):
+                imports.append("from typing import List")
             
             # 检查是否有 allowedTokens，需要导入 token
             has_allowed_tokens = any(attr.get('allowed_tokens') for attr in class_info['attributes'])
@@ -1095,7 +1204,8 @@ class CodeGenerator:
         
         # 添加命名空间类的导入
         if generated_ns_files:
-            for ns_prefix in sorted(generated_ns_files):
+            used_ns_files = self._collect_class_namespace_prefixes(class_info) & generated_ns_files
+            for ns_prefix in sorted(used_ns_files):
                 ns_class_name = self._snake_to_pascal(ns_prefix)
                 imports.append(f"from .{self._camel_to_snake(ns_prefix)} import {ns_class_name}")
         

@@ -1,6 +1,7 @@
 from ..api_schema_base import APISchemaBase
+from ..attribute import Attribute
+from typing import List
 from ..gf import float3, half3
-from ..dtypes import namespace
 from .radiance import Radiance
 
 

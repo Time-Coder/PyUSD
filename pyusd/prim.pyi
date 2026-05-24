@@ -12,6 +12,38 @@ from .clips_api import ClipsAPI
 from .collection_api import CollectionAPI
 from .color_space_api import ColorSpaceAPI
 from .color_space_definition_api import ColorSpaceDefinitionAPI
+from .lux.light_api import LightAPI
+from .lux.mesh_light_api import MeshLightAPI
+from .lux.volume_light_api import VolumeLightAPI
+from .lux.light_list_api import LightListAPI
+from .lux.list_api import ListAPI
+from .lux.shaping_api import ShapingAPI
+from .lux.shadow_api import ShadowAPI
+from .media.asset_previews_api import AssetPreviewsAPI
+from .physics.physics_rigid_body_api import PhysicsRigidBodyAPI
+from .physics.physics_mass_api import PhysicsMassAPI
+from .physics.physics_collision_api import PhysicsCollisionAPI
+from .physics.physics_mesh_collision_api import PhysicsMeshCollisionAPI
+from .physics.physics_material_api import PhysicsMaterialAPI
+from .physics.physics_filtered_pairs_api import PhysicsFilteredPairsAPI
+from .physics.physics_limit_api import PhysicsLimitAPI
+from .physics.physics_drive_api import PhysicsDriveAPI
+from .physics.physics_articulation_root_api import PhysicsArticulationRootAPI
+from .ri.statements_api import StatementsAPI
+from .ri.ri_material_api import RiMaterialAPI
+from .ri.ri_spline_api import RiSplineAPI
+from .semantics.semantics_labels_api import SemanticsLabelsAPI
+from .shade.node_def_api import NodeDefAPI
+from .shade.connectable_api import ConnectableAPI
+from .shade.material_binding_api import MaterialBindingAPI
+from .shade.coord_sys_api import CoordSysAPI
+from .skel.skel_binding_api import SkelBindingAPI
+from .ui.node_graph_node_api import NodeGraphNodeAPI
+from .ui.scene_graph_prim_api import SceneGraphPrimAPI
+from .ui.accessibility_api import AccessibilityAPI
+from .vol.particle_field_position_base_api import ParticleFieldPositionBaseAPI
+from .vol.particle_field_kernel_base_api import ParticleFieldKernelBaseAPI
+from .vol.particle_field_radiance_base_api import ParticleFieldRadianceBaseAPI
 
 
 PrimType = TypeVar('PrimType', bound='Prim')
@@ -138,3 +170,94 @@ class Prim:
 
     @property
     def color_space_definition_api(self)->ColorSpaceDefinitionAPI: ...
+
+    @property
+    def light_api(self)->LightAPI: ...
+
+    @property
+    def mesh_light_api(self)->MeshLightAPI: ...
+
+    @property
+    def volume_light_api(self)->VolumeLightAPI: ...
+
+    @property
+    def light_list_api(self)->LightListAPI: ...
+
+    @property
+    def list_api(self)->ListAPI: ...
+
+    @property
+    def shaping_api(self)->ShapingAPI: ...
+
+    @property
+    def shadow_api(self)->ShadowAPI: ...
+
+    @property
+    def asset_previews_api(self)->AssetPreviewsAPI: ...
+
+    @property
+    def physics_rigid_body_api(self)->PhysicsRigidBodyAPI: ...
+
+    @property
+    def physics_mass_api(self)->PhysicsMassAPI: ...
+
+    @property
+    def physics_collision_api(self)->PhysicsCollisionAPI: ...
+
+    @property
+    def physics_mesh_collision_api(self)->PhysicsMeshCollisionAPI: ...
+
+    @property
+    def physics_material_api(self)->PhysicsMaterialAPI: ...
+
+    @property
+    def physics_filtered_pairs_api(self)->PhysicsFilteredPairsAPI: ...
+
+    def physics_limit_api(self, instance_name:str)->PhysicsLimitAPI: ...
+
+    def physics_drive_api(self, instance_name:str)->PhysicsDriveAPI: ...
+
+    @property
+    def physics_articulation_root_api(self)->PhysicsArticulationRootAPI: ...
+
+    @property
+    def statements_api(self)->StatementsAPI: ...
+
+    @property
+    def ri_material_api(self)->RiMaterialAPI: ...
+
+    @property
+    def ri_spline_api(self)->RiSplineAPI: ...
+
+    def semantics_labels_api(self, instance_name:str)->SemanticsLabelsAPI: ...
+
+    @property
+    def node_def_api(self)->NodeDefAPI: ...
+
+    @property
+    def connectable_api(self)->ConnectableAPI: ...
+
+    @property
+    def material_binding_api(self)->MaterialBindingAPI: ...
+
+    def coord_sys_api(self, instance_name:str)->CoordSysAPI: ...
+
+    @property
+    def skel_binding_api(self)->SkelBindingAPI: ...
+
+    @property
+    def node_graph_node_api(self)->NodeGraphNodeAPI: ...
+
+    @property
+    def scene_graph_prim_api(self)->SceneGraphPrimAPI: ...
+
+    def accessibility_api(self, instance_name:str)->AccessibilityAPI: ...
+
+    @property
+    def particle_field_position_base_api(self)->ParticleFieldPositionBaseAPI: ...
+
+    @property
+    def particle_field_kernel_base_api(self)->ParticleFieldKernelBaseAPI: ...
+
+    @property
+    def particle_field_radiance_base_api(self)->ParticleFieldRadianceBaseAPI: ...

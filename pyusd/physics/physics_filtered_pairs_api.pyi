@@ -1,4 +1,5 @@
 from ..api_schema_base import APISchemaBase
+from ..relationship import Relationship
 from .physics import Physics
 
 

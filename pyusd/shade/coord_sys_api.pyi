@@ -1,6 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from .info import Info
-from .outputs import Outputs
+from ..relationship import Relationship
 
 
 class CoordSysAPI(APISchemaBase):

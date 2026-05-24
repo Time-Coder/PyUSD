@@ -1,5 +1,4 @@
 from ..attribute import Attribute
-from ..relationship import Relationship
 from ..gf import float3, half3
 from typing import List
 

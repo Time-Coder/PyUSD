@@ -1,6 +1,4 @@
 from ..geom.boundable import Boundable
-from .primvars import Primvars
-from .skel import Skel
 
 
 class SkelRoot(Boundable):

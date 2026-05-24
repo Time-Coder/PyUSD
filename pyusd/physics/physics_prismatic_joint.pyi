@@ -1,5 +1,6 @@
 from .physics_joint import PhysicsJoint
-from ..dtypes import namespace, token
+from ..attribute import Attribute
+from ..dtypes import token
 from ..common import Axis
 from .physics import Physics
 

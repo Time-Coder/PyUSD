@@ -1,7 +1,7 @@
 from ..api_schema_base import APISchemaBase
-from ..dtypes import namespace, token
+from ..attribute import Attribute
+from ..dtypes import token
 from .info import Info
-from .outputs import Outputs
 
 
 class NodeDefAPI(APISchemaBase):

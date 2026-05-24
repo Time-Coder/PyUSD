@@ -1,6 +1,6 @@
 from ..typed import Typed
+from ..attribute import Attribute
 from ..dtypes import string, token
-from .collection import Collection
 
 
 class RenderVar(Typed):

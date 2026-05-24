@@ -1,8 +1,6 @@
 from ..attribute import Attribute
-from ..relationship import Relationship
 from ..gf import color3f
 from ..dtypes import asset, token
-from typing import List
 
 
 class Inputs(Attribute):

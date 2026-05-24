@@ -1,7 +1,8 @@
 from ..api_schema_base import APISchemaBase
+from ..attribute import Attribute
+from ..relationship import Relationship
 from ..gf import float4, int2
 from ..dtypes import token
-from .collection import Collection
 
 
 class RenderSettingsBase(APISchemaBase):

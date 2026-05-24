@@ -1,8 +1,8 @@
 from ..geom.boundable import Boundable
+from ..attribute import Attribute
+from typing import List
 from ..gf import matrix4d
 from ..dtypes import token
-from .primvars import Primvars
-from .skel import Skel
 
 
 class Skeleton(Boundable):

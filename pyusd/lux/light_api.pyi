@@ -1,11 +1,11 @@
 from ..api_schema_base import APISchemaBase
+from ..attribute import Attribute
+from ..relationship import Relationship
 from ..gf import color3f
-from ..dtypes import namespace, token
+from ..dtypes import token
 from .collection import Collection
 from .inputs import Inputs
 from .light import Light
-from .light_filter import LightFilter
-from .light_list import LightList
 
 
 class LightAPI(APISchemaBase):
@@ -85,11 +85,11 @@ class LightAPI(APISchemaBase):
         NoMaterialResponse = "noMaterialResponse"
 
     @property
+    def collection(self) -> Collection: ...
+
+    @property
     def light(self) -> Light: ...
 
     @property
     def inputs(self) -> Inputs: ...
-
-    @property
-    def collection(self) -> Collection: ...
 

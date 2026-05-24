@@ -1,10 +1,8 @@
 from ..geom.xformable import Xformable
-from ..dtypes import namespace, token
+from ..attribute import Attribute
+from ..dtypes import token
 from .collection import Collection
-from .inputs import Inputs
-from .light import Light
 from .light_filter import LightFilter
-from .light_list import LightList
 
 
 class LightFilter(Xformable):
@@ -29,8 +27,8 @@ class LightFilter(Xformable):
     """
 
     @property
-    def lightFilter(self) -> LightFilter: ...
+    def collection(self) -> Collection: ...
 
     @property
-    def collection(self) -> Collection: ...
+    def lightFilter(self) -> LightFilter: ...
 

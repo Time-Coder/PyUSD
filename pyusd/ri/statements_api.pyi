@@ -1,5 +1,4 @@
 from ..api_schema_base import APISchemaBase
-from .outputs import Outputs
 
 
 class StatementsAPI(APISchemaBase):

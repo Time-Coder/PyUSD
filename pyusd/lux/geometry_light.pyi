@@ -1,10 +1,8 @@
 from .nonboundable_light_base import NonboundableLightBase
-from ..dtypes import namespace, token
-from .collection import Collection
-from .inputs import Inputs
+from ..attribute import Attribute
+from ..relationship import Relationship
+from ..dtypes import token
 from .light import Light
-from .light_filter import LightFilter
-from .light_list import LightList
 
 
 class GeometryLight(NonboundableLightBase):

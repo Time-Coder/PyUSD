@@ -1,6 +1,6 @@
 from .field_asset import FieldAsset
+from ..attribute import Attribute
 from ..dtypes import token
-from .radiance import Radiance
 
 
 class Field3DAsset(FieldAsset):

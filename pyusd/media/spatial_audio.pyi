@@ -1,4 +1,5 @@
 from ..geom.xformable import Xformable
+from ..attribute import Attribute
 from ..dtypes import asset, double, timecode, token
 
 

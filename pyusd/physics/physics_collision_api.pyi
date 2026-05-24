@@ -1,5 +1,6 @@
 from ..api_schema_base import APISchemaBase
-from ..dtypes import namespace
+from ..attribute import Attribute
+from ..relationship import Relationship
 from .physics import Physics
 
 

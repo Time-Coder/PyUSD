@@ -1,6 +1,7 @@
 from ..geom.imageable import Imageable
+from ..attribute import Attribute
+from ..relationship import Relationship
 from ..gf import point3f, quatf
-from ..dtypes import namespace
 from .physics import Physics
 
 

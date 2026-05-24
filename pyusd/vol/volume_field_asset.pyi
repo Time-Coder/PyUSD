@@ -1,6 +1,6 @@
 from ..api_schema_base import APISchemaBase
+from ..attribute import Attribute
 from ..dtypes import asset, token
-from .radiance import Radiance
 
 
 class VolumeFieldAsset(APISchemaBase):

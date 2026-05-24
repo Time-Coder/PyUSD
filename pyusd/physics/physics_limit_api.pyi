@@ -1,5 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..dtypes import namespace
+from ..attribute import Attribute
 from .physics import Physics
 
 

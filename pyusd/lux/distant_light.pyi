@@ -1,10 +1,8 @@
 from .nonboundable_light_base import NonboundableLightBase
-from ..dtypes import namespace, token
-from .collection import Collection
+from ..attribute import Attribute
+from ..dtypes import token
 from .inputs import Inputs
 from .light import Light
-from .light_filter import LightFilter
-from .light_list import LightList
 
 
 class DistantLight(NonboundableLightBase):

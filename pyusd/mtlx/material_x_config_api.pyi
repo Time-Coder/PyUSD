@@ -1,5 +1,6 @@
 from ..api_schema_base import APISchemaBase
-from ..dtypes import namespace, string
+from ..attribute import Attribute
+from ..dtypes import string
 from .config import Config
 
 

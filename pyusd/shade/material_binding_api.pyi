@@ -1,6 +1,4 @@
 from ..api_schema_base import APISchemaBase
-from .info import Info
-from .outputs import Outputs
 
 
 class MaterialBindingAPI(APISchemaBase):

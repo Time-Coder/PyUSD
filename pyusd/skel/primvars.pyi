@@ -1,5 +1,4 @@
 from ..attribute import Attribute
-from ..relationship import Relationship
 from ..gf import matrix4d
 from ..dtypes import token
 from typing import List

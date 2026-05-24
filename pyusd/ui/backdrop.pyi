@@ -1,5 +1,6 @@
 from ..typed import Typed
-from ..dtypes import namespace, token
+from ..attribute import Attribute
+from ..dtypes import token
 from .ui import Ui
 
 

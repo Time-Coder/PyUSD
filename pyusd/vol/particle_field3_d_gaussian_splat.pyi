@@ -1,6 +1,6 @@
 from .particle_field import ParticleField
+from ..attribute import Attribute
 from ..dtypes import token
-from .radiance import Radiance
 
 
 class ParticleField3DGaussianSplat(ParticleField):

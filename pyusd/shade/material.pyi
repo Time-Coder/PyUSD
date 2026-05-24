@@ -1,6 +1,6 @@
 from .node_graph import NodeGraph
-from ..dtypes import namespace, token
-from .info import Info
+from ..attribute import Attribute
+from ..dtypes import token
 from .outputs import Outputs
 
 

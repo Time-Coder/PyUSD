@@ -1,5 +1,4 @@
 from ..geom.gprim import Gprim
-from .radiance import Radiance
 
 
 class Volume(Gprim):

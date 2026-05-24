@@ -1,6 +1,6 @@
 from ..typed import Typed
+from ..attribute import Attribute
 from ..gf import vector3f
-from ..dtypes import namespace
 from .physics import Physics
 
 

@@ -1,5 +1,7 @@
 from ..typed import Typed
-from ..dtypes import namespace, string
+from ..attribute import Attribute
+from ..relationship import Relationship
+from ..dtypes import string
 from .physics import Physics
 
 

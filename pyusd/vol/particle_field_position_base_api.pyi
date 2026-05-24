@@ -1,5 +1,4 @@
 from ..api_schema_base import APISchemaBase
-from .radiance import Radiance
 
 
 class ParticleFieldPositionBaseAPI(APISchemaBase):
