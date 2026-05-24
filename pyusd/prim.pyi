@@ -6,6 +6,7 @@ from .prim_metadata import PrimMetadata
 from .sdf import Specifier
 from .common import SchemaKind
 from .layer import Layer
+from .variant_sets import VariantSets
 from .model_api import ModelAPI
 from .clips_api import ClipsAPI
 from .collection_api import CollectionAPI
@@ -27,6 +28,9 @@ class Prim:
     
     @specifier.setter
     def specifier(self, specifier:Specifier)->None: ...
+
+    @property
+    def variant_sets(self)->VariantSets: ...
 
     def create_prop(self, prop:Property)->Property: ...
 
@@ -53,6 +57,9 @@ class Prim:
     
     @property
     def child_names(self)->List[str]: ...
+
+    @property
+    def is_variant(self)->bool: ...
 
     def add_child(self, prim:Prim)->None: ...
 

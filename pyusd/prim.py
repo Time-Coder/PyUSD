@@ -1,7 +1,9 @@
 from __future__ import annotations
-from typing import Dict, Union, Optional, List, Any, TYPE_CHECKING, TypeVar, Type, Tuple
+from typing import Dict, Union, Optional, List, Any, TYPE_CHECKING, TypeVar, Type, Tuple, Callable
 from typeguard import typechecked
 from itertools import chain
+import functools
+import threading
 
 from .property import Property
 from .metadata import Metadata
@@ -11,6 +13,7 @@ from .sdf import Specifier
 from .common import SchemaKind
 from .api_schema_base import APISchemaBase
 from .api_wrapper import APIWrapper
+from .variant_sets import VariantSets
 
 if TYPE_CHECKING:
     from .layer import Layer
@@ -32,8 +35,10 @@ class Prim:
     _references: List[Prim]
     _payloads: List[Prim]
     _specializes: List[Prim]
+    _variant_sets: VariantSets
     _apis: Dict[Tuple[str, str], APISchemaBase]
     _api_wrappers: Dict[str, APIWrapper]
+    _is_variant: bool = False
     
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
     meta: Dict[str, Any] = {}
@@ -59,8 +64,10 @@ class Prim:
         self._references: List[Prim] = []
         self._payloads: List[Prim] = []
         self._specializes: List[Prim] = []
+        self._variant_sets: VariantSets = VariantSets(self)
         self._apis: Dict[Tuple[str, str], APISchemaBase] = {}
         self._api_wrappers: Dict[str, APIWrapper] = {}
+        self._is_variant:bool = False
 
         inherits = []
         for base in self.__class__.__bases__:
@@ -83,6 +90,8 @@ class Prim:
             "references": [],
             "payloads": [],
             "specializes": [],
+            "variantSets": [],
+            "variants": {},
             "doc": self.__class__.__doc__
         })
 
@@ -101,7 +110,11 @@ class Prim:
     def specifier(self, specifier:Specifier)->None:
         self._metadata.specifier = specifier
 
-    def _fetch_from_class(self, cls:Union[Type[Prim], Type[APISchemaBase]], instance_name:str="")->None:
+    @property
+    def variant_sets(self)->VariantSets:
+        return self._variant_sets
+
+    def _fetch_from_class(self, cls:Union[Type[Prim], Type[APISchemaBase]], instance_name:str="")->None:        
         prefix = ""
         start_prop = None
         if instance_name:
@@ -140,7 +153,7 @@ class Prim:
                     prop = self._props[name]
                     prop.update_children(value)
 
-    def create_prop(self, prop:Property)->Property:            
+    def create_prop(self, prop:Property)->Property:
         self._props[prop.name] = prop
         prop._parent_prim = self
         prop._parent_prop = None
@@ -162,11 +175,15 @@ class Prim:
         return True
 
     def has_prop(self, name:str, recursive:bool=True, specialize:bool=True)->bool:
+        # LIVRPS strength order
+
+        # Local
         if self._has_prop(name):
             return True
         
         if recursive:
-            for prim in chain(self._inherits, self._references, self._payloads):
+            # Inherits
+            for prim in self._inherits:
                 if isinstance(prim, Layer):
                     prim = prim.default_prim
                     if prim is None:
@@ -175,6 +192,23 @@ class Prim:
                 if prim.has_prop(name, recursive, False):
                     return True
                 
+            # Variants
+            for variant_set in self._variant_sets.values():
+                if variant_set.selected_variant is not None:
+                    if variant_set.selected_variant.has_prop(name, recursive, False):
+                        return True
+            
+            # References and Payloads
+            for prim in chain(self._references, self._payloads):
+                if isinstance(prim, Layer):
+                    prim = prim.default_prim
+                    if prim is None:
+                        continue
+
+                if prim.has_prop(name, recursive, False):
+                    return True
+            
+            # Specializes
             if specialize:
                 for prim in self._specializes:
                     if isinstance(prim, Layer):
@@ -206,13 +240,17 @@ class Prim:
     def prop(self, name:str, recursive:bool=True, specialize:bool=True)->Property:
         from .layer import Layer
 
+        # LIVRPS strength order
+
+        # Local
         try:
             return self._prop(name)
         except KeyError:
             pass
         
         if recursive:
-            for prim in chain(self._inherits, self._references, self._payloads):
+            # Inherits
+            for prim in self._inherits:
                 if isinstance(prim, Layer):
                     prim = prim.default_prim
                     if prim is None:
@@ -223,6 +261,27 @@ class Prim:
                 except KeyError:
                     pass
 
+            # Variants
+            for variant_set in self._variant_sets.values():
+                if variant_set.selected_variant is not None:
+                    try:
+                        return variant_set.selected_variant.prop(name, recursive, False)
+                    except KeyError:
+                        pass
+
+            # References and Payloads
+            for prim in chain(self._references, self._payloads):
+                if isinstance(prim, Layer):
+                    prim = prim.default_prim
+                    if prim is None:
+                        continue
+
+                try:
+                    return prim.prop(name, recursive, False)
+                except KeyError:
+                    pass
+
+            # Specializes
             if specialize:
                 for prim in self._specializes:
                     if isinstance(prim, Layer):
@@ -239,7 +298,7 @@ class Prim:
     
     def _getitem(self, path_items:List[str])->Prim:
         prim = self
-        for path_item in path_items:            
+        for path_item in path_items:
             prim = prim._children[path_item]
 
         return prim
@@ -266,7 +325,9 @@ class Prim:
                 new_prim._set_layer(self._layer)
                 new_prim._parent = parent_prim
                 parent_prim._children[path_item] = new_prim
-            parent_prim = parent_prim._children[path_item]
+                parent_prim = new_prim
+            else:
+                parent_prim = parent_prim._children[path_item]
 
         prim.detach_from_parent()
         prim.detach_from_layer()
@@ -509,7 +570,8 @@ class Prim:
         prim:Prim = self
         while True:
             if prim._parent is not None:
-                path = prim._parent.name + "/" + path
+                if not prim._parent._is_variant:
+                    path = prim._parent.name + "/" + path
                 prim = prim._parent
             else:
                 if self.layer is not None:
@@ -547,11 +609,16 @@ class Prim:
         prim:Prim = self
         while True:
             if prim._parent is not None:
-                depth += 1
+                if not prim._parent._is_variant:
+                    depth += 1
                 prim = prim._parent
             else:
                 return depth
             
+    @property
+    def is_variant(self)->bool:
+        return self._is_variant
+    
     def __generate_name(self)->str:
         cls = self.__class__
         if cls not in Prim.__name_indices:
@@ -567,7 +634,9 @@ class Prim:
     def to_str(self, indents:int=0)->str:        
         tabs = "    " * indents
         prim_type_name = self.__class__.__name__
-        if prim_type_name in ["Prim", "Typed"]:
+        if self._is_variant:
+            result = f'{tabs}"{self.name}"'
+        elif prim_type_name == "Prim" or self.specifier != Specifier.Def:
             result = f'{tabs}{self.specifier} "{self.name}"'
         else:
             result = f'{tabs}{self.specifier} {prim_type_name} "{self.name}"'
@@ -576,7 +645,8 @@ class Prim:
         if metadata_str:
             result += (" " + metadata_str)
 
-        result += f'\n{tabs}{{\n'
+        result += (" " if self._is_variant else f"\n{tabs}")
+        result += f'{{\n'
         
         props_str_list = []
         for prop in self._props.values():
@@ -591,10 +661,16 @@ class Prim:
         for child in self._children.values():
             children_str_list.append(child.to_str(indents + 1))
 
-        if props_str_list and children_str_list:
-            result += "\n"
+        for variant_set in self._variant_sets.values():
+            if not variant_set:
+                continue
+
+            children_str_list.append(variant_set.to_str(indents + 1))
 
         if children_str_list:
+            if props_str_list:
+                result += "\n"
+
             result += "\n".join(children_str_list)
 
         result += f'{tabs}}}\n'

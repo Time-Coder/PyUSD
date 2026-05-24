@@ -177,21 +177,22 @@ def usd_value_str(value:Any, indents:int=0, degenerate_list:bool=False, rel_laye
         tabs = "    " * indents
         next_tabs = "    " * (indents + 1)
         if len(value) == 1:
-            result = usd_value_str(value[0], 0, degenerate_list=degenerate_list, rel_layer=rel_layer, need_quote=need_quote)
+            result = usd_value_str(value[0], indents+1, degenerate_list=degenerate_list, rel_layer=rel_layer, need_quote=need_quote)
             if degenerate_list:
                 return result
             else:
                 if "\n" not in result and len(result) < 100:
                     return f"{left_bracket}{result}{right_bracket}"
                 else:
-                    return f"{left_bracket}\n{usd_value_str(value[0], indents+1, degenerate_list=degenerate_list, rel_layer=rel_layer, need_quote=need_quote)}\n{right_bracket}"
+                    return f"{left_bracket}\n{next_tabs}{result}\n{right_bracket}"
         else:
-            result = ", ".join([usd_value_str(subvalue, 0, degenerate_list=degenerate_list, rel_layer=rel_layer, need_quote=need_quote) for subvalue in value])
+            result_list = [usd_value_str(subvalue, indents+1, degenerate_list=degenerate_list, rel_layer=rel_layer, need_quote=need_quote) for subvalue in value]
+            result = ", ".join(result_list)
             if "\n" not in result and len(result) < 100:
                 return f"{left_bracket}{result}{right_bracket}"
              
             result = f"{left_bracket}\n"
-            result += f",\n{next_tabs}".join([usd_value_str(subvalue, indents+1, degenerate_list=degenerate_list, rel_layer=rel_layer, need_quote=need_quote) for subvalue in value])
+            result += f",\n{next_tabs}".join(result_list)
             result += f"\n{tabs}{right_bracket}"
         return result
     elif isinstance(value, Data):

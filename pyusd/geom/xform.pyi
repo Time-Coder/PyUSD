@@ -1,4 +1,4 @@
-from ..typed import Typed
+from .xformable import Xformable
 from .exposure import Exposure
 from .model import Model
 from .motion import Motion
@@ -7,6 +7,6 @@ from .shutter import Shutter
 from .trim_curve import TrimCurve
 
 
-class Xform(Typed):
+class Xform(Xformable):
     "Concrete prim schema for a transform, which implements Xformable "
 

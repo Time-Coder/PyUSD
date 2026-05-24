@@ -13,3 +13,5 @@ class PrimMetadata(Metadata):
     refrences: List[str]
     payloads: List[str]
     specializes: List[str]
+    variantSets: List[str]
+    variants: Dict[str, str]

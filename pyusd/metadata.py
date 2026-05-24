@@ -101,7 +101,7 @@ class Metadata:
         
         builtin_str_list:List[str] = []
         for key, value in self._builtin_data.items():
-            is_ref = key in ["inherits", "references", "payloads", "specializes", "subLayers"]
+            is_ref = key in ["inherits", "references", "payloads", "specializes", "subLayers", "variantSets", "variants"]
             use_ori_value = True
             ori_value = value
             if not full and not self._builtin_is_set[key]:
@@ -123,6 +123,16 @@ class Metadata:
                 value = self._parent._payloads
             elif key == "specializes":
                 value = self._parent._specializes
+            elif key == "variantSets":
+                value = list(self._parent._variant_sets.keys())
+            elif key == "variants":
+                value = {}
+                for variant_set in self._parent._variant_sets.values():
+                    selected_variant = variant_set._selected_variant
+                    if selected_variant is None:
+                        continue
+
+                    value[variant_set._name] = selected_variant._name
             elif key == "subLayers":
                 value = self._parent._sub_layers
 
@@ -139,8 +149,8 @@ class Metadata:
                 elif isinstance(self._parent, Layer):
                     rel_layer = self._parent
 
-            value_str = usd_value_str(value, indents+1, degenerate_list=(is_ref and key != "subLayers"), rel_layer=rel_layer, need_quote=(not is_ref))
-            if is_ref and key != "subLayers":
+            value_str = usd_value_str(value, indents+1, degenerate_list=(is_ref and key != "subLayers"), rel_layer=rel_layer, need_quote=(not is_ref or key in ["variantSets", "variants"]))
+            if is_ref and key not in ["subLayers", "variants"]:
                 builtin_str_list.append(f"{next_tabs}prepend {key} = {value_str}")
             else:
                 builtin_str_list.append(f"{next_tabs}{key} = {value_str}")

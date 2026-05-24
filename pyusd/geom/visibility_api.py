@@ -42,9 +42,7 @@ class VisibilityAPI(APISchemaBase):
 
     meta = {
         "customData": {
-            "apiSchemaCanOnlyApplyTo": [
-                "Imageable"
-            ]
+            "apiSchemaCanOnlyApplyTo": ["Imageable"]
         }
     }
 

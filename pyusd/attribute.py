@@ -17,7 +17,7 @@ class Attribute(Property, Data[T]):
     _fix_type: bool
 
     @typechecked
-    def __init__(self, value_type:type, name:str="", value:Optional[T]=None, doc:str="", metadata:Optional[Dict[str, Any]]=None, is_leaf:bool=True, uniform:bool=False, custom:bool=False, fix_type:bool=True)->None:
+    def __init__(self, value_type:type, *, name:str="", value:Optional[T]=None, doc:str="", metadata:Optional[Dict[str, Any]]=None, is_leaf:bool=True, uniform:bool=False, custom:bool=False, fix_type:bool=True)->None:
         if metadata is None:
             metadata = {}
         
