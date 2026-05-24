@@ -2,6 +2,7 @@ from .node_graph import NodeGraph
 from ..attribute import Attribute
 from ..dtypes import token
 from .outputs import Outputs
+from ..mtlx.material_x_config_api import MaterialXConfigAPI
 
 
 class Material(NodeGraph):
@@ -65,3 +66,5 @@ class Material(NodeGraph):
     @property
     def outputs(self) -> Outputs: ...
 
+    @property
+    def material_x_config_api(self)->MaterialXConfigAPI: ...
