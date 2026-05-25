@@ -1,13 +1,13 @@
 from __future__ import annotations
-from typing import Dict, Union, Optional, List, Any, TYPE_CHECKING, TypeVar, Type, Tuple, Callable
+from typing import Dict, Union, Optional, List, Any, TYPE_CHECKING, TypeVar, Type, Tuple
 from typeguard import typechecked
 from itertools import chain
-import functools
-import threading
 import importlib
 import pkgutil
 
 from .property import Property
+from .attribute import Attribute
+from .relationship import Relationship
 from .metadata import Metadata
 from .prim_metadata import PrimMetadata
 from .utils import infer_type, in_annotations, abspath
@@ -17,6 +17,7 @@ from .api_schema_base import APISchemaBase
 from .api_wrapper import APIWrapper
 from .variant_sets import VariantSets
 from .usda_parser import UsdaParser
+from .dtypes import namespace
 
 if TYPE_CHECKING:
     from .layer import Layer
@@ -295,6 +296,71 @@ class Prim:
         prop._parent_prop = None
         return prop
     
+    T = TypeVar('T')
+    def create_attr(self, value_type:type, name:str, value:Optional[T]=None, doc:str="", metadata:Optional[Dict[str, Any]]=None, is_leaf:bool=True, uniform:bool=False, custom:bool=False, fix_type:bool=True)->Attribute[T]:
+        ori_name = name
+        names = name.split(":")
+        name = names[0]
+
+        if name not in self._props:
+            if 0 == len(names) - 1:
+                prop = self.create_prop(Attribute(value_type, name, value, doc, metadata, is_leaf, uniform, custom, fix_type))
+            else:
+                prop = self.create_prop(Attribute(namespace, name, is_leaf=False))
+        else:
+            prop = self._props[name]
+            if 0 == len(names) - 1 and prop._value_state > Property.ValueState.NotAuthored:
+                raise RuntimeError(f"Attribute {ori_name} already exists")
+            else:
+                prop._value_state = Property.ValueState.NotAuthored
+        
+        for i, name in enumerate(names[1:]):
+            if name not in prop._children:
+                if i + 1 == len(names) - 1:
+                    prop = prop.create_prop(Attribute(value_type, name, value, doc, metadata, is_leaf, uniform, custom, fix_type))
+                else:
+                    prop = prop.create_prop(Attribute(namespace, name, is_leaf=False))
+            else:
+                prop = prop._children[name]
+                if i + 1 == len(names) - 1 and prop._value_state > Property.ValueState.NotAuthored:
+                    raise RuntimeError(f"Attribute {ori_name} already exists")
+                else:
+                    prop._value_state = Property.ValueState.NotAuthored
+        
+        return prop
+    
+    def create_rel(self, name:str, doc:str="", metadata:Optional[Dict[str, Any]]=None, custom:bool=False, is_leaf:bool=True)->Relationship:
+        ori_name = name
+        names = name.split(":")
+        name = names[0]
+
+        if name not in self._props:
+            if 0 == len(names) - 1:
+                prop = self.create_prop(Relationship(name, doc, metadata, custom, is_leaf))
+            else:
+                prop = self.create_prop(Attribute(namespace, name, is_leaf=False))
+        else:
+            prop = self._props[name]
+            if 0 == len(names) - 1 and prop._value_state > Property.ValueState.NotAuthored:
+                raise RuntimeError(f"Relationship {ori_name} already exists")
+            else:
+                prop._value_state = Property.ValueState.NotAuthored
+        
+        for i, name in enumerate(names[1:]):
+            if name not in prop._children:
+                if i + 1 == len(names) - 1:
+                    prop = prop.create_prop(Relationship(name, doc, metadata, custom, is_leaf))
+                else:
+                    prop = prop.create_prop(Attribute(namespace, name, is_leaf=False))
+            else:
+                prop = prop._children[name]
+                if i + 1 == len(names) - 1 and prop._value_state > Property.ValueState.NotAuthored:
+                    raise RuntimeError(f"Relationship {ori_name} already exists")
+                else:
+                    prop._value_state = Property.ValueState.NotAuthored
+        
+        return prop
+
     def _has_prop(self, name:str)->bool:
         names = name.split(":")
         name = names[0]
