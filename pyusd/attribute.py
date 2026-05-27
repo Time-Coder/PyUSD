@@ -84,42 +84,6 @@ class Attribute(Property, Data[T]):
     def uniform(self, flag:bool)->None:
         self._uniform = flag
 
-    def to_str(self, indents:int=0, full:bool=False)->str:
-        result_list = []
-        full_name = self.full_name
-        if (full or self.value_state != Property.ValueState.Fallback) and self._type != namespace:
-            tabs = "    " * indents
-            prefix = ""
-            if self._custom:
-                prefix += "custom "
-            if self._uniform:
-                prefix += "uniform "
-
-            line = f"{tabs}{prefix}{self.type_name} {full_name}"
-            if (
-                (self.value_state == Property.ValueState.Fallback and self._value is not None) or
-                self.value_state in [Property.ValueState.Authored, Property.ValueState.Cleared]
-            ):
-                line += f" = {self.value_str(indents)}"
-
-            metadata_str = self._metadata.to_str(indents, full=full)
-            if metadata_str:
-                line += (" " + metadata_str)
-
-            result_list.append(line)
-
-            if self._time_samples:
-                line = f"{tabs}{prefix}{self.type_name} {full_name}.timeSamples = " + usd_value_str(self._time_samples, indents)
-                result_list.append(line)
-
-        for child in self._children.values():
-            child_str = child.to_str(indents, full=full)
-            if child_str:
-                result_list.append(child_str)
-
-        result = "\n".join(result_list)
-        return result
-
     def __getattr__(self, name:str)->Any:
         if "_children" not in self.__dict__ or "_value" not in self.__dict__:
             return Property.__getattr__(self, name)

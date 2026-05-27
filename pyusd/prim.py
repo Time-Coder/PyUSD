@@ -14,6 +14,7 @@ from .common import SchemaKind
 from .api_schema_base import APISchemaBase
 from .api_wrapper import APIWrapper
 from .variant_sets import VariantSets
+from .dtypes import namespace
 
 if TYPE_CHECKING:
     from .layer import Layer
@@ -695,102 +696,6 @@ class Prim:
     
     def __str__(self)->str:
         return self.__class__.__name__ + "(<" + self.path + ">)"
-    
-    def to_str(self, indents:int=0)->str:        
-        tabs = "    " * indents
-        prim_type_name = self.__class__.__name__
-        if self._is_variant:
-            result = f'{tabs}"{self.name}"'
-        elif prim_type_name == "Prim" or self.specifier != Specifier.Def:
-            result = f'{tabs}{self.specifier} "{self.name}"'
-        else:
-            result = f'{tabs}{self.specifier} {prim_type_name} "{self.name}"'
-
-        metadata_str = self._metadata.to_str(indents)
-        if metadata_str:
-            result += (" " + metadata_str)
-
-        result += (" " if self._is_variant else f"\n{tabs}")
-        result += f'{{\n'
-        
-        props_str_list = []
-        for prop in self._props.values():
-            prop_str = prop.to_str(indents+1)
-            if prop_str:
-                props_str_list.append(prop_str)
-
-        if props_str_list:
-            result += "\n".join(props_str_list) + "\n"
-
-        children_str_list = []
-        for child in self._children.values():
-            children_str_list.append(child.to_str(indents + 1))
-
-        for variant_set in self._variant_sets.values():
-            if not variant_set:
-                continue
-
-            children_str_list.append(variant_set.to_str(indents + 1))
-
-        if children_str_list:
-            if props_str_list:
-                result += "\n"
-
-            result += "\n".join(children_str_list)
-
-        result += f'{tabs}}}\n'
-        return result
-    
-    @classmethod
-    def cls_to_str(cls)->str:
-        prim_type_name = cls.__name__
-        if cls.schema_kind == SchemaKind.ConcreteTyped:
-            result = f'class {prim_type_name} "{prim_type_name}"'
-        else:
-            result = f'class "{prim_type_name}"'
-
-        if "meta" in cls.__dict__:
-            metadata = Metadata(cls, cls.meta)
-        else:
-            metadata = Metadata(cls)
-
-        update_metadata = {}
-        inherits = []
-        for base in cls.__bases__:
-            if not issubclass(base, Prim) or base == Prim:
-                continue
-
-            inherits.append(f"</{base.__name__}>")
-
-        if inherits:
-            update_metadata["inherits"] = inherits
-
-        if cls.__doc__:
-            update_metadata["doc"] = cls.__doc__
-
-        metadata.update(update_metadata)
-
-        metadata_str = metadata.to_str(0, True)
-        if metadata_str:
-            result += (" " + metadata_str)
-
-        result += f'\n{{\n'
-        
-        props_str_list = []
-        for name, prop in cls.__dict__.items():
-            if not isinstance(prop, Property):
-                continue
-
-            prop._name = name
-            prop_str = prop.to_str(1, full=True)
-            if prop_str:
-                props_str_list.append(prop_str)
-
-        if props_str_list:
-            result += "\n".join(props_str_list) + "\n"
-
-        result += f'}}\n'
-        return result
 
     def __getattr__(self, name:str)->Union[Property, APISchemaBase, APIWrapper]:
         if name in self._props:
