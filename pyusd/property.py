@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Dict, Any, TYPE_CHECKING, Optional, Union
 from typeguard import typechecked
-from enum import Enum
+from enum import IntEnum
 
 from .metadata import Metadata
 from .utils import infer_type, in_annotations
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 class Property:
 
-    class ValueState(Enum):
+    class ValueState(IntEnum):
         Fallback = 0
         NotAuthored = 1
         Authored = 2
