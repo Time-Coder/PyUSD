@@ -2,10 +2,6 @@ from __future__ import annotations
 from typing import Dict, Union, Optional, List, Any, TYPE_CHECKING, TypeVar, Type, Tuple, Callable
 from typeguard import typechecked
 from itertools import chain
-import functools
-import threading
-import importlib
-import pkgutil
 
 from .property import Property
 from .metadata import Metadata
@@ -16,11 +12,9 @@ from .common import SchemaKind
 from .api_schema_base import APISchemaBase
 from .api_wrapper import APIWrapper
 from .variant_sets import VariantSets
-from .usda_parser import UsdaParser
 
 if TYPE_CHECKING:
     from .layer import Layer
-    from tree_sitter import Node
 
 
 PrimType = TypeVar('PrimType', bound='Prim')
@@ -104,138 +98,6 @@ class Prim:
                 continue
 
             self._fetch_from_class(klass)
-
-    @staticmethod
-    def _load(node:Node)->Prim:
-        specifier = Specifier.Def
-        type_name = ""
-        name = ""
-        metadata = {}
-        block = None
-
-        for child in node.named_children:
-            if child.type == "prim_type":
-                specifier = Prim._specifier_from_text(UsdaParser.node_text(child))
-            elif child.type == "identifier":
-                type_name = UsdaParser.node_text(child)
-            elif child.type == "string":
-                name = UsdaParser.load_string(child)
-            elif child.type == "metadata":
-                metadata = UsdaParser.load_metadata_assignments(child)
-            elif child.type == "block":
-                block = child
-
-        prim_cls = Prim._prim_class(type_name)
-        prim = prim_cls(name=name, specifier=specifier)
-        Prim._apply_loaded_metadata(prim, metadata)
-
-        if block is not None:
-            Prim._load_block(block, prim)
-
-        return prim
-
-    @staticmethod
-    def _load_block(node:Any, prim:Prim)->None:
-        from .attribute import Attribute
-        from .relationship import Relationship
-
-        for child in node.named_children:
-            if child.type == "prim_definition":
-                prim.add_child(Prim._load(child))
-            elif child.type in ["attribute_declaration", "attribute_assignment"]:
-                Prim._create_loaded_prop(prim, Attribute._load(child))
-            elif child.type in ["relationship_declaration", "relationship_assignment"]:
-                Prim._create_loaded_prop(prim, Relationship._load(child))
-            elif child.type == "variant_set_definition":
-                VariantSets._load(child, prim)
-
-    @staticmethod
-    def _apply_loaded_metadata(prim:Prim, metadata:Dict[str, Any])->None:
-        from .metadata import Metadata
-
-        field_to_attr = {
-            "prepend inherits": "_inherits",
-            "inherits": "_inherits",
-            "prepend references": "_references",
-            "references": "_references",
-            "prepend payloads": "_payloads",
-            "payloads": "_payloads",
-            "prepend specializes": "_specializes",
-            "specializes": "_specializes",
-        }
-
-        remaining = dict(metadata)
-        for key, attr_name in field_to_attr.items():
-            if key not in remaining:
-                continue
-            value = remaining.pop(key)
-            setattr(prim, attr_name, value if isinstance(value, list) else [value])
-            prim.metadata._builtin_is_set[key.split()[-1]] = True
-
-        if "prepend variantSets" in remaining or "variantSets" in remaining:
-            value = remaining.pop("prepend variantSets", remaining.pop("variantSets", []))
-            value = value if isinstance(value, list) else [value]
-            for variant_set_name in value:
-                prim.variant_sets[str(variant_set_name)]
-            prim.metadata._builtin_is_set["variantSets"] = True
-
-        variants = remaining.pop("variants", None)
-        if isinstance(variants, dict):
-            for variant_set_name, variant_name in variants.items():
-                variant_set = prim.variant_sets[str(variant_set_name)]
-                if str(variant_name) not in variant_set:
-                    variant_set[str(variant_name)]
-                variant_set.select_variant(str(variant_name))
-            prim.metadata._builtin_is_set["variants"] = True
-
-        for key, value in remaining.items():
-            Metadata._set_authored(prim.metadata, key, value)
-
-    @staticmethod
-    def _create_loaded_prop(prim:Prim, prop:Property)->Property:
-        names = prop.name.split(":")
-        prop._name = names[-1]
-        if len(names) == 1:
-            return prim.create_prop(prop)
-
-        parent = prim._props.get(names[0])
-        if parent is None:
-            parent = prim.create_prop(Property(names[0], custom=True, is_leaf=False))
-
-        for name in names[1:-1]:
-            if name not in parent._children:
-                parent.create_prop(Property(name, custom=True, is_leaf=False))
-            parent = parent._children[name]
-
-        return parent.create_prop(prop)
-
-    @staticmethod
-    def _specifier_from_text(text:str)->Specifier:
-        if text == "class":
-            return Specifier.Class
-        if text == "over":
-            return Specifier.Over
-        return Specifier.Def
-
-    @classmethod
-    def _prim_class(cls, type_name:str)->Type[Prim]:
-        if not type_name:
-            return Prim
-
-        if not hasattr(cls, "_LOAD_PRIM_TYPES"):
-            cls._LOAD_PRIM_TYPES = {"Prim": Prim}
-            package = importlib.import_module("pyusd")
-            for module_info in pkgutil.walk_packages(package.__path__, package.__name__ + "."):
-                try:
-                    module = importlib.import_module(module_info.name)
-                except Exception:
-                    continue
-                for name in getattr(module, "__all__", []):
-                    value = getattr(module, name, None)
-                    if isinstance(value, type) and issubclass(value, Prim):
-                        cls._LOAD_PRIM_TYPES[value.__name__] = value
-
-        return cls._LOAD_PRIM_TYPES.get(type_name, Prim)
     
     @property
     def specifier(self)->Specifier:

@@ -1,5 +1,6 @@
 from __future__ import annotations
-from typing import Any, Dict, TYPE_CHECKING
+import os
+from typing import Any, Dict, List, TYPE_CHECKING
 
 from .dtypes import asset, dictionary
 
@@ -128,12 +129,31 @@ class UsdaParser:
     @staticmethod
     def load_string(node:Node)->str:
         text = UsdaParser.node_text(node)
-        if text.startswith("'''") and text.endswith("'''"):
+        if (
+            (text.startswith("'''") and text.endswith("'''")) or
+            (text.startswith('"""') and text.endswith('"""'))
+        ):
             return text[3:-3]
-        if text.startswith('"""') and text.endswith('"""'):
-            return text[3:-3]
+        
         return text.strip('"')
 
     @staticmethod
     def node_text(node:Node)->str:
         return node.text.decode("utf-8")
+
+    @staticmethod
+    def resolve_asset_path(file_name, rel_path:str)->str:
+        if os.path.isabs(rel_path):
+            return rel_path
+        
+        return os.path.abspath(os.path.dirname(file_name) + "/" + rel_path).replace("\\", "/")
+
+    @staticmethod
+    def as_list(value:Any)->List[Any]:
+        if value is None:
+            return []
+        
+        if isinstance(value, list):
+            return value
+        
+        return [value]

@@ -1,11 +1,8 @@
 from __future__ import annotations
 from typing import Dict, TYPE_CHECKING, Optional, KeysView, ValuesView, ItemsView, Iterator
 
-from .usda_parser import UsdaParser
-
 if TYPE_CHECKING:
     from .prim import Prim
-    from tree_sitter import Node
 
 
 class VariantSet:
@@ -59,26 +56,6 @@ class VariantSet:
     
     def __contains__(self, name:str)->bool:
         return name in self._variants
-
-    @staticmethod
-    def _load(node:Node, variant_set:VariantSet)->Prim:
-        variant_name = ""
-        block = None
-        for child in node.named_children:
-            if child.type == "string":
-                variant_name = UsdaParser.load_string(child)
-            elif child.type == "block":
-                block = child
-
-        if not variant_name:
-            raise ValueError("variant has no name")
-
-        variant = variant_set[variant_name]
-        if block is not None:
-            from .prim import Prim
-            Prim._load_block(block, variant)
-
-        return variant
     
     def to_str(self, indents:int=0)->str:
         tabs = "    " * indents
