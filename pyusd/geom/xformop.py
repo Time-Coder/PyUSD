@@ -36,10 +36,10 @@ class XformOp(Attribute):
     def __setattr__(self, name: str, value: Any) -> None:
         Attribute.__setattr__(self, name, value)
 
-        if "_children" not in self.__dict__ or "_parent_prim" not in self.__dict__:
+        if "_props" not in self.__dict__ or "_parent_prim" not in self.__dict__:
             return
 
-        if name not in self._children:
+        if name not in self._props:
             return
 
         full_name = self._name + ":" + name

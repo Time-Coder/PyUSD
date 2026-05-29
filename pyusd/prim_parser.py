@@ -144,16 +144,13 @@ class PrimParser:
         if len(names) == 1:
             return prim.create_prop(prop)
 
-        parent = prim._props.get(names[0])
-        if parent is None:
-            parent = prim.create_prop(Property(names[0], custom=True, is_leaf=False))
+        current = prim
+        for name in names[:-1]:
+            if name not in current._props:
+                current.create_prop(Property(name, custom=True, is_leaf=False))
+            current = current._props[name]
 
-        for name in names[1:-1]:
-            if name not in parent._children:
-                parent.create_prop(Property(name, custom=True, is_leaf=False))
-            parent = parent._children[name]
-
-        return parent.create_prop(prop)
+        return current.create_prop(prop)
 
     @staticmethod
     def specifier_from_text(text:str)->Specifier:

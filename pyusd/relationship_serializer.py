@@ -30,7 +30,7 @@ class RelationshipSerializer:
 
             result_list.append(line)
 
-        for child in rel._children.values():
+        for child in rel._props.values():
             child_str = child.to_str(indents, full=full)
             if child_str:
                 result_list.append(child_str)

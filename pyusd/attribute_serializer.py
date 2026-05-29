@@ -41,7 +41,7 @@ class AttributeSerializer:
                 line = f"{tabs}{prefix}{attr.type_name} {full_name}.timeSamples = " + usd_value_str(attr._time_samples, indents)
                 result_list.append(line)
 
-        for child in attr._children.values():
+        for child in attr._props.values():
             child_str = child.to_str(indents, full=full)
             if child_str:
                 result_list.append(child_str)

@@ -83,11 +83,11 @@ class Attribute(Property, Data[T]):
         self._uniform = flag
 
     def __getattr__(self, name:str)->Any:
-        if "_children" not in self.__dict__ or "_value" not in self.__dict__:
+        if "_props" not in self.__dict__ or "_value" not in self.__dict__:
             return Property.__getattr__(self, name)
 
-        if name in self._children:
-            return self._children[name]
+        if name in self._props:
+            return self._props[name]
         elif hasattr(self._value, name):
             return getattr(self._value, name)
         else:
@@ -98,10 +98,10 @@ class Attribute(Property, Data[T]):
             super().__setattr__(name, value)
             return
 
-        if "_children" not in self.__dict__ or "_value" not in self.__dict__:
+        if "_props" not in self.__dict__ or "_value" not in self.__dict__:
             return Property.__setattr__(self, name, value)
 
-        if name in self._children:
+        if name in self._props:
             return Property.__setattr__(self, name, value)
         elif hasattr(self._value, name):
             return setattr(self._value, name, value)

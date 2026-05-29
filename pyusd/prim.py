@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from itertools import chain
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
 from typeguard import typechecked
@@ -25,8 +24,6 @@ if TYPE_CHECKING:
 PrimType = TypeVar('PrimType', bound='Prim')
 
 class Prim:
-
-    __name_indices:Dict[type, int] = {}
 
     _name: str
     _layer: Optional[Layer]
@@ -53,7 +50,7 @@ class Prim:
             raise TypeError(f"cannot instantiate abstract class {self.__class__.__name__}")
 
         if name == "":
-            name = self.__generate_name()
+            name = self.__class__.__name__
 
         if not name.isidentifier():
             raise ValueError(f'"{name}" is not a valid name')
@@ -119,7 +116,7 @@ class Prim:
 
     def _fetch_from_class(self, cls:Union[Type[Prim], Type[APISchemaBase]], instance_name:str="")->None:
         prefix = ""
-        start_prop = None
+        start = self
         if instance_name:
             prefix = cls.meta["customData"]["propertyNamespacePrefix"]
             if prefix not in self._props:
@@ -127,7 +124,7 @@ class Prim:
             else:
                 prefix_prop = self._props[prefix]
 
-            start_prop = prefix_prop.create_prop(Property(instance_name, is_leaf=False))
+            start = prefix_prop.create_prop(Property(instance_name, is_leaf=False))
 
         for name, value in cls.__dict__.items():
             if name == "meta":
@@ -138,28 +135,17 @@ class Prim:
                 continue
 
             value._name = name
-
-            if instance_name:
-                if name not in start_prop._children:
-                    prop = value.clone()
-                    prop._parent_prop = start_prop
-                    start_prop._children[name] = prop
-                else:
-                    prop = start_prop._children[name]
-                    prop.update_children(value)
+            if name not in start._props:
+                prop = value.clone()
+                prop._parent = start
+                start._props[name] = prop
             else:
-                if name not in self._props:
-                    prop = value.clone()
-                    prop._parent_prim = self
-                    self._props[name] = prop
-                else:
-                    prop = self._props[name]
-                    prop.update_children(value)
+                prop = start._props[name]
+                prop.update_children(value)
 
     def create_prop(self, prop:Property)->Property:
         self._props[prop.name] = prop
-        prop._parent_prim = self
-        prop._parent_prop = None
+        prop._parent = self
         return prop
 
     T = TypeVar('T')
@@ -168,201 +154,67 @@ class Prim:
         names = name.split(":")
         name = names[0]
 
-        if name not in self._props:
-            if len(names) - 1 == 0:
-                prop = self.create_prop(Attribute(value_type, name, value, doc, metadata, is_leaf, uniform, custom, fix_type))
-            else:
-                prop = self.create_prop(Attribute(namespace, name, is_leaf=False))
-        else:
-            prop = self._props[name]
-            if len(names) - 1 == 0 and prop._value_state > Property.ValueState.NotAuthored:
-                raise RuntimeError(f"Attribute {ori_name} already exists")
-            else:
-                prop._value_state = Property.ValueState.NotAuthored
-
-        for i, name in enumerate(names[1:]):
-            if name not in prop._children:
+        current = self
+        for i, name in enumerate(names):
+            if name not in current._props:
                 if i + 1 == len(names) - 1:
-                    prop = prop.create_prop(Attribute(value_type, name, value, doc, metadata, is_leaf, uniform, custom, fix_type))
+                    current = current.create_prop(Attribute(value_type, name, value, doc, metadata, is_leaf, uniform, custom, fix_type))
                 else:
-                    prop = prop.create_prop(Attribute(namespace, name, is_leaf=False))
+                    current = current.create_prop(Attribute(namespace, name, is_leaf=False))
             else:
-                prop = prop._children[name]
-                if i + 1 == len(names) - 1 and prop._value_state > Property.ValueState.NotAuthored:
+                current = current._props[name]
+                if i + 1 == len(names) - 1 and current._value_state > Property.ValueState.NotAuthored:
                     raise RuntimeError(f"Attribute {ori_name} already exists")
                 else:
-                    prop._value_state = Property.ValueState.NotAuthored
+                    current._value_state = Property.ValueState.NotAuthored
 
-        return prop
+        return current
 
     def create_rel(self, name:str, doc:str="", metadata:Optional[Dict[str, Any]]=None, custom:bool=False, is_leaf:bool=True)->Relationship:
         ori_name = name
         names = name.split(":")
         name = names[0]
 
-        if name not in self._props:
-            if len(names) - 1 == 0:
-                prop = self.create_prop(Relationship(name, doc, metadata, custom, is_leaf))
-            else:
-                prop = self.create_prop(Attribute(namespace, name, is_leaf=False))
-        else:
-            prop = self._props[name]
-            if len(names) - 1 == 0 and prop._value_state > Property.ValueState.NotAuthored:
-                raise RuntimeError(f"Relationship {ori_name} already exists")
-            else:
-                prop._value_state = Property.ValueState.NotAuthored
-
-        for i, name in enumerate(names[1:]):
-            if name not in prop._children:
-                if i + 1 == len(names) - 1:
-                    prop = prop.create_prop(Relationship(name, doc, metadata, custom, is_leaf))
+        current = self
+        for i, name in enumerate(names):
+            if name not in current._props:
+                if i == len(names) - 1:
+                    current = current.create_prop(Relationship(name, doc, metadata, custom, is_leaf))
                 else:
-                    prop = prop.create_prop(Attribute(namespace, name, is_leaf=False))
+                    current = current.create_prop(Attribute(namespace, name, is_leaf=False))
             else:
-                prop = prop._children[name]
-                if i + 1 == len(names) - 1 and prop._value_state > Property.ValueState.NotAuthored:
+                current = current._props[name]
+                if i == len(names) - 1 and current._value_state > Property.ValueState.NotAuthored:
                     raise RuntimeError(f"Relationship {ori_name} already exists")
                 else:
-                    prop._value_state = Property.ValueState.NotAuthored
+                    current._value_state = Property.ValueState.NotAuthored
 
-        return prop
+        return current
 
-    def _has_prop(self, name:str)->bool:
+    def has_prop(self, name:str)->bool:
         names = name.split(":")
         name = names[0]
 
-        if name not in self._props:
-            return False
-
-        prop = self._props[name]
+        current = self
         for name in names[1:]:
-            if name not in prop._children:
+            if name not in current._props:
                 return False
-            prop = prop._children[name]
+            current = current._props[name]
 
         return True
 
-    def has_prop(self, name:str, recursive:bool=True, specialize:bool=True)->bool:
-        # LIVRPS strength order
-
-        # Local
-        if self._has_prop(name):
-            return True
-
-        if recursive:
-            # Inherits
-            for prim in self._inherits:
-                if isinstance(prim, Layer):
-                    prim = prim.default_prim
-                    if prim is None:
-                        continue
-
-                if prim.has_prop(name, recursive, False):
-                    return True
-
-            # Variants
-            for variant_set in self._variant_sets.values():
-                if variant_set.selected_variant is not None:
-                    if variant_set.selected_variant.has_prop(name, recursive, False):
-                        return True
-
-            # References and Payloads
-            for prim in chain(self._references, self._payloads):
-                if isinstance(prim, Layer):
-                    prim = prim.default_prim
-                    if prim is None:
-                        continue
-
-                if prim.has_prop(name, recursive, False):
-                    return True
-
-            # Specializes
-            if specialize:
-                for prim in self._specializes:
-                    if isinstance(prim, Layer):
-                        prim = prim.default_prim
-                        if prim is None:
-                            continue
-
-                    if prim.has_prop(name, recursive, True):
-                        return True
-
-        return False
-
-    def _prop(self, name:str)->Property:
+    def prop(self, name:str)->Property:
         names = name.split(":")
         name = names[0]
 
-        if name not in self._props:
-            raise KeyError(name)
-
-        prop = self._props[name]
+        current = self
         for name in names[1:]:
-            if name not in prop._children:
+            if name not in current._props:
                 raise KeyError(name)
 
-            prop = prop._children[name]
+            current = current._props[name]
 
-        return prop
-
-    def prop(self, name:str, recursive:bool=True, specialize:bool=True)->Property:
-        from .layer import Layer
-
-        # LIVRPS strength order
-
-        # Local
-        try:
-            return self._prop(name)
-        except KeyError:
-            pass
-
-        if recursive:
-            # Inherits
-            for prim in self._inherits:
-                if isinstance(prim, Layer):
-                    prim = prim.default_prim
-                    if prim is None:
-                        continue
-
-                try:
-                    return prim.prop(name, recursive, False)
-                except KeyError:
-                    pass
-
-            # Variants
-            for variant_set in self._variant_sets.values():
-                if variant_set.selected_variant is not None:
-                    try:
-                        return variant_set.selected_variant.prop(name, recursive, False)
-                    except KeyError:
-                        pass
-
-            # References and Payloads
-            for prim in chain(self._references, self._payloads):
-                if isinstance(prim, Layer):
-                    prim = prim.default_prim
-                    if prim is None:
-                        continue
-
-                try:
-                    return prim.prop(name, recursive, False)
-                except KeyError:
-                    pass
-
-            # Specializes
-            if specialize:
-                for prim in self._specializes:
-                    if isinstance(prim, Layer):
-                        prim = prim.default_prim
-                        if prim is None:
-                            continue
-
-                    try:
-                        return prim.prop(name, recursive, True)
-                    except KeyError:
-                        pass
-
-        raise KeyError(name)
+        return current
 
     def _getitem(self, path_items:List[str])->Prim:
         prim = self
@@ -687,15 +539,6 @@ class Prim:
     def is_variant(self)->bool:
         return self._is_variant
 
-    def __generate_name(self)->str:
-        cls = self.__class__
-        if cls not in Prim.__name_indices:
-            Prim.__name_indices[cls] = 0
-
-        index = Prim.__name_indices[cls]
-        Prim.__name_indices[cls] += 1
-        return cls.__name__ + str(index)
-
     def __str__(self)->str:
         return self.__class__.__name__ + "(<" + self.path + ">)"
 
@@ -720,11 +563,8 @@ class Prim:
                 if name not in self._api_wrappers:
                     self._api_wrappers[name] = APIWrapper(name, api_type, self)
                 return self._api_wrappers[name]
-
-        try:
-            return self.create_prop(self.prop(name, True).clone(False))
-        except KeyError:
-            return self.create_prop(Property(name, custom=True, is_leaf=False))
+        
+        return self.create_prop(Property(name, custom=True, is_leaf=False))
 
     def __setattr__(self, name: str, value: Any) -> None:
         if hasattr(self.__class__, name) or in_annotations(name, self.__class__):
@@ -757,7 +597,7 @@ class Prim:
                 del self._props[name]
 
         if name not in self._props and isinstance(value, Property):
-            if value._parent_prim is None and value._parent_prop is None:
+            if value._parent is None:
                 value._name = name
                 self.create_prop(value)
             else:
@@ -766,12 +606,6 @@ class Prim:
                 self.create_prop(cloned_value)
 
             return
-
-        if name not in self._props:
-            try:
-                self.create_prop(self.prop(name, True).clone(False))
-            except KeyError:
-                pass
 
         if name not in self._props:
             if is_rel:

@@ -25,11 +25,10 @@ class Property:
         Authored = 2
         Cleared = 3
 
-    _parent_prim: Optional[Prim]
-    _parent_prop: Optional[Property]
+    _parent: Optional[Union[Prim, Property]]
     _name: str
     _metadata: Metadata
-    _children: Dict[str, Property]
+    _props: Dict[str, Property]
     _is_leaf: bool
     _custom: bool
     _value_state: Property.ValueState
@@ -52,11 +51,10 @@ class Property:
 
         self.__doc__ = doc
 
-        self._parent_prim:Optional[Prim] = None
-        self._parent_prop:Optional[Property] = None
+        self._parent: Optional[Union[Prim, Property]] = None
         self._name:str = name
         self._metadata:Metadata = Metadata(self, metadata)
-        self._children:Dict[str, Property] = {}
+        self._props:Dict[str, Property] = {}
         self._custom:bool = custom
         self._is_leaf:bool = is_leaf
         self._value_state:Property.ValueState = Property.ValueState.Fallback
@@ -71,13 +69,12 @@ class Property:
 
                 value._name = name
 
-                if name in self._children:
+                if name in self._props:
                     continue
 
                 prop = value.clone()
-                prop._parent_prim = self._parent_prim
-                prop._parent_prop = self
-                self._children[name] = prop
+                prop._parent = self
+                self._props[name] = prop
 
         self._metadata.update(self.meta)
 
@@ -85,28 +82,23 @@ class Property:
         result = Property()
         result.__class__ = self.__class__
         result.__doc__ = self.__doc__
-        result._parent_prim = None
-        result._parent_prop = None
+        result._parent = None
         result._name = self._name
         result._metadata = self._metadata.clone()
-        result._children = {}
+        result._props = {}
         result._custom = self._custom
         result._is_leaf = self._is_leaf
         result._value_state = self._value_state
         if clone_child:
-            for name, child in self._children.items():
-                result._children[name] = child.clone()
-                result._children[name]._parent_prop = result
+            for name, child in self._props.items():
+                result._props[name] = child.clone()
+                result._props[name]._parent = result
 
         return result
 
     @property
-    def parent_prim(self)->Prim:
-        return self._parent_prim
-
-    @property
-    def parent_prop(self)->Property:
-        return self._parent_prop
+    def parent(self)->Optional[Union[Prim, Property]]:
+        return self._parent
 
     @property
     def is_leaf(self)->bool:
@@ -118,17 +110,19 @@ class Property:
 
     @property
     def full_name(self)->str:
-        if self._parent_prop is None:
+        from .prim import Prim
+
+        if self._parent is None or isinstance(self._parent, Prim):
             return self._name
 
-        return self._parent_prop.full_name + ":" + self._name
+        return self._parent.full_name + ":" + self._name
 
     @property
     def path(self)->str:
-        if self._parent_prim is None:
+        if self._parent is None:
             return self.full_name
 
-        return self._parent_prim.path + "." + self.full_name
+        return self._parent.path + "." + self.full_name
 
     @property
     def metadata(self)->Metadata:
@@ -158,23 +152,23 @@ class Property:
 
         from .attribute import Attribute
         self.__class__ = Attribute
-        Attribute._init(self, value_type, value, uniform, custom, fix_type)
+        self._custom = custom
+        Attribute._init(self, value_type, value=value, uniform=uniform, fix_type=fix_type)
         self._value_state = Property.ValueState.NotAuthored
         return self
 
     def create_prop(self, prop:Property)->Property:
-        self._children[prop.name] = prop
-        prop._parent_prim = self._parent_prim
-        prop._parent_prop = self
+        self._props[prop.name] = prop
+        prop._parent = self
         return prop
 
     def update_children(self, prop:Property)->None:
-        for child_name, child in prop._children.items():
-            if child_name not in self._children:
-                self._children[child_name] = child.clone()
-                self._children[child_name]._parent_prop = self
+        for child_name, child in prop._props.items():
+            if child_name not in self._props:
+                self._props[child_name] = child.clone()
+                self._props[child_name]._parent = self
             else:
-                self._children[child_name].update_children(child)
+                self._props[child_name].update_children(child)
 
     def __get__(self, instance:Union[Prim, Property, APISchemaBase], owner)->Property:
         from .api_schema_base import APISchemaBase
@@ -183,12 +177,12 @@ class Property:
         if isinstance(instance, Prim):
             return instance._props[self._name]
         elif isinstance(instance, Property):
-            return instance._children[self._name]
+            return instance._props[self._name]
         elif isinstance(instance, APISchemaBase):
             if instance.schema_kind == SchemaKind.MultipleApplyAPI:
                 prefix_prop = instance._prim._props[instance._namespace_prefix]
-                start_prop = prefix_prop._children[instance._instance_name]
-                return start_prop._children[self._name]
+                start_prop = prefix_prop._props[instance._instance_name]
+                return start_prop._props[self._name]
             else:
                 return instance._prim._props[self._name]
 
@@ -199,20 +193,20 @@ class Property:
         if isinstance(instance, Prim):
             instance._props[self._name].set(value)
         elif isinstance(instance, Property):
-            instance._children[self._name].set(value)
+            instance._props[self._name].set(value)
         elif isinstance(instance, APISchemaBase):
             if instance.schema_kind == SchemaKind.MultipleApplyAPI:
                 prefix_prop = instance._prim._props[instance._namespace_prefix]
-                start_prop = prefix_prop._children[instance._instance_name]
-                start_prop._children[self._name].set(value)
+                start_prop = prefix_prop._props[instance._instance_name]
+                start_prop._props[self._name].set(value)
             else:
                 instance._prim._props[self._name].set(value)
 
     def __getattr__(self, name:str)->Property:
-        if name not in self._children:
+        if name not in self._props:
             self.create_prop(Property(name, custom=True, is_leaf=False))
 
-        return self._children[name]
+        return self._props[name]
 
     def __setattr__(self, name: str, value: Any) -> None:
         if hasattr(self.__class__, name) or in_annotations(name, self.__class__):
@@ -224,8 +218,8 @@ class Property:
         from .relationship import Relationship
 
         is_rel:bool = (isinstance(value, Prim) or (isinstance(value, list) and all(isinstance(item, Prim) for item in value)) or isinstance(value, Relationship))
-        if name in self._children:
-            prop = self._children[name]
+        if name in self._props:
+            prop = self._props[name]
             if isinstance(prop, Attribute) and is_rel:
                 if not prop._custom:
                     if isinstance(value, Prim):
@@ -237,20 +231,20 @@ class Property:
 
                     raise TypeError(error_message)
 
-                del self._children[name]
+                del self._props[name]
 
             if isinstance(prop, Relationship) and not is_rel:
                 if not prop._custom:
                     raise TypeError(f"cannot assign {value.__class__} object to Relationship")
 
-                del self._children[name]
+                del self._props[name]
 
-        if name not in self._children:
+        if name not in self._props:
             if self._is_leaf:
                 raise AttributeError("leaf Property cannot create child Property")
 
-        if name not in self._children and isinstance(value, Property):
-            if value._parent_prim is None and value._parent_prop is None:
+        if name not in self._props and isinstance(value, Property):
+            if value._parent is None:
                 value._name = name
                 self.create_prop(value)
             else:
@@ -260,7 +254,7 @@ class Property:
 
             return
 
-        if name not in self._children:
+        if name not in self._props:
             if not isinstance(value, Prim):
                 if isinstance(self, Attribute):
                     target_type = self._type
@@ -277,7 +271,7 @@ class Property:
             else:
                 self.create_prop(Relationship(name, custom=target_custom, is_leaf=False))
 
-        self._children[name].set(value)
+        self._props[name].set(value)
 
     def to_str(self, indents:int=0, full:bool=False)->str:
         return PropertySerializer.to_str(self, indents, full)
