@@ -11,10 +11,10 @@ from .utils import (
     usd_matrix_types,
     usd_quat_types,
     usd_scalar_types,
-    usd_type_str,
-    usd_value_str,
     usd_vector_types,
 )
+from .usda_serializer import UsdaSerializer
+
 
 T = TypeVar('T')
 class Data(Generic[T]):
@@ -45,7 +45,7 @@ class Data(Generic[T]):
 
     @property
     def type_name(self)->str:
-        return usd_type_str(self._dtype, self._array_dim)
+        return UsdaSerializer.type_str(self._dtype, self._array_dim)
 
     @property
     def is_namespace(self)->bool:
@@ -53,7 +53,7 @@ class Data(Generic[T]):
 
     @typechecked
     def value_str(self, indent:int=0)->str:
-        return usd_value_str(self.value, indent)
+        return UsdaSerializer.value_str(self.value, indent)
 
     def get(self)->T:
         return self.value

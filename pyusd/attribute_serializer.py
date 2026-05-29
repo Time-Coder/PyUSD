@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from .dtypes import namespace
 from .property import Property
-from .utils import usd_value_str
+from .usda_serializer import UsdaSerializer
 
 if TYPE_CHECKING:
     from .attribute import Attribute
@@ -38,7 +38,7 @@ class AttributeSerializer:
             result_list.append(line)
 
             if attr._time_samples:
-                line = f"{tabs}{prefix}{attr.type_name} {full_name}.timeSamples = " + usd_value_str(attr._time_samples, indents)
+                line = f"{tabs}{prefix}{attr.type_name} {full_name}.timeSamples = " + UsdaSerializer.value_str(attr._time_samples, indents)
                 result_list.append(line)
 
         for child in attr._props.values():

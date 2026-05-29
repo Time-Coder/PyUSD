@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, List
 
-from .utils import infer_type, usd_type_str, usd_value_str
+from .utils import infer_type
+from .usda_serializer import UsdaSerializer
 
 if TYPE_CHECKING:
     from .metadata import Metadata
@@ -73,7 +74,7 @@ class MetadataSerializer:
                 elif isinstance(metadata._parent, Layer):
                     rel_layer = metadata._parent
 
-            value_str = usd_value_str(value, indents+1, degenerate_list=(is_ref and key != "subLayers"), rel_layer=rel_layer, need_quote=(not is_ref or key in ["variantSets", "variants"]))
+            value_str = UsdaSerializer.value_str(value, indents+1, degenerate_list=(is_ref and key != "subLayers"), rel_layer=rel_layer, need_quote=(not is_ref or key in ["variantSets", "variants"]))
             if is_ref and key not in ["subLayers", "variants"]:
                 builtin_str_list.append(f"{next_tabs}prepend {key} = {value_str}")
             else:
@@ -87,7 +88,7 @@ class MetadataSerializer:
             if value is None:
                 continue
 
-            custom_str_list.append(f"{next2_tabs}{usd_type_str(infer_type(value))} {key} = {usd_value_str(value, indents+2)}")
+            custom_str_list.append(f"{next2_tabs}{UsdaSerializer.type_str(infer_type(value))} {key} = {UsdaSerializer.value_str(value, indents+2)}")
 
         if len(builtin_str_list) == 0 and len(custom_str_list) == 0:
             return ""
