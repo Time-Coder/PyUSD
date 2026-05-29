@@ -15,6 +15,7 @@ from .api_schema_base import APISchemaBase
 from .api_wrapper import APIWrapper
 from .variant_sets import VariantSets
 from .dtypes import namespace
+from .prim_serializer import PrimSerializer
 
 if TYPE_CHECKING:
     from .layer import Layer
@@ -778,3 +779,10 @@ class Prim:
                 self.create_prop(Attribute(infer_type(value), name, uniform=False, custom=True, is_leaf=False, fix_type=False))
 
         self._props[name].set(value)
+
+    def to_str(self, indents: int = 0)->str:
+        return PrimSerializer.to_str(self, indents)
+    
+    @classmethod
+    def cls_to_str(cls)->str:
+        return PrimSerializer.cls_to_str(cls)

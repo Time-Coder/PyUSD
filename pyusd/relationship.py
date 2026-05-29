@@ -4,12 +4,10 @@ from typeguard import typechecked
 import copy
 
 from .property import Property
-from .utils import usd_value_str
-from .usda_parser import UsdaParser
+from .relationship_serializer import RelationshipSerializer
 
 if TYPE_CHECKING:
     from .prim import Prim
-    from tree_sitter import Node
 
 
 class Relationship(Property):
@@ -70,28 +68,4 @@ class Relationship(Property):
             return str(self._targets)
     
     def to_str(self, indents:int=0, full:bool=False)->str:
-        result_list = []
-        if full or self._value_state != Property.ValueState.Fallback:
-            tabs = "    " * indents
-            prefix = ""
-            if self._custom:
-                prefix += "custom "
-
-            line = f"{tabs}{prefix}rel {self.full_name}"
-            if self.value_state in [Property.ValueState.Authored, Property.ValueState.Cleared]:
-                line += f" = {usd_value_str(self._targets, indents, True)}"
-
-            metadata_str = self._metadata.to_str(indents, full=full)
-            if metadata_str:
-                line += (" " + metadata_str)
-
-            result_list.append(line)
-
-        for child in self._children.values():
-            child_str = child.to_str(indents, full=full)
-            if child_str:
-                result_list.append(child_str)
-
-        result = "\n".join(result_list)
-        return result
-    
+        return RelationshipSerializer.to_str(self, indents, full)

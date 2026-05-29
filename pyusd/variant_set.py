@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import Dict, TYPE_CHECKING, Optional, KeysView, ValuesView, ItemsView, Iterator
 
+from .variant_set_serializer import VariantSetSerializer
+
 if TYPE_CHECKING:
     from .prim import Prim
 
@@ -58,16 +60,4 @@ class VariantSet:
         return name in self._variants
     
     def to_str(self, indents:int=0)->str:
-        tabs = "    " * indents
-        result = f'{tabs}variantSet "{self._name}" = {{'
-
-        if self._variants:
-            variant_str_list = []
-            for variant in self._variants.values():
-                variant_str_list.append(variant.to_str(indents + 1))
-
-            result += "\n" + '\n'.join(variant_str_list)
-
-        result += f"{tabs}}}\n"
-        
-        return result
+        return VariantSetSerializer.to_str(self, indents)

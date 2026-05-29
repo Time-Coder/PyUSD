@@ -1,11 +1,17 @@
-from .attribute import Attribute
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
 from .property import Property
 from .dtypes import namespace
 from .utils import usd_value_str
 
+if TYPE_CHECKING:
+    from .attribute import Attribute
+    
 
 class AttributeSerializer:
 
+    @staticmethod
     def to_str(attr: Attribute, indents:int=0, full:bool=False) -> str:
         result_list = []
         full_name = attr.full_name

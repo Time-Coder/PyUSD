@@ -7,6 +7,7 @@ from .sdf import Specifier
 from .prim import Prim, PrimType
 from .layer_metadata import LayerMetadata
 from .layer_parser import LayerParser
+from .layer_serializer import LayerSerializer
 from .common import Axis
 
 
@@ -214,31 +215,8 @@ class Layer:
     def __str__(self)->str:
         return f'Layer("{self.file_name}")'
     
-    def to_str(self)->str:
-        result = "#usda 1.0\n"
-
-        metadata_str = self._metadata.to_str()
-        if metadata_str:
-            result += metadata_str + "\n"
-
-        result += "\n"
-
-        prims_str_list = []
-        for prim in self._root_prims.values():
-            prims_str_list.append(prim.to_str())
-
-        result += "\n".join(prims_str_list)
-
-        return result
-    
     def save(self, file_name:str="")->None:
-        if file_name == "":
-            file_name = self._file_name
+        LayerSerializer.save(self, file_name)
 
-        abs_file_name = os.path.abspath(file_name)
-        dir_name = os.path.dirname(abs_file_name)
-        if not os.path.exists(dir_name):
-            os.makedirs(dir_name)
-
-        with open(abs_file_name, "w") as f:
-            f.write(self.to_str())
+    def to_str(self)->str:
+        return LayerSerializer.to_str(self)

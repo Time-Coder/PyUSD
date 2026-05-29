@@ -1,10 +1,13 @@
-from typing import Type
+from __future__ import annotations
+from typing import Type, TYPE_CHECKING
 
-from .prim import Prim
 from .sdf import Specifier
 from .common import SchemaKind
 from .metadata import Metadata
 from .property import Property
+
+if TYPE_CHECKING:
+    from .prim import Prim
 
 
 class PrimSerializer:

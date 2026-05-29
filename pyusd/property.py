@@ -6,6 +6,7 @@ from enum import IntEnum
 from .metadata import Metadata
 from .utils import infer_type, in_annotations
 from .common import SchemaKind
+from .property_serializer import PropertySerializer
 
 if TYPE_CHECKING:
     from .prim import Prim
@@ -277,11 +278,4 @@ class Property:
         self._children[name].set(value)
 
     def to_str(self, indents:int=0, full:bool=False)->str:
-        result_list = []
-        for child in self._children.values():
-            child_str = child.to_str(indents, full=full)
-            if child_str:
-                result_list.append(child_str)
-
-        result = "\n".join(result_list)
-        return result
+        return PropertySerializer.to_str(self, indents, full)

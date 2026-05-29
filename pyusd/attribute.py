@@ -5,12 +5,9 @@ import copy
 
 from .data import Data
 from .property import Property
-from .dtypes import namespace, token
-from .utils import usd_value_str, in_annotations
-from .usda_parser import UsdaParser
-
-if TYPE_CHECKING:
-    from tree_sitter import Node
+from .dtypes import token
+from .utils import in_annotations
+from .attribute_serializer import AttributeSerializer
 
 
 T = TypeVar('T')
@@ -109,3 +106,6 @@ class Attribute(Property, Data[T]):
             return setattr(self._value, name, value)
         else:
             return Property.__setattr__(self, name, value)
+
+    def to_str(self, indents:int=0, full:bool=False) -> str:
+        return AttributeSerializer.to_str(self, indents, full)
