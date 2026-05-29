@@ -1,10 +1,9 @@
 from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
-from ..relationship import Relationship
-from ..dtypes import namespace
-from ..gf import color3f
-from ..dtypes import token
 from ..common import SchemaKind
+from ..dtypes import namespace, token
+from ..gf import color3f
+from ..relationship import Relationship
 
 
 class LightAPI(APISchemaBase):

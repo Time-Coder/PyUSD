@@ -1,8 +1,9 @@
+from typing import List
+
 from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
-from typing import List
-from ..dtypes import half
 from ..common import SchemaKind
+from ..dtypes import half
 
 
 class ParticleFieldOpacityAttributeAPI(APISchemaBase):

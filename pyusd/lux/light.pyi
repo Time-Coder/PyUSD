@@ -1,7 +1,6 @@
 from ..attribute import Attribute
-from ..relationship import Relationship
 from ..dtypes import token
-
+from ..relationship import Relationship
 
 class Light(Attribute):
 

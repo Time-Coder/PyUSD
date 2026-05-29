@@ -1,8 +1,8 @@
-from .skel_root import SkelRoot
-from .skeleton import Skeleton
+from .blend_shape import BlendShape
 from .skel_animation import SkelAnimation
 from .skel_binding_api import SkelBindingAPI
-from .blend_shape import BlendShape
+from .skel_root import SkelRoot
+from .skeleton import Skeleton
 
 __all__ = [
     "SkelRoot",

@@ -1,9 +1,10 @@
+from typing import List
+
 from ..attribute import Attribute
-from ..dtypes import token, namespace
+from ..common import SchemaKind
+from ..dtypes import namespace, token
 from ..gf import color3f
 from .boundable import Boundable
-from ..common import SchemaKind
-from typing import List
 
 
 class Gprim(Boundable):

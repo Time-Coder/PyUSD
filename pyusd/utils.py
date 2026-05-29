@@ -1,29 +1,80 @@
 from __future__ import annotations
-from typing import List, Any, get_origin, get_args, Optional, Union, TYPE_CHECKING, Tuple
-import re
+
 import os
+import re
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    List,
+    Optional,
+    Tuple,
+    Union,
+    get_args,
+    get_origin,
+)
 
 import numpy as np
 
-from .gf import (
-    int2, int3, int4,
-    half2, half3, half4,
-    float2, float3, float4,
-    double2, double3, double4,
-    matrix2d, matrix3d, matrix4d,
-    quath, quatf, quatd,
-
-    color3h, color3f, color3d,
-    color4h, color4f, color4d,
-    point3h, point3f, point3d,
-    normal3h, normal3f, normal3d,
-    vector3h, vector3f, vector3d,
-    texCoord2f, texCoord2h, texCoord2d,
-    texCoord3f, texCoord3h, texCoord3d,
-    frame4d, MathForm
+from .dtypes import (
+    asset,
+    dictionary,
+    double,
+    group,
+    half,
+    int64,
+    namespace,
+    opaque,
+    pathExpression,
+    string,
+    timecode,
+    token,
+    uchar,
+    uint,
+    uint64,
 )
-
-from .dtypes import double, half, int64, string, token, pathExpression, timecode, uchar, uint, uint64, namespace, asset, dictionary, opaque, group
+from .gf import (
+    MathForm,
+    color3d,
+    color3f,
+    color3h,
+    color4d,
+    color4f,
+    color4h,
+    double2,
+    double3,
+    double4,
+    float2,
+    float3,
+    float4,
+    frame4d,
+    half2,
+    half3,
+    half4,
+    int2,
+    int3,
+    int4,
+    matrix2d,
+    matrix3d,
+    matrix4d,
+    normal3d,
+    normal3f,
+    normal3h,
+    point3d,
+    point3f,
+    point3h,
+    quatd,
+    quatf,
+    quath,
+    texCoord2d,
+    texCoord2f,
+    texCoord2h,
+    texCoord3d,
+    texCoord3f,
+    texCoord3h,
+    vector3d,
+    vector3f,
+    vector3h,
+)
 
 if TYPE_CHECKING:
     from .layer import Layer
@@ -120,28 +171,28 @@ asset_pattern = re.compile(r"@(.*?)@")
 def abspath(text):
     if "@" not in text:
         return os.path.abspath(text).replace("\\", "/")
-    
+
     return asset_pattern.sub(_to_abs, text)
 
 def usd_value_str(value:Any, indents:int=0, degenerate_list:bool=False, rel_layer:Optional[Union[str, Layer]]="", need_quote:bool=True)->str:
-    from .gf import genType
-    from .prim import Prim
-    from .layer import Layer
     from .data import Data
+    from .gf import genType
+    from .layer import Layer
+    from .prim import Prim
 
     tabs = "    " * indents
     next_tabs = "    " * (indents + 1)
 
     if isinstance(value, genType):
         if value.math_form == MathForm.Mat:
-            result = f"(\n"
+            result = "(\n"
             for i in range(value.shape[0]):
                 result += f"{next_tabs}("
                 for j in range(value.shape[1]):
                     result += str(value[i, j])
                     if j != value.shape[1] - 1:
                         result += ", "
-                result += f")"
+                result += ")"
                 if i != value.shape[0] - 1:
                     result += ",\n"
                 else:
@@ -173,7 +224,7 @@ def usd_value_str(value:Any, indents:int=0, degenerate_list:bool=False, rel_laye
 
         if len(value) == 0:
             return f"{left_bracket}{right_bracket}"
-        
+
         tabs = "    " * indents
         next_tabs = "    " * (indents + 1)
         if len(value) == 1:
@@ -190,7 +241,7 @@ def usd_value_str(value:Any, indents:int=0, degenerate_list:bool=False, rel_laye
             result = ", ".join(result_list)
             if "\n" not in result and len(result) < 100:
                 return f"{left_bracket}{result}{right_bracket}"
-             
+
             result = f"{left_bracket}\n"
             result += f",\n{next_tabs}".join(result_list)
             result += f"\n{tabs}{right_bracket}"
@@ -219,7 +270,7 @@ def usd_value_str(value:Any, indents:int=0, degenerate_list:bool=False, rel_laye
                 return value
     else:
         return str(value)
-    
+
 def usd_type_str(type_:type, array_dim:int=0)->str:
     dtype, dim = analyze_list_type(type_)
     array_dim += dim
@@ -240,22 +291,22 @@ def usd_type_str(type_:type, array_dim:int=0)->str:
 def analyze_list_type(type_hint):
     depth = 0
     current_type = type_hint
-    
+
     while True:
         origin = get_origin(current_type)
-        
+
         if origin is list:
             args = get_args(current_type)
             if not args:
-                raise TypeError(f"no element type int List")
-            
+                raise TypeError("no element type int List")
+
             inner_type = args[0]
             inner_origin = get_origin(inner_type)
-            
+
             if inner_origin is not None and inner_origin is not list:
                 if inner_origin in [dict, tuple, set, frozenset]:
                     raise TypeError(f"not support type {inner_origin}")
-            
+
             depth += 1
             current_type = inner_type
         else:
@@ -267,16 +318,16 @@ def _analyze_type(item: Any) -> Tuple[int, type]:
     if isinstance(item, list):
         if not item:
             return 1, Any
-        
+
         children_results = [_analyze_type(elem) for elem in item]
         first_depth, _ = children_results[0]
-        
+
         if any(depth != first_depth for depth, _ in children_results):
             raise TypeError("list dimension not match")
-        
+
         child_types = [t for _, t in children_results]
         unique_types = set(child_types)
-        
+
         final_type = None
         if len(unique_types) == 1:
             final_type = child_types[0]
@@ -284,22 +335,22 @@ def _analyze_type(item: Any) -> Tuple[int, type]:
             final_type = max(unique_types, key=lambda t: TYPE_PRIORITY.get(t, 0))
         else:
             raise TypeError(f"list type not compatible: {unique_types}")
-            
+
         return first_depth + 1, final_type
 
     elif isinstance(item, np.ndarray):
         py_equiv_type = NUMPY_TO_PY_TYPE_MAP.get(item.dtype, item.dtype)
-        
+
         if not issubclass(py_equiv_type, allowed_types):
-            pass 
-        
+            pass
+
         return 0, py_equiv_type
 
     else:
         val_type = type(item)
         if not issubclass(val_type, allowed_types):
             raise TypeError(f"not supported type: {val_type}")
-        
+
         if val_type == float:
             val_type = double
 
@@ -313,11 +364,11 @@ def infer_type(data: Any) -> type:
 
     if isinstance(data, np.ndarray):
         if data.dtype == np.object_:
-            pass 
-        
+            pass
+
         depth, _ = _analyze_type(data)
         target_type = NUMPY_TO_PY_TYPE_MAP.get(data.dtype, data.dtype)
-        
+
         ndim = data.ndim
         result = target_type
         for _ in range(ndim):
@@ -325,14 +376,14 @@ def infer_type(data: Any) -> type:
         return result
 
     depth, element_type = _analyze_type(data)
-    
+
     if depth == 0:
         return element_type
-    
+
     current_type = element_type
     for _ in range(depth):
         current_type = List[current_type]
-        
+
     return current_type
 
 
@@ -355,7 +406,7 @@ def in_annotations(name:str, cls:type)->bool:
         if hasattr(klass, '__annotations__'):
             if name in klass.__annotations__:
                 return True
-            
+
     return False
 
 

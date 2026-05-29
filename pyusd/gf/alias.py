@@ -1,15 +1,12 @@
-from .half2 import half2
-from .half3 import half3
-from .half4 import half4
-
-from .float2 import float2
-from .float3 import float3
-from .float4 import float4
-
 from .double2 import double2
 from .double3 import double3
 from .double4 import double4
-
+from .float2 import float2
+from .float3 import float3
+from .float4 import float4
+from .half2 import half2
+from .half3 import half3
+from .half4 import half4
 from .matrix4d import matrix4d
 
 

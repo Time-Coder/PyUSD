@@ -1,9 +1,9 @@
-from .xformable import Xformable
+from typing import List
+
 from ..attribute import Attribute
 from ..dtypes import token
 from ..gf import float2, float4
-from typing import List
-
+from .xformable import Xformable
 
 class Shutter(Attribute):
 
@@ -67,7 +67,7 @@ class Exposure(Attribute):
         """Scalar multiplier representing overall responsivity of the 
         sensor system to light when calculating exposure. Intended to be
         used as a per camera/lens system measured scaling value."""
-        
+
     @responsivity.setter
     def responsivity(self, value:float)->None: ...
 
@@ -156,7 +156,7 @@ class Camera(Xformable):
     
     \\sa \\ref UsdGeom_LinAlgBasics
      """
-    
+
     def __init__(self, name:str="")->None: ...
 
     @property
@@ -211,7 +211,7 @@ class Camera(Xformable):
     def clippingRange(self)->Attribute[float2]:
         """Near and far clipping distances in scene units; see 
         \\ref UsdGeom_CameraUnits ."""
-        
+
     @clippingRange.setter
     def clippingRange(self, value:float2)->None: ...
 

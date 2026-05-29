@@ -1,7 +1,7 @@
-from .curves import Curves
 from ..attribute import Attribute
-from ..dtypes import token
 from ..common import SchemaKind
+from ..dtypes import token
+from .curves import Curves
 
 
 class BasisCurves(Curves):
@@ -207,7 +207,7 @@ class BasisCurves(Curves):
     two different statements in the original RenderMan specification:
     'Basis' and 'Curves'.
     """
-    
+
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     class Type(token):

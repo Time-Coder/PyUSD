@@ -1,10 +1,9 @@
-from .nonboundable_light_base import NonboundableLightBase
 from ..attribute import Attribute
+from ..dtypes import token
 from ..relationship import Relationship
-from ..dtypes import asset, token
 from .inputs import Inputs
 from .light import Light
-
+from .nonboundable_light_base import NonboundableLightBase
 
 class DomeLight(NonboundableLightBase):
     """Light emitted inward from a distant external environment,

@@ -1,8 +1,8 @@
-from ..typed import Typed
-from ..attribute import Attribute
 from typing import List
-from ..gf import vector3f
 
+from ..attribute import Attribute
+from ..gf import vector3f
+from ..typed import Typed
 
 class BlendShape(Typed):
     """Describes a target blend shape, possibly containing inbetween

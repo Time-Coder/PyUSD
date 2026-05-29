@@ -1,4 +1,5 @@
 from enum import Enum
+
 from .dtypes import token
 
 
@@ -11,7 +12,7 @@ class SchemaKind(Enum):
     # known to the usdGenSchema system, so this should never be assigned to
     # generated schema classes.
     AbstractBase = 1
-    
+
     # Represents a non-concrete typed schema
     AbstractTyped = 2
 
@@ -49,4 +50,3 @@ class Axis(token):
     X = "X"
     Y = "Y"
     Z = "Z"
-    

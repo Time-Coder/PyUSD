@@ -1,9 +1,6 @@
-from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
-from typing import List
-from ..gf import float3, half3
-from .radiance import Radiance
 
+from ..api_schema_base import APISchemaBase
+from .radiance import Radiance
 
 class ParticleFieldSphericalHarmonicsAttributeAPI(APISchemaBase):
     """A ParticleField related applied schema that provides spherical

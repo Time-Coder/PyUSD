@@ -1,9 +1,5 @@
 from ..geom.imageable import Imageable
-from ..attribute import Attribute
-from ..relationship import Relationship
-from ..gf import point3f, quatf
 from .physics import Physics
-
 
 class PhysicsJoint(Imageable):
     """A joint constrains the movement of rigid bodies. Joint can be 

@@ -1,10 +1,10 @@
-from .genVec4 import genVec4
-
 import ctypes
+
+from .genVec4 import genVec4
 
 
 class double4(genVec4):
-    
+
     _fields_ = [
         ('x', ctypes.c_double),
         ('y', ctypes.c_double),

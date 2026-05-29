@@ -1,15 +1,16 @@
 from __future__ import annotations
+
 import importlib
 import pkgutil
-from typing import TYPE_CHECKING, Dict, Any, Type
+from typing import TYPE_CHECKING, Any, Dict, Type
 
-from .prim import Prim
-from .usda_parser import UsdaParser
-from .sdf import Specifier
-from .property import Property
-from .variant_set import VariantSet
-from .relationship_parse import RelationshipParser
 from .attribute_parser import AttributeParser
+from .prim import Prim
+from .property import Property
+from .relationship_parse import RelationshipParser
+from .sdf import Specifier
+from .usda_parser import UsdaParser
+from .variant_set import VariantSet
 
 if TYPE_CHECKING:
     from tree_sitter import Node
@@ -45,7 +46,7 @@ class PrimParser:
             PrimParser.load_block(prim, block)
 
         return prim
-    
+
     @staticmethod
     def load_variant_set(parent_prim:Prim, node:Node):
         name = ""
@@ -83,8 +84,6 @@ class PrimParser:
 
     @staticmethod
     def load_block(prim:Prim, node:Node)->None:
-        from .attribute import Attribute
-        from .relationship import Relationship
 
         for child in node.named_children:
             if child.type == "prim_definition":

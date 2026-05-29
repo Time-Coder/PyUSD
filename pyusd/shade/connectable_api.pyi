@@ -1,6 +1,5 @@
 from ..api_schema_base import APISchemaBase
 
-
 class ConnectableAPI(APISchemaBase):
     """UsdShadeConnectableAPI is an API schema that provides a common
     interface for creating outputs and making connections between shading 

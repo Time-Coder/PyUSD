@@ -1,7 +1,6 @@
-from .gprim import Gprim
 from ..attribute import Attribute
 from ..dtypes import double, token
-
+from .gprim import Gprim
 
 class Cylinder_1(Gprim):
     """Defines a primitive cylinder with closed ends, centered at the
@@ -10,7 +9,7 @@ class Cylinder_1(Gprim):
 
     The fallback values for Cube, Sphere, Cone, and Cylinder are set so that
     they all pack into the same volume/bounds."""
-    
+
     def __init__(self, name:str="")->None: ...
 
     @property

@@ -1,8 +1,8 @@
-from ..typed import Typed
-from ..attribute import Attribute
-from ..dtypes import token
 from typing import List
 
+from ..attribute import Attribute
+from ..dtypes import token
+from ..typed import Typed
 
 class GeomSubset(Typed):
     """Encodes a subset of a piece of geometry (i.e. a UsdGeomImageable) 

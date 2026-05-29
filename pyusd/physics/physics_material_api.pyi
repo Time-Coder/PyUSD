@@ -1,7 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
 from .physics import Physics
-
 
 class PhysicsMaterialAPI(APISchemaBase):
     """ Adds simulation material properties to a Material. All collisions 

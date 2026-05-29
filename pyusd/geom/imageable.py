@@ -1,8 +1,8 @@
-from ..typed import Typed
 from ..attribute import Attribute
-from ..relationship import Relationship
-from ..dtypes import token
 from ..common import SchemaKind
+from ..dtypes import token
+from ..relationship import Relationship
+from ..typed import Typed
 
 
 class Imageable(Typed):
@@ -52,7 +52,7 @@ class Imageable(Typed):
         on a stage, such as rendering or bounding-box computation traversals.
 
         See \\ref UsdGeom_ImageablePurpose for more detail about how 
-        \\em purpose is computed and used.""" 
+        \\em purpose is computed and used."""
     )
 
     proxyPrim: Relationship = Relationship(doc=

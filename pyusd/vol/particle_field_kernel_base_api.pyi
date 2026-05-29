@@ -1,6 +1,5 @@
 from ..api_schema_base import APISchemaBase
 
-
 class ParticleFieldKernelBaseAPI(APISchemaBase):
     """Defines a base-class type applied schema that all applied schema
     that provide a ParticleField kernel will automatically apply.

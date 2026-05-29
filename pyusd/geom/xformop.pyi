@@ -1,6 +1,5 @@
 from ..attribute import Attribute
-from ..gf import Vec3Type, Mat4Type
-
+from ..gf import Mat4Type, Vec3Type
 
 class XformOp(Attribute):
 

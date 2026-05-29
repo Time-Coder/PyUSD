@@ -1,8 +1,7 @@
-from .render_settings_base import RenderSettingsBase
 from ..attribute import Attribute
-from ..relationship import Relationship
 from ..dtypes import token
-
+from ..relationship import Relationship
+from .render_settings_base import RenderSettingsBase
 
 class RenderProduct(RenderSettingsBase):
     """A UsdRenderProduct describes an image or other

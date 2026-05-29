@@ -1,7 +1,7 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
 
 import os
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .layer import Layer
@@ -26,7 +26,7 @@ class LayerSerializer:
         result += "\n".join(prims_str_list)
 
         return result
-    
+
     @staticmethod
     def save(layer: Layer, file_name:str="")->None:
         if file_name == "":

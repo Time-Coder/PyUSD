@@ -1,8 +1,6 @@
-from ..attribute import Attribute
-from ..relationship import Relationship
-from ..dtypes import double
-from typing import List
 
+from ..attribute import Attribute
+from ..dtypes import double
 
 class Shutter(Attribute):
 

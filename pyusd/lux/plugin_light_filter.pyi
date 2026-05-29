@@ -1,6 +1,5 @@
 from .light_filter import LightFilter
 
-
 class PluginLightFilter(LightFilter):
     """Light filter that provides properties that allow it to identify an 
     external SdrShadingNode definition, through UsdShadeNodeDefAPI, that can be 

@@ -1,9 +1,10 @@
-from ..geom.boundable import Boundable
-from ..attribute import Attribute
 from typing import List
-from ..gf import matrix4d
-from ..dtypes import token
+
+from ..attribute import Attribute
 from ..common import SchemaKind
+from ..dtypes import token
+from ..geom.boundable import Boundable
+from ..gf import matrix4d
 
 
 class Skeleton(Boundable):

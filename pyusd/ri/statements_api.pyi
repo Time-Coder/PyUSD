@@ -1,6 +1,5 @@
 from ..api_schema_base import APISchemaBase
 
-
 class StatementsAPI(APISchemaBase):
     """Container namespace schema for all renderman statements.
     

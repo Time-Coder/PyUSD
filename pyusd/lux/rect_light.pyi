@@ -1,9 +1,6 @@
 from .boundable_light_base import BoundableLightBase
-from ..attribute import Attribute
-from ..dtypes import asset, token
 from .inputs import Inputs
 from .light import Light
-
 
 class RectLight(BoundableLightBase):
     """Light emitted from one side of a rectangle.

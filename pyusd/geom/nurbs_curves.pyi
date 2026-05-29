@@ -1,8 +1,8 @@
-from .curves import Curves
-from ..attribute import Attribute
-from ..gf import double2
 from typing import List
 
+from ..attribute import Attribute
+from ..gf import double2
+from .curves import Curves
 
 class NurbsCurves(Curves):
     """This schema is analagous to NURBS Curves in packages like Maya
@@ -26,7 +26,7 @@ class NurbsCurves(Curves):
     \\em order and \\em range, when representing a batched NurbsCurve should be
     authored one value per curve.  \\em knots should be the concatentation of
     all batched curves."""
-    
+
     def __init__(self, name:str="")->None: ...
 
     @property

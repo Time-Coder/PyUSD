@@ -1,8 +1,7 @@
-from .nonboundable_light_base import NonboundableLightBase
 from ..attribute import Attribute
-from ..dtypes import namespace
-from ..dtypes import token
 from ..common import SchemaKind
+from ..dtypes import namespace, token
+from .nonboundable_light_base import NonboundableLightBase
 
 
 class DistantLight(NonboundableLightBase):

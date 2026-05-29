@@ -1,7 +1,7 @@
-from ..geom.xformable import Xformable
 from ..attribute import Attribute
-from ..dtypes import asset, double, timecode, token
 from ..common import SchemaKind
+from ..dtypes import asset, double, timecode, token
+from ..geom.xformable import Xformable
 
 
 class SpatialAudio(Xformable):

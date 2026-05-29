@@ -1,5 +1,5 @@
-from typing import Any, Dict
 from enum import ReprEnum
+from typing import Any, Dict
 
 
 class double(float):
@@ -65,7 +65,7 @@ class uint(int):
 class uint64(int):
     pass
 
-class opaque(object):
+class opaque:
     pass
 
 class group(opaque):
@@ -75,13 +75,13 @@ class namespace(opaque):
     pass
 
 class dictionary(dict):
-    
+
     def __getattr__(self, name:str)->Any:
         if name not in self:
             raise AttributeError(f"{name}")
-        
+
         return self[name]
-    
+
     def __setattr__(self, name:str, value:Any)->None:
         self[name] = value
 

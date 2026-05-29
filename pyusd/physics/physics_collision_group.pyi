@@ -1,9 +1,5 @@
 from ..typed import Typed
-from ..attribute import Attribute
-from ..relationship import Relationship
-from ..dtypes import string
 from .physics import Physics
-
 
 class PhysicsCollisionGroup(Typed):
     """Defines a collision group for coarse filtering. When a collision 

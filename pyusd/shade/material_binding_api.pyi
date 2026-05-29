@@ -1,6 +1,5 @@
 from ..api_schema_base import APISchemaBase
 
-
 class MaterialBindingAPI(APISchemaBase):
     """UsdShadeMaterialBindingAPI is an API schema that provides an 
     interface for binding materials to prims or collections of prims 

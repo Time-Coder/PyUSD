@@ -1,12 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..dtypes import namespace
-from .exposure import Exposure
-from .model import Model
 from .motion import Motion
-from .primvars import Primvars
-from .shutter import Shutter
-from .trim_curve import TrimCurve
-
 
 class MotionAPI(APISchemaBase):
     """UsdGeomMotionAPI encodes data that can live on any prim that

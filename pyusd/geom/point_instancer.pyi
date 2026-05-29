@@ -1,10 +1,10 @@
-from .boundable import Boundable
-from ..attribute import Attribute
-from ..relationship import Relationship
-from ..dtypes import int64
-from ..gf import float3, point3f, quath, quatf, vector3f
 from typing import List
 
+from ..attribute import Attribute
+from ..dtypes import int64
+from ..gf import float3, point3f, quatf, quath, vector3f
+from ..relationship import Relationship
+from .boundable import Boundable
 
 class PointInstancer(Boundable):
     """Encodes vectorized instancing of multiple, potentially
@@ -245,14 +245,14 @@ class PointInstancer(Boundable):
       the value an instance would specify in the \\em protoIndices attribute to 
       instance that prototype. Since relationships are uniform, this property
       cannot be animated."""
-        
+
     @property
     def protoIndices(self)->Attribute[List[int]]:
         """<b>Required property</b>. Per-instance index into 
       \\em prototypes relationship that identifies what geometry should be 
       drawn for each instance.  <b>Topology attribute</b> - can be animated, 
       but at a potential performance impact for streaming."""
-        
+
     @protoIndices.setter
     def protoIndices(self, value:List[int])->None: ...
 
@@ -264,7 +264,7 @@ class PointInstancer(Boundable):
       type is signed intentionally, so that clients can encode some
       binary state on Id'd instances without adding a separate primvar.
       See also \\ref UsdGeomPointInstancer_varyingTopo"""
-        
+
     @ids.setter
     def ids(self, value:List[int64])->None: ...
 
@@ -272,7 +272,7 @@ class PointInstancer(Boundable):
     def positions(self)->Attribute[List[point3f]]:
         """<b>Required property</b>. Per-instance position.  See also 
       \\ref UsdGeomPointInstancer_transform ."""
-        
+
     @positions.setter
     def positions(self, value:List[point3f])->None: ...
 
@@ -290,7 +290,7 @@ class PointInstancer(Boundable):
       that encode the rotation. 
       
       See also \\ref UsdGeomPointInstancer_transform ."""
-        
+
     @orientations.setter
     def orientations(self, value:List[quath])->None: ...
 
@@ -310,7 +310,7 @@ class PointInstancer(Boundable):
       orientationsf will be preferred over orientations if both are authored.
       
       See also \\ref UsdGeomPointInstancer_transform ."""
-        
+
     @orientationsf.setter
     def orientationsf(self, value:List[quatf])->None: ...
 
@@ -320,7 +320,7 @@ class PointInstancer(Boundable):
       each instance, before any rotation is applied.
       
       See also \\ref UsdGeomPointInstancer_transform ."""
-        
+
     @scales.setter
     def scales(self, value:List[float3])->None: ...
 
@@ -337,7 +337,7 @@ class PointInstancer(Boundable):
 
        See also \\ref UsdGeomPointInstancer_transform, 
        \\ref UsdGeom_VelocityInterpolation ."""
-        
+
     @velocities.setter
     def velocities(self, value:List[vector3f])->None: ...
 
@@ -363,7 +363,7 @@ class PointInstancer(Boundable):
       UsdStage::GetTimeCodesPerSecond().
       
       See also \\ref UsdGeomPointInstancer_transform ."""
-        
+
     @angularVelocities.setter
     def angularVelocities(self, value:List[vector3f])->None: ...
 
@@ -371,6 +371,6 @@ class PointInstancer(Boundable):
     def invisibleIds(self)->Attribute[List[int64]]:
         """A list of id's to make invisible at the evaluation time.
       See \\ref UsdGeomPointInstancer_invisibleIds ."""
-        
+
     @invisibleIds.setter
     def invisibleIds(self, value:List[int64])->None: ...

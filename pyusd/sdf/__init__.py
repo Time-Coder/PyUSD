@@ -1,4 +1,4 @@
-from .common import Specifier, Purpose
+from .common import Purpose, Specifier
 
 __all__ = [
     "Specifier",

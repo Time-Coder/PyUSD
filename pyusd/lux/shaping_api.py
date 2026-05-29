@@ -1,9 +1,8 @@
 from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
-from ..dtypes import namespace
-from ..gf import color3f
-from ..dtypes import asset
 from ..common import SchemaKind
+from ..dtypes import asset, namespace
+from ..gf import color3f
 
 
 class ShapingAPI(APISchemaBase):

@@ -1,8 +1,9 @@
+from typing import List
+
 from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
-from typing import List
-from ..gf import quatf, quath
 from ..common import SchemaKind
+from ..gf import quatf, quath
 
 
 class ParticleFieldOrientationAttributeAPI(APISchemaBase):

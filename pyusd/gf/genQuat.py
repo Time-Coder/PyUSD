@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from .genType import genType, MathForm, Number
+import ctypes
+import math
+from typing import Any, Tuple, TypeAlias, Union
+
+from .genType import MathForm, Number, genType
 from .genVec import genVec
 from .genVec3 import genVec3
 from .helper import is_number
-
-from typing import Tuple, Any, Union, TypeAlias
-import math
-import ctypes
 
 
 class genQuat(genType, ctypes.Structure):
@@ -23,17 +23,17 @@ class genQuat(genType, ctypes.Structure):
             arg = args[0]
             if not isinstance(arg, genQuat):
                 raise TypeError(f"invalid argument type(s) for {self.__class__.__name__}()")
-            
+
             ctypes.Structure.__init__(self, arg.w, arg.x, arg.y, arg.z)
             return
-        
+
         if len(args) == 2:
             w = args[0]
             v = args[1]
 
             if not is_number(w) or not isinstance(v, genVec):
                 raise TypeError(f"invalid argument type(s) for {self.__class__.__name__}()")
-            
+
             ctypes.Structure.__init__(self, w, v.x, v.y, v.z)
             return
 
@@ -42,7 +42,7 @@ class genQuat(genType, ctypes.Structure):
             return
 
         raise ValueError(f"invalid arguments for {self.__class__.__name__}()")
-            
+
     @property
     def math_form(self)->MathForm:
         return MathForm.Quat
@@ -50,7 +50,7 @@ class genQuat(genType, ctypes.Structure):
     @property
     def w(self)->float:
         return super().w
-    
+
     @w.setter
     def w(self, w:float)->None:
         ctypes.Structure.__setattr__(self, 'w', w)
@@ -59,7 +59,7 @@ class genQuat(genType, ctypes.Structure):
     @property
     def x(self)->float:
         return super().x
-    
+
     @x.setter
     def x(self, x:float)->None:
         ctypes.Structure.__setattr__(self, 'x', x)
@@ -68,7 +68,7 @@ class genQuat(genType, ctypes.Structure):
     @property
     def y(self)->float:
         return super().y
-    
+
     @y.setter
     def y(self, y:float)->None:
         ctypes.Structure.__setattr__(self, 'y', y)
@@ -77,7 +77,7 @@ class genQuat(genType, ctypes.Structure):
     @property
     def z(self)->float:
         return super().z
-    
+
     @z.setter
     def z(self, z:float)->None:
         ctypes.Structure.__setattr__(self, 'z', z)
@@ -87,7 +87,7 @@ class genQuat(genType, ctypes.Structure):
     def xyz(self)->genVec3:
         vec_type = genVec.vec_type(self.dtype, 3)
         return vec_type(self.x, self.y, self.z)
-    
+
     @xyz.setter
     def xyz(self, xyz:genVec3)->None:
         if not isinstance(xyz, genVec3):
@@ -105,11 +105,11 @@ class genQuat(genType, ctypes.Structure):
     @property
     def shape(self)->Tuple[int]:
         return (4,)
-    
+
     def __len__(self)->int:
         return 4
-    
-    def __getitem__(self, index:int)->float:        
+
+    def __getitem__(self, index:int)->float:
         if index == 0:
             return self.w
         elif index == 1:
@@ -120,7 +120,7 @@ class genQuat(genType, ctypes.Structure):
             return self.z
         else:
             raise IndexError("index out of range")
-    
+
     def __setitem__(self, index:int, value:float)->None:
         if index == 0:
             self.w = value
@@ -132,15 +132,15 @@ class genQuat(genType, ctypes.Structure):
             self.z = value
         else:
             raise IndexError("index out of range")
-    
+
     def _op(self, operator:str, other:Union[float, bool, int, genQuat, genVec])->Union[genQuat, genVec]:
         if operator == "**" or (operator in ["/", "//", "%"] and isinstance(other, genType)):
             raise TypeError(f"unsupported operand type(s) for {operator}: '{self.__class__.__name__}' and '{other.__class__.__name__}'")
-        
+
         if operator == "*" and isinstance(other, genType):
             if not isinstance(other, (genQuat, genVec)):
                 raise TypeError(f"unsupported operand type(s) for {operator}: '{self.__class__.__name__}' and '{other.__class__.__name__}'")
-            
+
             if isinstance(other, genVec) and len(other) != 3:
                 raise TypeError(f"unsupported operand type(s) for {operator}: '{self.__class__.__name__}' and '{other.__class__.__name__}'")
 
@@ -157,7 +157,7 @@ class genQuat(genType, ctypes.Structure):
                 vec_quat:genQuat = quat_type(0, other)
                 temp_quat:genQuat = self * vec_quat * quat_type(self.w, -self.xyz) / math.sqrt(self.w**2 + self.x**2 + self.y**2 + self.z**2)
                 return temp_quat.xyz
-        
+
         if isinstance(other, genType) and not isinstance(other, genQuat):
             raise TypeError(f"unsupported operand type(s) for {operator}: '{self.__class__.__name__}' and '{other.__class__.__name__}'")
 
@@ -170,7 +170,7 @@ class genQuat(genType, ctypes.Structure):
         if operator == "*" and isinstance(other, genType):
             if not isinstance(other, genQuat):
                 raise TypeError(f"unsupported operand type(s) for {operator}: '{self.__class__.__name__}' and '{other.__class__.__name__}'")
-            
+
             w = self.w * other.w - self.x * other.x - self.y * other.y - self.z * other.z
             x = self.w * other.x + self.x * other.w + self.y * other.z - self.z * other.y
             y = self.w * other.y + self.y * other.w + self.z * other.x - self.x * other.z
@@ -181,7 +181,7 @@ class genQuat(genType, ctypes.Structure):
             self.z = z
 
             return self
-        
+
         if isinstance(other, genType) and not isinstance(other, genQuat):
             raise TypeError(f"unsupported operand type(s) for {operator}=: '{self.__class__.__name__}' and '{other.__class__.__name__}'")
 
@@ -190,13 +190,13 @@ class genQuat(genType, ctypes.Structure):
     def __iter__(self):
         for field_name, _ in self._fields_:
             yield getattr(self, field_name)
-    
+
     def __contains__(self, value:Any):
         for field_name, _ in self._fields_:
             field_value = getattr(self, field_name)
             if field_value == value:
                 return True
-            
+
         return False
 
 QuatType: TypeAlias = Union[genQuat, Tuple[Number, Number, Number, Number]]

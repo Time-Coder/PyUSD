@@ -1,9 +1,10 @@
-from .curves import Curves
+from typing import List
+
 from ..attribute import Attribute
+from ..common import SchemaKind
 from ..dtypes import double
 from ..gf import double2
-from ..common import SchemaKind
-from typing import List
+from .curves import Curves
 
 
 class NurbsCurves(Curves):

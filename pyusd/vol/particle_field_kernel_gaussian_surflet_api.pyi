@@ -1,6 +1,5 @@
 from ..api_schema_base import APISchemaBase
 
-
 class ParticleFieldKernelGaussianSurfletAPI(APISchemaBase):
     """Defines the gaussian surflet kernel for a given ParticleField.
     

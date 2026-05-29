@@ -1,6 +1,5 @@
 from ..api_schema_base import APISchemaBase
 
-
 class FieldBase(APISchemaBase):
     """
     \\deprecated This schema will be removed in a future release.

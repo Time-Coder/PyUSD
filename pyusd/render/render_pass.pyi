@@ -1,10 +1,10 @@
-from ..typed import Typed
-from ..attribute import Attribute
-from ..relationship import Relationship
 from typing import List
-from ..dtypes import asset, string, token
-from .collection import Collection
 
+from ..attribute import Attribute
+from ..dtypes import asset, string, token
+from ..relationship import Relationship
+from ..typed import Typed
+from .collection import Collection
 
 class RenderPass(Typed):
     """A RenderPass prim encapsulates necessary information

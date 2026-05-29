@@ -1,9 +1,6 @@
 from ..geom.xformable import Xformable
-from ..attribute import Attribute
-from ..dtypes import token
 from .collection import Collection
 from .light_filter import LightFilter
-
 
 class LightFilter(Xformable):
     """A light filter modifies the effect of a light.

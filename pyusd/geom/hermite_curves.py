@@ -1,8 +1,9 @@
-from .curves import Curves
-from ..attribute import Attribute
-from ..gf import vector3f
-from ..common import SchemaKind
 from typing import List
+
+from ..attribute import Attribute
+from ..common import SchemaKind
+from ..gf import vector3f
+from .curves import Curves
 
 
 class HermiteCurves(Curves):
@@ -36,7 +37,7 @@ class HermiteCurves(Curves):
     also means that width and normal interpolation should be restricted to
     varying (linear), uniform (per curve element), or constant (per prim).
     """
-    
+
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     tangents: Attribute[List[vector3f]] = Attribute(List[vector3f], "tangents", value=[], doc=

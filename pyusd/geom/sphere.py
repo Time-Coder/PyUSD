@@ -1,9 +1,10 @@
-from .gprim import Gprim
-from ..attribute import Attribute
-from ..dtypes import double
-from ..common import SchemaKind
-from ..gf import float3
 from typing import List
+
+from ..attribute import Attribute
+from ..common import SchemaKind
+from ..dtypes import double
+from ..gf import float3
+from .gprim import Gprim
 
 
 class Sphere(Gprim):

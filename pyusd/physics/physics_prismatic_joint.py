@@ -1,9 +1,7 @@
-from .physics_joint import PhysicsJoint
 from ..attribute import Attribute
+from ..common import Axis, SchemaKind
 from ..dtypes import namespace
-from ..dtypes import token
-from ..common import SchemaKind
-from ..common import Axis
+from .physics_joint import PhysicsJoint
 
 
 class PhysicsPrismaticJoint(PhysicsJoint):

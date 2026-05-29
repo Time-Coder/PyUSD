@@ -1,9 +1,11 @@
+from enum import Enum
+from typing import Any, Dict, List, Optional, Union
+
+from typeguard import typechecked
+
 from .api_schema_base import APISchemaBase
 from .common import Kind, SchemaKind
 from .dtypes import asset
-from enum import Enum
-from typing import Optional, Union, List, Dict, Any
-from typeguard import typechecked
 
 
 class ModelAPI(APISchemaBase):
@@ -41,7 +43,7 @@ class ModelAPI(APISchemaBase):
     @property
     def kind(self)->Kind:
         return self._prim.metadata.kind
-    
+
     @kind.setter
     @typechecked
     def kind(self, kind:Kind):
@@ -77,7 +79,7 @@ class ModelAPI(APISchemaBase):
         """Return true if this prim represents a model group, based on its kind
         metadata."""
         return self._prim.metadata.kind == Kind.Group
-    
+
     @property
     def asset_identifier(self)->Optional[asset]:
         """Returns the model's asset identifier as authored in the composed 
@@ -87,7 +89,7 @@ class ModelAPI(APISchemaBase):
         the asset resolver plugin."""
 
         return self._prim.metadata.assetInfo.identifier
-    
+
     @asset_identifier.setter
     @typechecked
     def asset_identifier(self, identifier:Union[asset, str])->None:
@@ -99,7 +101,7 @@ class ModelAPI(APISchemaBase):
             identifier = asset(identifier)
 
         self._prim.metadata.assetInfo.identifier = identifier
-    
+
     @property
     def asset_name(self)->Optional[str]:
         """Returns the model's asset name from the composed assetInfo dictionary.
@@ -107,7 +109,7 @@ class ModelAPI(APISchemaBase):
         The asset name is the name of the asset, as would be used in a database 
         query."""
         return self._prim.metadata.assetInfo.name
-    
+
     @asset_name.setter
     @typechecked
     def asset_name(self, asset_name:str)->None:
@@ -116,7 +118,7 @@ class ModelAPI(APISchemaBase):
         \\sa GetAssetName()"""
 
         self._prim.metadata.assetInfo.name = asset_name
-    
+
     @property
     def asset_version(self)->Optional[str]:
         """Returns the model's resolved asset version.  
@@ -131,7 +133,7 @@ class ModelAPI(APISchemaBase):
         opened."""
 
         return self._prim.metadata.assetInfo.version
-    
+
     @asset_version.setter
     def asset_version(self, asset_version:str)->None:
         """Sets the model's asset version string. 
@@ -139,7 +141,7 @@ class ModelAPI(APISchemaBase):
         \\sa GetAssetVersion()"""
 
         self._prim.metadata.assetInfo.version = asset_version
-    
+
     @property
     def payload_asset_dependencies(self)->Optional[List[asset]]:
         """Returns the list of asset dependencies referenced inside the 
@@ -151,7 +153,7 @@ class ModelAPI(APISchemaBase):
         efficient dependency analysis without the need to include the model's 
         payload."""
         return self._prim.metadata.assetInfo.payloadAssetDependencies
-    
+
     @payload_asset_dependencies.setter
     def payload_asset_dependencies(self, asset_dependencies:List[asset])->None:
         """Sets the list of external asset dependencies referenced inside the 
@@ -160,7 +162,7 @@ class ModelAPI(APISchemaBase):
         \\sa GetPayloadAssetDependencies()"""
 
         self._prim.metadata.assetInfo.payloadAssetDependencies = asset_dependencies
-    
+
     @property
     def asset_info(self)->Dict[str, Any]:
         """Returns the model's composed assetInfo dictionary.
@@ -173,7 +175,7 @@ class ModelAPI(APISchemaBase):
         nestable."""
 
         return self._prim.metadata.assetInfo
-    
+
     @asset_info.setter
     @typechecked
     def asset_info(self, info:Dict[str, Any])->None:

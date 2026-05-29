@@ -1,8 +1,8 @@
+from typing import List
+
 from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
-from typing import List
 from ..dtypes import token
-
 
 class SemanticsLabelsAPI(APISchemaBase):
     """Application of labels for a prim for a taxonomy specified by the

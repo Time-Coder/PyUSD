@@ -1,7 +1,6 @@
 from ..attribute import Attribute
 from ..dtypes import token
 
-
 class LightList(Attribute):
 
     class CacheBehavior(token):

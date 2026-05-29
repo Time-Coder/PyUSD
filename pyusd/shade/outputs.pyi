@@ -1,7 +1,6 @@
 from ..attribute import Attribute
 from ..dtypes import token
 
-
 class Outputs(Attribute):
 
     @property

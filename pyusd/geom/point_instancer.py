@@ -1,10 +1,11 @@
-from .boundable import Boundable
-from ..attribute import Attribute
-from ..relationship import Relationship
-from ..dtypes import int64
-from ..gf import float3, point3f, quath, quatf, vector3f
-from ..common import SchemaKind
 from typing import List
+
+from ..attribute import Attribute
+from ..common import SchemaKind
+from ..dtypes import int64
+from ..gf import float3, point3f, quatf, quath, vector3f
+from ..relationship import Relationship
+from .boundable import Boundable
 
 
 class PointInstancer(Boundable):
@@ -234,7 +235,7 @@ class PointInstancer(Boundable):
     22 }
     \\endcode
     """
-    
+
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     meta = {

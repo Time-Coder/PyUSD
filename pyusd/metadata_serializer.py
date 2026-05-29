@@ -1,7 +1,8 @@
 from __future__ import annotations
+
 from typing import TYPE_CHECKING, List
 
-from .utils import usd_type_str, usd_value_str, infer_type
+from .utils import infer_type, usd_type_str, usd_value_str
 
 if TYPE_CHECKING:
     from .metadata import Metadata
@@ -11,14 +12,14 @@ class MetadataSerializer:
 
     @staticmethod
     def to_str(metadata:Metadata, indents:int=0, full:bool=False)->str:
-        from .prim import Prim
         from .layer import Layer
+        from .prim import Prim
 
         tabs = "    " * indents
         next_tabs = "    " * (indents + 1)
         next2_tabs = "    " * (indents + 2)
         result = "(\n"
-        
+
         builtin_str_list:List[str] = []
         for key, value in metadata._builtin_data.items():
             is_ref = key in ["inherits", "references", "payloads", "specializes", "subLayers", "variantSets", "variants"]
@@ -34,7 +35,7 @@ class MetadataSerializer:
 
             if key == "doc" and isinstance(value, str) and value == "":
                 continue
-            
+
             if key == "inherits":
                 value = metadata._parent._inherits
             elif key == "references":
@@ -77,7 +78,7 @@ class MetadataSerializer:
                 builtin_str_list.append(f"{next_tabs}prepend {key} = {value_str}")
             else:
                 builtin_str_list.append(f"{next_tabs}{key} = {value_str}")
-            
+
         custom_str_list:List[str] = []
         for key, value in metadata._custom_data.items():
             if not full and not metadata._custom_is_set[key]:

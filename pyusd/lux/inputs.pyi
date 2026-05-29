@@ -1,7 +1,6 @@
 from ..attribute import Attribute
-from ..gf import color3f
 from ..dtypes import asset, token
-
+from ..gf import color3f
 
 class Inputs(Attribute):
 

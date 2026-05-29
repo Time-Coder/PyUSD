@@ -1,8 +1,8 @@
+from typing import List
+
 from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
-from typing import List
 from ..dtypes import half
-
 
 class ParticleFieldOpacityAttributeAPI(APISchemaBase):
     """A ParticleField related applied schema that provides an

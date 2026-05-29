@@ -1,11 +1,13 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
-from tree_sitter import Parser, Language
-import tree_sitter_usd
 
-from .usda_parser import UsdaParser
-from .prim_parser import PrimParser
+from typing import TYPE_CHECKING
+
+import tree_sitter_usd
+from tree_sitter import Language, Parser
+
 from .metadata_parser import MetadataParser
+from .prim_parser import PrimParser
+from .usda_parser import UsdaParser
 
 if TYPE_CHECKING:
     from .layer import Layer
@@ -16,7 +18,7 @@ class LayerParser:
     @staticmethod
     def load(file_name:str) -> Layer:
         from .layer import Layer
-        
+
         layer = Layer(file_name)
 
         with open(file_name, "rb") as f:
@@ -46,5 +48,5 @@ class LayerParser:
         if pending_default_prim:
             layer._default_prim = layer._root_prims.get(str(pending_default_prim))
             MetadataParser.set_authored(layer._metadata, "defaultPrim", pending_default_prim)
-    
+
         return layer

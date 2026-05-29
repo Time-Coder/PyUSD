@@ -1,6 +1,5 @@
 from ..api_schema_base import APISchemaBase
 
-
 class AssetPreviewsAPI(APISchemaBase):
     """AssetPreviewsAPI is the interface for authoring and accessing 
         precomputed, lightweight previews of assets.  It is an applied schema, 

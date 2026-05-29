@@ -1,7 +1,7 @@
-from .point_based import PointBased
-from ..attribute import Attribute
 from typing import List
 
+from ..attribute import Attribute
+from .point_based import PointBased
 
 class Curves(PointBased):
     """Base class for UsdGeomBasisCurves, UsdGeomNurbsCurves, and

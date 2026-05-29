@@ -1,14 +1,16 @@
 from __future__ import annotations
-from typing import Dict, Union, Optional, List, Type, Any
+
 import os
+from typing import Any, Dict, List, Optional, Type, Union
+
 from typeguard import typechecked
 
-from .sdf import Specifier
-from .prim import Prim, PrimType
+from .common import Axis
 from .layer_metadata import LayerMetadata
 from .layer_parser import LayerParser
 from .layer_serializer import LayerSerializer
-from .common import Axis
+from .prim import Prim, PrimType
+from .sdf import Specifier
 
 
 class Layer:
@@ -35,24 +37,24 @@ class Layer:
     @property
     def file_name(self)->str:
         return self._file_name
-    
+
     @property
     def metadata(self)->LayerMetadata:
         return self._metadata
-    
+
     @property
     def default_prim(self)->Prim:
         return self._default_prim
-    
+
     @default_prim.setter
     @typechecked
     def default_prim(self, prim:Prim)->None:
         if prim.layer is None or os.path.abspath(self._file_name) != os.path.abspath(prim.layer.file_name):
             raise ValueError("Prim is not in current layer")
-        
+
         if prim.depth != 0:
             raise ValueError("Default prim must be a root prim")
-        
+
         self._default_prim = prim
         self.metadata.defaultPrim = prim.name
 
@@ -69,9 +71,9 @@ class Layer:
                 abs_folder = os.path.dirname(abs_path)
                 rel_path = os.path.relpath(self_layer_abs_path, abs_folder).replace("\\", "/")
                 result = f"@./{rel_path}@"
-                
+
         return result
-    
+
     def __eq__(self, other:Any)->bool:
         if isinstance(other, Layer):
             return (self.id() == other.id())
@@ -79,7 +81,7 @@ class Layer:
             return (self.id().strip("@") == os.path.abspath(other.strip("@")).replace("\\", "/"))
         else:
             return False
-    
+
     def __neq__(self, other:Any)->bool:
         if isinstance(other, Layer):
             return (self.id() != other.id())
@@ -92,7 +94,7 @@ class Layer:
     def include(self, layer:Layer, prepend:bool=True)->None:
         if layer in self._sub_layers:
             return
-        
+
         if prepend:
             self._sub_layers.insert(0, layer)
         else:
@@ -102,7 +104,7 @@ class Layer:
     def remove_include(self, layer:Layer)->None:
         if layer not in self._sub_layers:
             return
-        
+
         self._sub_layers.remove(layer)
 
     @typechecked
@@ -116,7 +118,7 @@ class Layer:
         path_items = path_items[1:]
         root_prim = self._root_prims[root_name]
         return root_prim._getitem(path_items)
-    
+
     @typechecked
     def __setitem__(self, path:str, prim:Prim)->None:
         if path.startswith("/"):
@@ -128,12 +130,12 @@ class Layer:
         if len(path_items) == 1:
             prim.detach_from_parent()
             prim.detach_from_layer()
-            
+
             prim._name = root_name
             prim._set_layer(self)
             self._root_prims[root_name] = prim
             return
-        
+
         path_items = path_items[1:]
         specifier = (Specifier.Def if prim.specifier != Specifier.Over else Specifier.Over)
         if root_name not in self._root_prims:
@@ -154,12 +156,12 @@ class Layer:
         if len(path_items) == 1:
             if root_name not in self._root_prims:
                 raise KeyError(root_name)
-            
+
             prim:Prim = self._root_prims[root_name]
             prim._set_layer(None)
             del self._root_prims[root_name]
             return
-        
+
         path_items = path_items[1:]
         parent_prim = self._root_prims[root_name]
         parent_prim._delitem(path_items)
@@ -168,7 +170,7 @@ class Layer:
     def add_root_prim(self, prim:Prim)->None:
         if prim._parent is None and prim._layer is self:
             return
-        
+
         prim.detach_from_parent()
         prim.detach_from_layer()
 
@@ -180,41 +182,41 @@ class Layer:
         if isinstance(prim, str):
             if prim not in self._root_prims:
                 raise KeyError(prim)
-            
+
             prim = self._root_prims[prim]
         else:
             if prim._layer is not self:
                 raise ValueError(f"{prim} is not a root of current layer")
-            
+
         prim._set_layer(None)
         del self._root_prims[prim.name]
         return prim
-    
+
     @typechecked
     def def_(self, prim_type:Type[PrimType], path:str)->PrimType:
         prim = prim_type(specifier = Specifier.Def)
         self[path] = prim
         return prim
-    
+
     @typechecked
     def class_(self, path:str)->Prim:
         prim = Prim(specifier = Specifier.Class)
         self[path] = prim
         return prim
-    
+
     @typechecked
     def over_(self, path:str)->Prim:
         prim = Prim(specifier = Specifier.Over)
         self[path] = prim
         return prim
-    
+
     @typechecked
     def root_prim(self, name:str)->Prim:
         return self._root_prims[name]
 
     def __str__(self)->str:
         return f'Layer("{self.file_name}")'
-    
+
     def save(self, file_name:str="")->None:
         LayerSerializer.save(self, file_name)
 

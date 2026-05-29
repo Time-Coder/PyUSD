@@ -1,5 +1,6 @@
 from __future__ import annotations
-from typing import Type, TYPE_CHECKING
+
+from typing import TYPE_CHECKING, Type
 
 from .api_schema_base import APISchemaBase
 
@@ -17,6 +18,5 @@ class APIWrapper:
     def __call__(self, instance_name:str)->APISchemaBase:
         if (self._api_key, instance_name) not in self._prim._apis:
             self._prim._apis[self._api_key, instance_name] = self._api_type(self._prim, instance_name)
-        
+
         return self._prim._apis[self._api_key, instance_name]
-        

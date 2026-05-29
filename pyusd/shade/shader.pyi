@@ -1,6 +1,5 @@
 from ..typed import Typed
 
-
 class Shader(Typed):
     """Base class for all USD shaders. Shaders are the building blocks
     of shading networks. While UsdShadeShader objects are not target specific,

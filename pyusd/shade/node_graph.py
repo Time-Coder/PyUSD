@@ -1,5 +1,5 @@
-from ..typed import Typed
 from ..common import SchemaKind
+from ..typed import Typed
 
 
 class NodeGraph(Typed):

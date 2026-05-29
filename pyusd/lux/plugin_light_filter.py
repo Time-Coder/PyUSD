@@ -1,5 +1,5 @@
-from .light_filter import LightFilter
 from ..common import SchemaKind
+from .light_filter import LightFilter
 
 
 class PluginLightFilter(LightFilter):

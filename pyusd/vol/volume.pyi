@@ -1,6 +1,5 @@
 from ..geom.gprim import Gprim
 
-
 class Volume(Gprim):
     """A renderable volume primitive. A volume is made up of any number
     of FieldBase primitives bound together in this volume. Each

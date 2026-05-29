@@ -1,11 +1,10 @@
-from typing import override, Union
+from typing import Union
 
+from .double2 import double2
+from .double3 import double3
 from .genVec2 import genVec2
 from .genVec3 import genVec3
 from .genVec4 import genVec4
-from .double2 import double2
-from .double3 import double3
-
 
 class double4(genVec4):
 

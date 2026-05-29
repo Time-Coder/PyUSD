@@ -1,65 +1,122 @@
-from .genType import MathForm, genType, Number
-from .genVec import genVec, VecType
-from .genVec2 import genVec2, Vec2Type
-from .genVec3 import genVec3, Vec3Type
-from .genVec4 import genVec4, Vec4Type
-from .genMat import genMat, MatType
-from .genMat2 import genMat2, Mat2Type
-from .genMat3 import genMat3, Mat3Type
-from .genMat4 import genMat4, Mat4Type
-from .genQuat import genQuat, QuatType
-
-from .int2 import int2
-from .int3 import int3
-from .int4 import int4
-
-from .half2 import half2
-from .half3 import half3
-from .half4 import half4
-
-from .float2 import float2
-from .float3 import float3
-from .float4 import float4
-
+from .alias import (
+    color3d,
+    color3f,
+    color3h,
+    color4d,
+    color4f,
+    color4h,
+    frame4d,
+    normal3d,
+    normal3f,
+    normal3h,
+    point3d,
+    point3f,
+    point3h,
+    texCoord2d,
+    texCoord2f,
+    texCoord2h,
+    texCoord3d,
+    texCoord3f,
+    texCoord3h,
+    vector3d,
+    vector3f,
+    vector3h,
+)
 from .double2 import double2
 from .double3 import double3
 from .double4 import double4
-
-from .matrix2f import matrix2f
-from .matrix3f import matrix3f
-from .matrix4f import matrix4f
-
-from .matrix2d import matrix2d
-from .matrix3d import matrix3d
-from .matrix4d import matrix4d
-
-from .quatf import quatf
-from .quatd import quatd
-from .quath import quath
-
-from .alias import (
-    color3h, color3f, color3d,
-    color4h, color4f, color4d,
-    point3h, point3f, point3d,
-    vector3h, vector3f, vector3d,
-    texCoord2f, texCoord2h, texCoord2d,
-    texCoord3f, texCoord3h, texCoord3d,
-    normal3h, normal3f, normal3d,
-    frame4d
-)
-
+from .float2 import float2
+from .float3 import float3
+from .float4 import float4
 from .funcs import (
-    abs, sign, floor, ceil, trunc, round, roundEven, fract, mod,
-    min, max, clamp, mix, step, smoothstep, sqrt, inversesqrt,
-    pow, exp, exp2, exp10, log, log2, log10,
-    sin, cos, tan, asin, acos, atan,
-    sinh, cosh, tanh, asinh, acosh, atanh,
-    length, normalize, distance, dot, cross, faceforward, reflect, refract,
-    transpose, determinant, inverse, trace, conjugate,
-    matrixCompMult, outerProduct, lessThan, lessThanEqual,
-    greaterThan, greaterThanEqual, equal, notEqual, any, all, not_, sizeof
+    abs,
+    acos,
+    acosh,
+    all,
+    any,
+    asin,
+    asinh,
+    atan,
+    atanh,
+    ceil,
+    clamp,
+    conjugate,
+    cos,
+    cosh,
+    cross,
+    determinant,
+    distance,
+    dot,
+    equal,
+    exp,
+    exp2,
+    exp10,
+    faceforward,
+    floor,
+    fract,
+    greaterThan,
+    greaterThanEqual,
+    inverse,
+    inversesqrt,
+    length,
+    lessThan,
+    lessThanEqual,
+    log,
+    log2,
+    log10,
+    matrixCompMult,
+    max,
+    min,
+    mix,
+    mod,
+    normalize,
+    not_,
+    notEqual,
+    outerProduct,
+    pow,
+    reflect,
+    refract,
+    round,
+    roundEven,
+    sign,
+    sin,
+    sinh,
+    sizeof,
+    smoothstep,
+    sqrt,
+    step,
+    tan,
+    tanh,
+    trace,
+    transpose,
+    trunc,
 )
+from .genMat import MatType, genMat
+from .genMat2 import Mat2Type, genMat2
+from .genMat3 import Mat3Type, genMat3
+from .genMat4 import Mat4Type, genMat4
+from .genQuat import QuatType, genQuat
+from .genType import MathForm, Number, genType
+from .genVec import VecType, genVec
+from .genVec2 import Vec2Type, genVec2
+from .genVec3 import Vec3Type, genVec3
+from .genVec4 import Vec4Type, genVec4
+from .half2 import half2
+from .half3 import half3
+from .half4 import half4
 from .helper import patch_nparray
+from .int2 import int2
+from .int3 import int3
+from .int4 import int4
+from .matrix2d import matrix2d
+from .matrix2f import matrix2f
+from .matrix3d import matrix3d
+from .matrix3f import matrix3f
+from .matrix4d import matrix4d
+from .matrix4f import matrix4f
+from .quatd import quatd
+from .quatf import quatf
+from .quath import quath
 
 __all__ = [
     "MathForm",
@@ -83,7 +140,7 @@ __all__ = [
     "color3h", "color3f", "color3d",
     "color4h", "color4f", "color4d",
     "texCoord2h", "texCoord2f", "texCoord2d",
-    "texCoord3h", "texCoord3f", "texCoord3d", 
+    "texCoord3h", "texCoord3f", "texCoord3d",
     "normal3h", "normal3f", "normal3d",
     "point3h", "point3f", "point3d",
     "vector3h", "vector3f", "vector3d",

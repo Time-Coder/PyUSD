@@ -1,13 +1,13 @@
-from .gprim import Gprim
-from ..attribute import Attribute
-from ..gf import point3f, vector3f, normal3f
 from typing import List
 
+from ..attribute import Attribute
+from ..gf import normal3f, point3f, vector3f
+from .gprim import Gprim
 
 class PointBased(Gprim):
     """Base class for all UsdGeomGprims that possess points,
     providing common attributes such as normals and velocities."""
-    
+
     def __init__(self, name:str="")->None: ...
 
     @property
@@ -31,7 +31,7 @@ class PointBased(Gprim):
         as per most simulation software. To convert to position units per
         UsdTimeCode, divide by UsdStage::GetTimeCodesPerSecond().
         
-        See also \\ref UsdGeom_VelocityInterpolation .""" 
+        See also \\ref UsdGeom_VelocityInterpolation ."""
 
     @velocities.setter
     def velocities(self, value:List[vector3f])->None: ...

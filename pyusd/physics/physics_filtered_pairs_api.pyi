@@ -1,7 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..relationship import Relationship
 from .physics import Physics
-
 
 class PhysicsFilteredPairsAPI(APISchemaBase):
     """API to describe fine-grained filtering. If a collision between

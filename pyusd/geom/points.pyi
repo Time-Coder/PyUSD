@@ -1,8 +1,8 @@
-from .point_based import PointBased
-from ..attribute import Attribute
-from ..dtypes import int64
 from typing import List
 
+from ..attribute import Attribute
+from ..dtypes import int64
+from .point_based import PointBased
 
 class Points(PointBased):
     """Points are analogous to the <A HREF="https://renderman.pixar.com/resources/RenderMan_20/appnote.18.html">RiPoints spec</A>.  
@@ -15,7 +15,7 @@ class Points(PointBased):
     While not technically UsdGeomPrimvars, the widths and normals also
     have interpolation metadata.  It's common for authored widths and normals
     to have constant or varying interpolation."""
-    
+
     def __init__(self, name:str="")->None: ...
 
     @property

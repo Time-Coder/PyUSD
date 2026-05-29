@@ -1,8 +1,9 @@
-from .point_based import PointBased
-from ..attribute import Attribute
-from ..dtypes import int64
-from ..common import SchemaKind
 from typing import List
+
+from ..attribute import Attribute
+from ..common import SchemaKind
+from ..dtypes import int64
+from .point_based import PointBased
 
 
 class Points(PointBased):
@@ -16,7 +17,7 @@ class Points(PointBased):
     While not technically UsdGeomPrimvars, the widths and normals also
     have interpolation metadata.  It's common for authored widths and normals
     to have constant or varying interpolation."""
-    
+
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     meta = {

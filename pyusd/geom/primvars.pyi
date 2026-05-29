@@ -1,8 +1,7 @@
-from ..attribute import Attribute
-from ..gf import color3f, texCoord2f
-
 from typing import List
 
+from ..attribute import Attribute
+from ..gf import color3f, texCoord2f
 
 class PrimVars(Attribute):
 
@@ -15,7 +14,7 @@ class PrimVars(Attribute):
         shader for a gprim.  DisplayColor serves this role; because it is a
         UsdGeomPrimvar, it can also be used as a gprim override for any shader
         that consumes a \\em displayColor parameter."""
-    
+
     @displayColor.setter
     def displayColor(self, value: List[color3f])->None: ...
 
@@ -29,7 +28,7 @@ class PrimVars(Attribute):
     @displayOpacity.setter
     def displayOpacity(self, value: List[float])->None: ...
 
-        
+
     @property
     def st(self)->Attribute[List[texCoord2f]]: ...
 

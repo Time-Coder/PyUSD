@@ -1,9 +1,10 @@
-from .xformable import Xformable
-from ..attribute import Attribute
-from ..dtypes import token, namespace, double
-from ..gf import float2, float4
-from ..common import SchemaKind
 from typing import List
+
+from ..attribute import Attribute
+from ..common import SchemaKind
+from ..dtypes import double, namespace, token
+from ..gf import float2, float4
+from .xformable import Xformable
 
 
 class Camera(Xformable):
@@ -90,7 +91,7 @@ class Camera(Xformable):
     
     \\sa \\ref UsdGeom_LinAlgBasics
      """
-    
+
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     meta = {
@@ -209,4 +210,3 @@ class Camera(Xformable):
         sensor system to light when calculating exposure. Intended to be
         used as a per camera/lens system measured scaling value."""
     )
-        

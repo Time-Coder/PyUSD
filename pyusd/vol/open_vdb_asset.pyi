@@ -1,7 +1,6 @@
-from .field_asset import FieldAsset
 from ..attribute import Attribute
 from ..dtypes import token
-
+from .field_asset import FieldAsset
 
 class OpenVDBAsset(FieldAsset):
     """OpenVDB field primitive. The FieldAsset filePath attribute must

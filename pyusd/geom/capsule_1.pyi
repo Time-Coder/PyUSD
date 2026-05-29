@@ -1,7 +1,6 @@
-from .gprim import Gprim
 from ..attribute import Attribute
 from ..dtypes import double, token
-
+from .gprim import Gprim
 
 class Capsule_1(Gprim):
     """Defines a primitive capsule, i.e. a cylinder capped by two half
@@ -10,7 +9,7 @@ class Capsule_1(Gprim):
     The spherical cap heights (sagitta) of the two endcaps are a function of 
     the relative radii of the endcaps, such that cylinder tangent and sphere 
     tangent are coincident and maintain C1 continuity."""
-        
+
     def __init__(self, name:str="")->None: ...
 
     @property

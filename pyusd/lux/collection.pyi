@@ -1,6 +1,5 @@
 from ..attribute import Attribute
 
-
 class Collection(Attribute):
 
     @property

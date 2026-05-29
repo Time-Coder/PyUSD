@@ -1,8 +1,8 @@
-from ..attribute import Attribute
-from ..relationship import Relationship
-from ..dtypes import token
 from typing import List
 
+from ..attribute import Attribute
+from ..dtypes import token
+from ..relationship import Relationship
 
 class Skel(Attribute):
 

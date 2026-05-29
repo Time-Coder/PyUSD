@@ -1,7 +1,8 @@
-from .point_based import PointBased
+from typing import List
+
 from ..attribute import Attribute
 from ..common import SchemaKind
-from typing import List
+from .point_based import PointBased
 
 
 class Curves(PointBased):
@@ -24,7 +25,7 @@ class Curves(PointBased):
     sure to key any indexing behavior off the concrete type, not this
     abstract type.
     """
-    
+
     schema_kind: SchemaKind = SchemaKind.AbstractTyped
 
     meta = {

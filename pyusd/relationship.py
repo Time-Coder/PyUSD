@@ -1,7 +1,9 @@
 from __future__ import annotations
-from typing import List, TYPE_CHECKING, Dict, Any, Union, Optional
-from typeguard import typechecked
+
 import copy
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+
+from typeguard import typechecked
 
 from .property import Property
 from .relationship_serializer import RelationshipSerializer
@@ -46,7 +48,7 @@ class Relationship(Property):
     @property
     def targets(self)->List[Prim]:
         return self._targets
-    
+
     def rel(self, prim:Prim)->None:
         self._targets.append(prim)
         self._value_state = Property.ValueState.Authored
@@ -66,6 +68,6 @@ class Relationship(Property):
             return str(self._targets[0])
         else:
             return str(self._targets)
-    
+
     def to_str(self, indents:int=0, full:bool=False)->str:
         return RelationshipSerializer.to_str(self, indents, full)

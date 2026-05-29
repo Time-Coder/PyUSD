@@ -1,8 +1,8 @@
-from .point_based import PointBased
-from ..attribute import Attribute
-from ..gf import int3, int4
 from typing import List
 
+from ..attribute import Attribute
+from ..gf import int3, int4
+from .point_based import PointBased
 
 class TetMesh(PointBased):
     """Encodes a tetrahedral mesh. A tetrahedral mesh is defined as a set of 
@@ -14,7 +14,7 @@ class TetMesh(PointBased):
     physics attachments. Both tetrahedra and surface face definitions use 
     indices into the TetMesh's <b>points</b> attribute, inherited from 
     UsdGeomPointBased."""
-    
+
     def __init__(self, name:str="")->None: ...
 
     @property
@@ -53,6 +53,6 @@ class TetMesh(PointBased):
         the <b>orientation</b> attribute inherited from UsdGeomPrim should be 
         set accordingly. The <b>orientation</b> for faces of tetrahedra and  
         surface faces must match."""
-        
+
     @surfaceFaceVertexIndices.setter
     def surfaceFaceVertexIndices(self, value:List[int3])->None: ...

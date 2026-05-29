@@ -1,8 +1,8 @@
-from .point_based import PointBased
-from ..attribute import Attribute
-from ..dtypes import token
 from typing import List
 
+from ..attribute import Attribute
+from ..dtypes import token
+from .point_based import PointBased
 
 class Mesh(PointBased):
     """Encodes a mesh with optional subdivision properties and features.
@@ -75,7 +75,7 @@ class Mesh(PointBased):
     The normals generated for smooth subdivision schemes, e.g. Catmull-Clark
     and Loop, will likewise be smooth, but others, e.g. Bilinear, may be
     discontinuous between faces and/or within non-planar irregular faces."""
-    
+
     def __init__(self, name = "")->None: ...
 
     @property

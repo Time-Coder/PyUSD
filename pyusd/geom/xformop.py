@@ -1,9 +1,10 @@
+from typing import Any
+
+from typeguard import typechecked
+
 from ..attribute import Attribute
 from ..dtypes import double, namespace
 from ..gf import double3, matrix4d, quatd
-
-from typing import Any
-from typeguard import typechecked
 
 
 class XformOp(Attribute):

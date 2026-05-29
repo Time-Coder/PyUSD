@@ -1,9 +1,6 @@
-from .nonboundable_light_base import NonboundableLightBase
-from ..attribute import Attribute
 from ..relationship import Relationship
-from ..dtypes import token
 from .light import Light
-
+from .nonboundable_light_base import NonboundableLightBase
 
 class GeometryLight(NonboundableLightBase):
     """\\deprecated

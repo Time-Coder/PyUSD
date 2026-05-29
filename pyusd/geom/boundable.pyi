@@ -1,8 +1,8 @@
-from .xformable import Xformable
-from ..attribute import Attribute
-from ..gf import float3
 from typing import List
 
+from ..attribute import Attribute
+from ..gf import float3
+from .xformable import Xformable
 
 class Boundable(Xformable):
     """Boundable introduces the ability for a prim to persistently

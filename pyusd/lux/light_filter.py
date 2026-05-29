@@ -1,8 +1,7 @@
-from ..geom.xformable import Xformable
 from ..attribute import Attribute
-from ..dtypes import namespace
-from ..dtypes import token
 from ..common import SchemaKind
+from ..dtypes import namespace, token
+from ..geom.xformable import Xformable
 
 
 class LightFilter(Xformable):

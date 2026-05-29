@@ -1,16 +1,15 @@
-from .particle_field import ParticleField
 from ..attribute import Attribute
 from ..dtypes import token
-
+from .particle_field import ParticleField
 
 class ParticleField3DGaussianSplat(ParticleField):
     """This is a concrete ParticleField representing the original 3D
     Gaussian Splats technique (https://arxiv.org/abs/2308.04079).
-    
+
     It inherits from the ParticleField base prim, and has a set of
     applied schema automatically applied to provide the required
     attributes to define the necessary data from the original 3DGS paper.
-    
+
     It also contains some rendering hints that can optionally inform
     how the splats should be rendered. These hints typically
     corrolate with choices that were made when the data was trained.

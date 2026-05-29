@@ -1,7 +1,6 @@
 from ..attribute import Attribute
 from ..dtypes import string
 
-
 class Config(Attribute):
 
     @property

@@ -1,5 +1,5 @@
-from ..geom.xformable import Xformable
 from ..common import SchemaKind
+from ..geom.xformable import Xformable
 
 
 class PluginLight(Xformable):

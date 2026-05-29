@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -20,5 +21,5 @@ class VariantSetSerializer:
             result += "\n" + '\n'.join(variant_str_list)
 
         result += f"{tabs}}}\n"
-        
+
         return result

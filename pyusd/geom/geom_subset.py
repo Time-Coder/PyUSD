@@ -1,8 +1,9 @@
-from ..typed import Typed
-from ..attribute import Attribute
-from ..dtypes import token
-from ..common import SchemaKind
 from typing import List
+
+from ..attribute import Attribute
+from ..common import SchemaKind
+from ..dtypes import token
+from ..typed import Typed
 
 
 class GeomSubset(Typed):

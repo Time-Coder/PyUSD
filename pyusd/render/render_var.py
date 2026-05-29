@@ -1,7 +1,7 @@
-from ..typed import Typed
 from ..attribute import Attribute
-from ..dtypes import string, token
 from ..common import SchemaKind
+from ..dtypes import string, token
+from ..typed import Typed
 
 
 class RenderVar(Typed):

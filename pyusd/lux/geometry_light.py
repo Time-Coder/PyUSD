@@ -1,9 +1,8 @@
-from .nonboundable_light_base import NonboundableLightBase
 from ..attribute import Attribute
-from ..relationship import Relationship
-from ..dtypes import namespace
-from ..dtypes import token
 from ..common import SchemaKind
+from ..dtypes import namespace, token
+from ..relationship import Relationship
+from .nonboundable_light_base import NonboundableLightBase
 
 
 class GeometryLight(NonboundableLightBase):

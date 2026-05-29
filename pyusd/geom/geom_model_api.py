@@ -1,8 +1,7 @@
-from ..prim import Prim
+from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
 from ..dtypes import asset, namespace, token
 from ..gf import float3
-from ..api_schema_base import APISchemaBase
 
 
 class GeomModelAPI(APISchemaBase):

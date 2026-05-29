@@ -1,8 +1,7 @@
-from .boundable_light_base import BoundableLightBase
 from ..attribute import Attribute
-from ..dtypes import namespace
-from ..dtypes import asset, token
 from ..common import SchemaKind
+from ..dtypes import asset, namespace, token
+from .boundable_light_base import BoundableLightBase
 
 
 class RectLight(BoundableLightBase):

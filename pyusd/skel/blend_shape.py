@@ -1,8 +1,9 @@
-from ..typed import Typed
-from ..attribute import Attribute
 from typing import List
-from ..gf import vector3f
+
+from ..attribute import Attribute
 from ..common import SchemaKind
+from ..gf import vector3f
+from ..typed import Typed
 
 
 class BlendShape(Typed):

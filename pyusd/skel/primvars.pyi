@@ -1,8 +1,8 @@
-from ..attribute import Attribute
-from ..gf import matrix4d
-from ..dtypes import token
 from typing import List
 
+from ..attribute import Attribute
+from ..dtypes import token
+from ..gf import matrix4d
 
 class Primvars(Attribute):
 

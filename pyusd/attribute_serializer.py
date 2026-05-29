@@ -1,13 +1,14 @@
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
-from .property import Property
 from .dtypes import namespace
+from .property import Property
 from .utils import usd_value_str
 
 if TYPE_CHECKING:
     from .attribute import Attribute
-    
+
 
 class AttributeSerializer:
 

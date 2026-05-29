@@ -1,9 +1,5 @@
-from .physics_joint import PhysicsJoint
-from ..attribute import Attribute
-from ..dtypes import token
-from ..common import Axis
 from .physics import Physics
-
+from .physics_joint import PhysicsJoint
 
 class PhysicsRevoluteJoint(PhysicsJoint):
     """Predefined revolute joint type (rotation along revolute joint

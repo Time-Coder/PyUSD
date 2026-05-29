@@ -1,9 +1,6 @@
 from .boundable_light_base import BoundableLightBase
-from ..attribute import Attribute
-from ..dtypes import token
 from .inputs import Inputs
 from .light import Light
-
 
 class PortalLight(BoundableLightBase):
     """A rectangular portal in the local XY plane that guides sampling

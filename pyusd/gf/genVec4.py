@@ -1,9 +1,10 @@
-from typing import Union, Tuple, TypeAlias
-from .genVec import genVec, Number
+from typing import Tuple, TypeAlias, Union
+
+from .genVec import Number, genVec
 
 
 class genVec4(genVec):
-    
+
     def __len__(self)->int:
         return 4
 

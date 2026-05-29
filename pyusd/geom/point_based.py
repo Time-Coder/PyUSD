@@ -1,14 +1,15 @@
-from .gprim import Gprim
-from ..attribute import Attribute
-from ..gf import point3f, vector3f, normal3f
-from ..common import SchemaKind
 from typing import List
+
+from ..attribute import Attribute
+from ..common import SchemaKind
+from ..gf import normal3f, point3f, vector3f
+from .gprim import Gprim
 
 
 class PointBased(Gprim):
     """Base class for all UsdGeomGprims that possess points,
     providing common attributes such as normals and velocities."""
-    
+
     schema_kind: SchemaKind = SchemaKind.AbstractTyped
 
     meta = {
@@ -36,7 +37,7 @@ class PointBased(Gprim):
         as per most simulation software. To convert to position units per
         UsdTimeCode, divide by UsdStage::GetTimeCodesPerSecond().
         
-        See also \\ref UsdGeom_VelocityInterpolation .""" 
+        See also \\ref UsdGeom_VelocityInterpolation ."""
     )
 
     accelerations: Attribute[List[vector3f]] = Attribute(List[vector3f], "accelerations", doc=

@@ -1,7 +1,7 @@
-from ..attribute import Attribute
-from ..dtypes import token
 from ..api_schema_base import APISchemaBase
+from ..attribute import Attribute
 from ..common import SchemaKind
+from ..dtypes import token
 
 
 class VisibilityAPI(APISchemaBase):
@@ -37,7 +37,7 @@ class VisibilityAPI(APISchemaBase):
     UseGeomImageable schema provides API for computing the purpose visibility
     values that result from the attributes introduced by this schema.
     """
-    
+
     schema_kind = SchemaKind.SingleApplyAPI
 
     meta = {

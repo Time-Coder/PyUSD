@@ -1,9 +1,10 @@
+from typing import List
+
 from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
-from typing import List
+from ..common import SchemaKind
 from ..dtypes import namespace
 from ..gf import float3, half3
-from ..common import SchemaKind
 
 
 class ParticleFieldSphericalHarmonicsAttributeAPI(APISchemaBase):

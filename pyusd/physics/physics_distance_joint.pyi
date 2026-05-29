@@ -1,7 +1,5 @@
-from .physics_joint import PhysicsJoint
-from ..attribute import Attribute
 from .physics import Physics
-
+from .physics_joint import PhysicsJoint
 
 class PhysicsDistanceJoint(PhysicsJoint):
     """Predefined distance joint type (Distance between rigid bodies

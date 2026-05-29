@@ -1,5 +1,7 @@
 from __future__ import annotations
-from typing import Any, Dict, Optional, Union, TYPE_CHECKING
+
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+
 import tree_sitter
 
 from .metadata import Metadata
@@ -22,7 +24,7 @@ class MetadataParser:
             MetadataParser.set_authored(result, key, value)
 
         return result
-    
+
     @staticmethod
     def set_authored(metadata:Metadata, key:str, value:Any)->None:
         clean_key = key.split(" ", 1)[1] if key.startswith(("prepend ", "append ")) else key

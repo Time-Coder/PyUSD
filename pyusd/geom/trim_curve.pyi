@@ -1,9 +1,8 @@
-from ..attribute import Attribute
-from ..relationship import Relationship
-from ..gf import double2, double3
-from ..dtypes import double
 from typing import List
 
+from ..attribute import Attribute
+from ..dtypes import double
+from ..gf import double2, double3
 
 class TrimCurve(Attribute):
 

@@ -1,6 +1,5 @@
 from ..api_schema_base import APISchemaBase
 
-
 class BoundableLightBase(APISchemaBase):
     """Base class for intrinsic lights that are boundable.
     

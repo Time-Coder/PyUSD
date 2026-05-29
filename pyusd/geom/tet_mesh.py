@@ -1,8 +1,9 @@
-from .point_based import PointBased
-from ..attribute import Attribute
-from ..gf import int3, int4
-from ..common import SchemaKind
 from typing import List
+
+from ..attribute import Attribute
+from ..common import SchemaKind
+from ..gf import int3, int4
+from .point_based import PointBased
 
 
 class TetMesh(PointBased):
@@ -15,7 +16,7 @@ class TetMesh(PointBased):
     physics attachments. Both tetrahedra and surface face definitions use 
     indices into the TetMesh's <b>points</b> attribute, inherited from 
     UsdGeomPointBased."""
-    
+
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     meta = {

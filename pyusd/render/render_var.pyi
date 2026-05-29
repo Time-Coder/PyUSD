@@ -1,7 +1,6 @@
-from ..typed import Typed
 from ..attribute import Attribute
 from ..dtypes import string, token
-
+from ..typed import Typed
 
 class RenderVar(Typed):
     """A UsdRenderVar describes a custom data variable for

@@ -1,7 +1,7 @@
-from .field_asset import FieldAsset
 from ..attribute import Attribute
-from ..dtypes import token
 from ..common import SchemaKind
+from ..dtypes import token
+from .field_asset import FieldAsset
 
 
 class Field3DAsset(FieldAsset):

@@ -1,12 +1,8 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
-from ..relationship import Relationship
-from ..gf import color3f
 from ..dtypes import token
 from .collection import Collection
 from .inputs import Inputs
 from .light import Light
-
 
 class LightAPI(APISchemaBase):
     """API schema that imparts the quality of being a light onto a prim. 

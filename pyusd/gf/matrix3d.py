@@ -1,11 +1,11 @@
-from .genMat3 import genMat3
-from .double3 import double3
-
 import ctypes
+
+from .double3 import double3
+from .genMat3 import genMat3
 
 
 class matrix3d(genMat3):
-    
+
     _type_ = ctypes.c_double
 
     @staticmethod

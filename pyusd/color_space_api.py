@@ -1,7 +1,7 @@
-from .attribute import Attribute
-from .dtypes import token, namespace
 from .api_schema_base import APISchemaBase
+from .attribute import Attribute
 from .common import SchemaKind
+from .dtypes import namespace, token
 
 
 class ColorSpaceAPI(APISchemaBase):
@@ -69,4 +69,3 @@ class ColorSpaceAPI(APISchemaBase):
         unauthored color spaces on this prim and its descendents.
         """
     ))
-    

@@ -1,7 +1,7 @@
+from typing import Any, Dict, List
+
 from .metadata import Metadata
 from .sdf import Specifier
-from typing import List, Dict, Any
-
 
 class PrimMetadata(Metadata):
 

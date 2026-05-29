@@ -1,7 +1,7 @@
-from .genMat2 import genMat2
-from .double2 import double2
-
 import ctypes
+
+from .double2 import double2
+from .genMat2 import genMat2
 
 
 class matrix2d(genMat2):

@@ -1,9 +1,7 @@
-from ..attribute import Attribute
-from ..relationship import Relationship
-from ..gf import float3
-from ..dtypes import asset, token
-from typing import List
 
+from ..attribute import Attribute
+from ..dtypes import asset, token
+from ..gf import float3
 
 class Model(Attribute):
 

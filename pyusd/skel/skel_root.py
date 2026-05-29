@@ -1,5 +1,5 @@
-from ..geom.boundable import Boundable
 from ..common import SchemaKind
+from ..geom.boundable import Boundable
 
 
 class SkelRoot(Boundable):

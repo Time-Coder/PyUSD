@@ -1,8 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
-from ..relationship import Relationship
 from .physics import Physics
-
 
 class PhysicsCollisionAPI(APISchemaBase):
     """Applies collision attributes to a UsdGeomXformable prim. If a 

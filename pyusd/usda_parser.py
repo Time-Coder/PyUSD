@@ -1,6 +1,7 @@
 from __future__ import annotations
+
 import os
-from typing import Any, Dict, List, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from .dtypes import asset, dictionary
 
@@ -134,7 +135,7 @@ class UsdaParser:
             (text.startswith('"""') and text.endswith('"""'))
         ):
             return text[3:-3]
-        
+
         return text.strip('"')
 
     @staticmethod
@@ -145,15 +146,15 @@ class UsdaParser:
     def resolve_asset_path(file_name, rel_path:str)->str:
         if os.path.isabs(rel_path):
             return rel_path
-        
+
         return os.path.abspath(os.path.dirname(file_name) + "/" + rel_path).replace("\\", "/")
 
     @staticmethod
     def as_list(value:Any)->List[Any]:
         if value is None:
             return []
-        
+
         if isinstance(value, list):
             return value
-        
+
         return [value]

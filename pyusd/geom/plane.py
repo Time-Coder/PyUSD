@@ -1,9 +1,10 @@
-from .gprim import Gprim
-from ..attribute import Attribute
-from ..dtypes import double, token
-from ..common import SchemaKind, Axis
-from ..gf import float3
 from typing import List
+
+from ..attribute import Attribute
+from ..common import Axis, SchemaKind
+from ..dtypes import double
+from ..gf import float3
+from .gprim import Gprim
 
 
 class Plane(Gprim):
@@ -19,7 +20,7 @@ class Plane(Gprim):
     Z     | x-axis | y-axis
 
     """
-    
+
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     meta = {

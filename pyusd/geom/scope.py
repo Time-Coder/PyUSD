@@ -1,5 +1,5 @@
-from .imageable import Imageable
 from ..common import SchemaKind
+from .imageable import Imageable
 
 
 class Scope(Imageable):

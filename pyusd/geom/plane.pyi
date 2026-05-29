@@ -1,7 +1,6 @@
-from .gprim import Gprim
 from ..attribute import Attribute
 from ..dtypes import double, token
-
+from .gprim import Gprim
 
 class Plane(Gprim):
     """Defines a primitive plane, centered at the origin, and is defined by
@@ -16,7 +15,7 @@ class Plane(Gprim):
     Z     | x-axis | y-axis
 
     """
-    
+
     def __init__(self, name:str="")->None: ...
 
     @property

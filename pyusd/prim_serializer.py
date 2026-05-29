@@ -1,10 +1,11 @@
 from __future__ import annotations
-from typing import Type, TYPE_CHECKING
 
-from .sdf import Specifier
+from typing import TYPE_CHECKING, Type
+
 from .common import SchemaKind
 from .metadata import Metadata
 from .property import Property
+from .sdf import Specifier
 
 if TYPE_CHECKING:
     from .prim import Prim
@@ -28,8 +29,8 @@ class PrimSerializer:
             result += (" " + metadata_str)
 
         result += (" " if prim._is_variant else f"\n{tabs}")
-        result += f'{{\n'
-        
+        result += '{\n'
+
         props_str_list = []
         for prop in prim._props.values():
             prop_str = prop.to_str(indents+1)
@@ -57,7 +58,7 @@ class PrimSerializer:
 
         result += f'{tabs}}}\n'
         return result
-    
+
     @staticmethod
     def cls_to_str(cls: Type[Prim])->str:
         prim_type_name = cls.__name__
@@ -91,8 +92,8 @@ class PrimSerializer:
         if metadata_str:
             result += (" " + metadata_str)
 
-        result += f'\n{{\n'
-        
+        result += '\n{\n'
+
         props_str_list = []
         for name, prop in cls.__dict__.items():
             if not isinstance(prop, Property):
@@ -106,5 +107,5 @@ class PrimSerializer:
         if props_str_list:
             result += "\n".join(props_str_list) + "\n"
 
-        result += f'}}\n'
+        result += '}\n'
         return result

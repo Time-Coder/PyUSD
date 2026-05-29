@@ -1,10 +1,11 @@
-from tree_sitter import Node
 from typing import Dict, List
 
+from tree_sitter import Node
+
 from .attribute import Attribute
+from .metadata_parser import MetadataParser
 from .property import Property
 from .usda_parser import UsdaParser
-from .metadata_parser import MetadataParser
 
 
 class AttributeParser:
@@ -40,7 +41,7 @@ class AttributeParser:
             MetadataParser.set_authored(prop._metadata, key, authored_value)
 
         return prop
-    
+
     @staticmethod
     def usd_type(type_name:str)->type:
         array_dim = type_name.count("[]")

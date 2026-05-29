@@ -1,7 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
 from .physics import Physics
-
 
 class PhysicsLimitAPI(APISchemaBase):
     """The PhysicsLimitAPI can be applied to a PhysicsJoint and will

@@ -1,9 +1,10 @@
-from .gprim import Gprim
-from ..attribute import Attribute
-from ..dtypes import double
-from ..common import SchemaKind, Axis
-from ..gf import float3
 from typing import List
+
+from ..attribute import Attribute
+from ..common import Axis, SchemaKind
+from ..dtypes import double
+from ..gf import float3
+from .gprim import Gprim
 
 
 class Cylinder_1(Gprim):
@@ -13,7 +14,7 @@ class Cylinder_1(Gprim):
 
     The fallback values for Cube, Sphere, Cone, and Cylinder are set so that
     they all pack into the same volume/bounds."""
-    
+
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     meta = {

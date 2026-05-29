@@ -1,13 +1,6 @@
 from ..api_schema_base import APISchemaBase
-from ..gf import float3
-from ..dtypes import asset, namespace, token
-from .exposure import Exposure
+from ..dtypes import token
 from .model import Model
-from .motion import Motion
-from .primvars import Primvars
-from .shutter import Shutter
-from .trim_curve import TrimCurve
-
 
 class GeomModelAPI(APISchemaBase):
     """UsdGeomModelAPI extends the generic UsdModelAPI schema with

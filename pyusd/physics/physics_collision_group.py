@@ -1,9 +1,8 @@
-from ..typed import Typed
 from ..attribute import Attribute
-from ..relationship import Relationship
-from ..dtypes import namespace
-from ..dtypes import string
 from ..common import SchemaKind
+from ..dtypes import namespace, string
+from ..relationship import Relationship
+from ..typed import Typed
 
 
 class PhysicsCollisionGroup(Typed):

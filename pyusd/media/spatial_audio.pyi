@@ -1,7 +1,6 @@
-from ..geom.xformable import Xformable
 from ..attribute import Attribute
 from ..dtypes import asset, double, timecode, token
-
+from ..geom.xformable import Xformable
 
 class SpatialAudio(Xformable):
     """The SpatialAudio primitive defines basic properties for encoding 

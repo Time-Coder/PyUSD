@@ -1,11 +1,11 @@
-from .genMat4 import genMat4
-from .float4 import float4
-
 import ctypes
+
+from .float4 import float4
+from .genMat4 import genMat4
 
 
 class matrix4f(genMat4):
-    
+
     _type_ = ctypes.c_float
 
     @staticmethod

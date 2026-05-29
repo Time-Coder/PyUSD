@@ -1,9 +1,10 @@
-from ..typed import Typed
-from ..attribute import Attribute
 from typing import List
-from ..gf import float3, half3, quatf
-from ..dtypes import token
+
+from ..attribute import Attribute
 from ..common import SchemaKind
+from ..dtypes import token
+from ..gf import float3, half3, quatf
+from ..typed import Typed
 
 
 class SkelAnimation(Typed):

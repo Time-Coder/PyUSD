@@ -2,7 +2,6 @@ from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
 from ..dtypes import string, token
 
-
 class AccessibilityAPI(APISchemaBase):
     """
     This API describes \\em Accessibility information on a Prim that may be

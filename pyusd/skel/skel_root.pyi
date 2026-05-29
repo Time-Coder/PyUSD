@@ -1,6 +1,5 @@
 from ..geom.boundable import Boundable
 
-
 class SkelRoot(Boundable):
     """Boundable prim type used to identify a scope beneath which
     skeletally-posed primitives are defined.

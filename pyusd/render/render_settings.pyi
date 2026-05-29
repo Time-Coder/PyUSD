@@ -1,9 +1,9 @@
-from .render_settings_base import RenderSettingsBase
-from ..attribute import Attribute
-from ..relationship import Relationship
 from typing import List
-from ..dtypes import token
 
+from ..attribute import Attribute
+from ..dtypes import token
+from ..relationship import Relationship
+from .render_settings_base import RenderSettingsBase
 
 class RenderSettings(RenderSettingsBase):
     """A UsdRenderSettings prim specifies global settings for

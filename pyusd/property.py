@@ -1,18 +1,20 @@
 from __future__ import annotations
-from typing import Dict, Any, TYPE_CHECKING, Optional, Union
-from typeguard import typechecked
-from enum import IntEnum
 
-from .metadata import Metadata
-from .utils import infer_type, in_annotations
+from enum import IntEnum
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+
+from typeguard import typechecked
+
 from .common import SchemaKind
+from .metadata import Metadata
 from .property_serializer import PropertySerializer
+from .utils import in_annotations, infer_type
 
 if TYPE_CHECKING:
-    from .prim import Prim
-    from .attribute import Attribute
-    from .relationship import Relationship
     from .api_schema_base import APISchemaBase
+    from .attribute import Attribute
+    from .prim import Prim
+    from .relationship import Relationship
 
 
 class Property:
@@ -38,7 +40,7 @@ class Property:
     def __init__(self, name:str="", doc:str="", metadata:Optional[Dict[str, Any]]=None, custom:bool=False, is_leaf:bool=True)->None:
         if metadata is None:
             metadata = {}
-        
+
         if "doc" in metadata:
             doc = metadata["doc"]
 
@@ -101,7 +103,7 @@ class Property:
     @property
     def parent_prim(self)->Prim:
         return self._parent_prim
-    
+
     @property
     def parent_prop(self)->Property:
         return self._parent_prop
@@ -109,29 +111,29 @@ class Property:
     @property
     def is_leaf(self)->bool:
         return self._is_leaf
-    
+
     @property
     def name(self)->str:
         return self._name
-    
+
     @property
     def full_name(self)->str:
         if self._parent_prop is None:
             return self._name
-        
+
         return self._parent_prop.full_name + ":" + self._name
-    
+
     @property
     def path(self)->str:
         if self._parent_prim is None:
             return self.full_name
-        
+
         return self._parent_prim.path + "." + self.full_name
-    
+
     @property
     def metadata(self)->Metadata:
         return self._metadata
-    
+
     @property
     def value_state(self)->Property.ValueState:
         return self._value_state
@@ -153,7 +155,7 @@ class Property:
     def create(self, value_type:type, value:Optional[Any]=None, uniform:bool=False, custom:bool=False, fix_type:bool=True)->Attribute:
         if self.__class__.__name__ != "Property":
             raise AttributeError(f"'{self.__class__.__name__}' object has not attribute 'create'")
-        
+
         from .attribute import Attribute
         self.__class__ = Attribute
         Attribute._init(self, value_type, value, uniform, custom, fix_type)
@@ -165,7 +167,7 @@ class Property:
         prop._parent_prim = self._parent_prim
         prop._parent_prop = self
         return prop
-    
+
     def update_children(self, prop:Property)->None:
         for child_name, child in prop._children.items():
             if child_name not in self._children:
@@ -175,8 +177,8 @@ class Property:
                 self._children[child_name].update_children(child)
 
     def __get__(self, instance:Union[Prim, Property, APISchemaBase], owner)->Property:
-        from .prim import Prim
         from .api_schema_base import APISchemaBase
+        from .prim import Prim
 
         if isinstance(instance, Prim):
             return instance._props[self._name]
@@ -189,10 +191,10 @@ class Property:
                 return start_prop._children[self._name]
             else:
                 return instance._prim._props[self._name]
-    
+
     def __set__(self, instance, value:Any):
-        from .prim import Prim
         from .api_schema_base import APISchemaBase
+        from .prim import Prim
 
         if isinstance(instance, Prim):
             instance._props[self._name].set(value)
@@ -216,9 +218,9 @@ class Property:
         if hasattr(self.__class__, name) or in_annotations(name, self.__class__):
             super().__setattr__(name, value)
             return
-        
-        from .prim import Prim
+
         from .attribute import Attribute
+        from .prim import Prim
         from .relationship import Relationship
 
         is_rel:bool = (isinstance(value, Prim) or (isinstance(value, list) and all(isinstance(item, Prim) for item in value)) or isinstance(value, Relationship))
@@ -234,18 +236,18 @@ class Property:
                         error_message = "cannot assign Relationship to Attribute"
 
                     raise TypeError(error_message)
-                
+
                 del self._children[name]
 
             if isinstance(prop, Relationship) and not is_rel:
                 if not prop._custom:
                     raise TypeError(f"cannot assign {value.__class__} object to Relationship")
-                
+
                 del self._children[name]
 
         if name not in self._children:
             if self._is_leaf:
-                raise AttributeError(f"leaf Property cannot create child Property")
+                raise AttributeError("leaf Property cannot create child Property")
 
         if name not in self._children and isinstance(value, Property):
             if value._parent_prim is None and value._parent_prop is None:

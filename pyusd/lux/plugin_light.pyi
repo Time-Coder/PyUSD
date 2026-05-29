@@ -1,6 +1,5 @@
 from ..geom.xformable import Xformable
 
-
 class PluginLight(Xformable):
     """Light that provides properties that allow it to identify an 
     external SdrShadingNode definition, through UsdShadeNodeDefAPI, that can be 

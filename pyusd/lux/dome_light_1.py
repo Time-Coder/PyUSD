@@ -1,9 +1,8 @@
-from .nonboundable_light_base import NonboundableLightBase
 from ..attribute import Attribute
-from ..relationship import Relationship
-from ..dtypes import namespace
-from ..dtypes import asset, token
 from ..common import SchemaKind
+from ..dtypes import asset, namespace, token
+from ..relationship import Relationship
+from .nonboundable_light_base import NonboundableLightBase
 
 
 class DomeLight_1(NonboundableLightBase):

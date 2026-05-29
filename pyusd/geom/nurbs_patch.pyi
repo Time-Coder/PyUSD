@@ -1,8 +1,8 @@
-from .point_based import PointBased
-from ..attribute import Attribute
-from ..gf import double2, double3
 from typing import List
 
+from ..attribute import Attribute
+from ..gf import double2, double3
+from .point_based import PointBased
 
 class TrimCurve(Attribute):
 
@@ -109,7 +109,7 @@ class NurbsPatch(PointBased):
     although they do not subscribe to trim-curve-based shaping, subdivs are
     often considered a more flexible modeling primitive.
     """
-    
+
     def __init__(self, name:str="")->None: ...
 
     @property
@@ -152,7 +152,7 @@ class NurbsPatch(PointBased):
     def uKnots(self)->Attribute[List[float]]:
         """Knot vector for U direction providing U parameterization.
         The length of this array must be ( uVertexCount + uOrder ), and its
-        entries must take on monotonically increasing values."""  
+        entries must take on monotonically increasing values."""
 
 
     @uKnots.setter
@@ -162,7 +162,7 @@ class NurbsPatch(PointBased):
     def vKnots(self)->Attribute[List[float]]:
         """Knot vector for V direction providing U parameterization.
         The length of this array must be ( vVertexCount + vOrder ), and its
-        entries must take on monotonically increasing values."""  
+        entries must take on monotonically increasing values."""
 
     @vKnots.setter
     def vKnots(self, value:List[float])->None: ...

@@ -1,8 +1,8 @@
+from typing import List
+
 from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
-from typing import List
 from ..gf import point3f, point3h
-
 
 class ParticleFieldPositionAttributeAPI(APISchemaBase):
     """A ParticleField related applied schema that provides a position

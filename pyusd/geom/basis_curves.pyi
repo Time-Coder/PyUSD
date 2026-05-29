@@ -1,7 +1,6 @@
-from .curves import Curves
 from ..attribute import Attribute
 from ..dtypes import token
-
+from .curves import Curves
 
 class BasisCurves(Curves):
     """BasisCurves are a batched curve representation analogous to the

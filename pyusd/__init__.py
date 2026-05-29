@@ -1,21 +1,34 @@
-from .layer import Layer
-from .prim import Prim, PrimType
-from .property import Property
-from .attribute import Attribute
-from .relationship import Relationship
-from .data import Data
-from .dtypes import double, half, uint, uint64, int64, double, string, uchar, opaque, group, asset, timecode, namespace, dictionary, pathExpression
-
-from .typed import Typed
 from .api_schema_base import APISchemaBase
-from .model_api import ModelAPI
+from .attribute import Attribute
+from .clips_api import ClipsAPI
+from .collection_api import CollectionAPI
 from .color_space_api import ColorSpaceAPI
 from .color_space_definition_api import ColorSpaceDefinitionAPI
-from .collection_api import CollectionAPI
-from .clips_api import ClipsAPI
+from .common import Axis, Kind, SchemaKind
+from .data import Data
+from .dtypes import (
+    asset,
+    dictionary,
+    double,
+    group,
+    half,
+    int64,
+    namespace,
+    opaque,
+    pathExpression,
+    string,
+    timecode,
+    uchar,
+    uint,
+    uint64,
+)
+from .layer import Layer
+from .model_api import ModelAPI
+from .prim import Prim, PrimType
+from .property import Property
+from .relationship import Relationship
+from .typed import Typed
 from .utils import abspath
-from .common import SchemaKind, Kind, Axis
-
 
 __all__ = [
     "Layer",

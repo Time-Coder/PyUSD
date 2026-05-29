@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from typing import List, Dict, Tuple, Union, Any, Optional, Callable, TypeAlias
 import ctypes
-from .helper import from_import, is_number
 import math
 from enum import Enum
-import importlib
+from typing import Any, Callable, Dict, List, Optional, Tuple, TypeAlias, Union
+
+from .helper import from_import, is_number
 
 
 class MathForm(Enum):
@@ -63,14 +63,14 @@ class genType:
 
     def __str__(self)->str:
         return f"{self.__class__.__name__}({', '.join([str(value) for value in self])})"
-    
+
     def __repr__(self)->str:
         return f"{self.__class__.__name__}({', '.join([str(value) for value in self])})"
 
     @property
     def on_changed(self)->Optional[Callable[[], None]]:
         return self._on_changed
-    
+
     @on_changed.setter
     def on_changed(self, on_changed:Optional[Callable[[], None]]):
         if on_changed is not None and not callable(on_changed):
@@ -85,7 +85,7 @@ class genType:
     @property
     def dtype(self)->type:
         pass
-    
+
     @property
     def shape(self)->Tuple[int]:
         pass
@@ -109,16 +109,16 @@ class genType:
                 genType.__gen_type_map[key] = from_import("." + result_name, result_name)
 
         return genType.__gen_type_map[key]
-    
+
     def _call_on_changed(self):
         if self._on_changed is None:
             return
-        
+
         self._on_changed()
 
     def _update_data(self, indices:Optional[List[int]] = None):
         self._call_on_changed()
-    
+
     @staticmethod
     def _bin_op_dtype(operator:str, type1:type, type2:type, type2_has_negative:bool=False)->type:
         type1_order = genType.__type_order.index(type1)
@@ -137,7 +137,7 @@ class genType:
 
         if isinstance(value1, genType) and isinstance(value2, genType) and not value1._is_homo(value2):
             raise TypeError(f"unsupported operand type(s) for {operator}: '{value1.__class__.__name__}' and '{value2.__class__.__name__}'")
-        
+
         second_has_negative:bool = False
         if operator == "**":
             if isinstance(value2, genType):
@@ -156,7 +156,7 @@ class genType:
         elif isinstance(value2, genType):
             math_form = value2.math_form
             shape = value2.shape
-        
+
         result_dtype:type = genType._bin_op_dtype(operator, value1_dtype, value2_dtype, second_has_negative)
         result_type:type = genType.gen_type(math_form, result_dtype, shape)
         return result_type
@@ -188,7 +188,7 @@ class genType:
             result[i] = operator_func(self[i], other[i] if other_is_homo else other)
 
         return result
-    
+
     def _rop(self, operator:str, other:Union[float, bool, int, genType])->genType:
         result_type = self._bin_op_type(operator, other, self)
         result:genType = result_type()
@@ -197,12 +197,12 @@ class genType:
             result[i] = operator_func(other, self[i])
 
         return result
-    
+
     def _iop(self, operator:str, other:Union[float, bool, int, genType])->genType:
         other_is_homo:bool = self._is_homo(other)
         if not other_is_homo and not is_number(other):
             raise TypeError(f"unsupported operand type(s) for {operator}=: '{self.__class__.__name__}' and '{other.__class__.__name__}'")
-        
+
         operator_func:Callable[[Any,Any], Any] = self._operator_funcs[operator]
         for i in range(len(self)):
             self[i] = operator_func(self[i], other[i] if other_is_homo else other)
@@ -210,7 +210,7 @@ class genType:
         self._update_data()
 
         return self
-    
+
     def _compare_op(self, operator:str, other:Union[float, bool, int, genType])->genType:
         btype = self.gen_type(self.math_form, ctypes.c_bool, self.shape)
         result:genType = btype()
@@ -218,13 +218,13 @@ class genType:
         other_is_homo:bool = self._is_homo(other)
         if not other_is_homo and not is_number(other):
             raise TypeError(f"unsupported operand type(s) for {operator}: '{self.__class__.__name__}' and '{other.__class__.__name__}'")
-        
+
         operator_func:Callable[[Any,Any], Any] = self._operator_funcs[operator]
         for i in range(len(self)):
             result[i] = operator_func(self[i], other[i] if other_is_homo else other)
-        
+
         return result
-    
+
     def _compare_rop(self, operator:str, other:Union[float, bool, int, genType])->genType:
         btype = self.gen_type(self.math_form, ctypes.c_bool, self.shape)
         result:genType = btype()
@@ -232,119 +232,119 @@ class genType:
         operator_func:Callable[[Any,Any], Any] = self._operator_funcs[operator]
         for i in range(len(result)):
             result[i] = operator_func(other, self[i])
-        
+
         return result
-    
+
     def __add__(self, other:Union[float, bool, int, genType])->genType:
         return self._op("+", other)
-    
+
     def __radd__(self, other:Union[float, bool, int])->genType:
         return self._rop("+", other)
-    
+
     def __iadd__(self, other:Union[float, bool, int, genType])->genType:
         return self._iop("+", other)
 
     def __sub__(self, other:Union[float, bool, int, genType])->genType:
         return self._op("-", other)
-    
+
     def __rsub__(self, other:Union[float, bool, int])->genType:
         return self._rop("-", other)
-    
+
     def __isub__(self, other:Union[float, bool, int, genType])->genType:
         return self._iop("-", other)
 
     def __mul__(self, other:Union[float, bool, int, genType])->genType:
         return self._op("*", other)
-    
+
     def __rmul__(self, other:Union[float, bool, int])->genType:
         return self._rop("*", other)
-    
+
     def __imul__(self, other:Union[float, bool, int, genType])->genType:
         return self._iop("*", other)
 
     def __truediv__(self, other:Union[float, bool, int, genType])->genType:
         return self._op("/", other)
-    
+
     def __rtruediv__(self, other:Union[float, bool, int])->genType:
         return self._rop("/", other)
-    
+
     def __itruediv__(self, other:Union[float, bool, int, genType]):
         return self._iop("/", other)
 
     def __floordiv__(self, other:Union[float, bool, int, genType])->genType:
         return self._op("//", other)
-    
+
     def __rfloordiv__(self, other:Union[float, bool, int])->genType:
         return self._rop("//", other)
-    
+
     def __ifloordiv__(self, other:Union[float, bool, int, genType]):
         return self._iop("//", other)
 
     def __mod__(self, other:Union[float, bool, int, genType])->genType:
         return self._op("%", other)
-    
+
     def __rmod__(self, other:Union[float, bool, int])->genType:
         return self._rop("%", other)
-    
+
     def __imod__(self, other:Union[float, bool, int, genType]):
         return self._iop("%", other)
 
     def __pow__(self, other:Union[float, bool, int, genType])->genType:
         return self._op("**", other)
-    
+
     def __rpow__(self, other:Union[float, bool, int])->genType:
         return self._rop("**", other)
-    
+
     def __ipow__(self, other:Union[float, bool, int, genType]):
         return self._iop("**", other)
 
-    def __eq__(self, other:Union[float, bool, int, genType])->bool:        
+    def __eq__(self, other:Union[float, bool, int, genType])->bool:
         if not isinstance(other, self.__class__):
             return False
-        
+
         for i in range(len(self)):
             if self[i] != other[i]:
                 return False
-            
+
         return True
-    
+
     def __req__(self, other:Union[float, bool, int, genType])->bool:
         return (self == other)
-    
+
     def __ne__(self, other:Union[float, bool, int, genType])->bool:
         if not isinstance(other, self.__class__):
             return True
-        
+
         for i in range(len(self)):
             if self[i] != other[i]:
                 return True
-            
+
         return False
-    
+
     def __rne__(self, other:Union[float, bool, int, genType])->bool:
         return (self != other)
-    
+
     def __gt__(self, other:Union[float, bool, int, genType])->genType:
         return self._compare_op(">", other)
-    
+
     def __rgt__(self, other:Union[float, bool, int, genType])->genType:
         return self._compare_rop(">", other)
-    
+
     def __lt__(self, other:Union[float, bool, int, genType])->genType:
         return self._compare_op("<", other)
-    
+
     def __rlt__(self, other:Union[float, bool, int, genType])->genType:
         return self._compare_rop("<", other)
-    
+
     def __ge__(self, other:Union[float, bool, int, genType])->genType:
         return self._compare_op(">=", other)
-    
+
     def __rge__(self, other:Union[float, bool, int, genType])->genType:
         return self._compare_rop(">=", other)
-    
+
     def __le__(self, other:Union[float, bool, int, genType])->genType:
         return self._compare_op("<=", other)
-    
+
     def __rle__(self, other:Union[float, bool, int, genType])->genType:
         return self._compare_rop("<=", other)
 

@@ -1,9 +1,7 @@
-from .boundable_light_base import BoundableLightBase
 from ..attribute import Attribute
-from ..dtypes import token
+from .boundable_light_base import BoundableLightBase
 from .inputs import Inputs
 from .light import Light
-
 
 class CylinderLight(BoundableLightBase):
     """Light emitted outward from a cylinder.

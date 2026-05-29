@@ -1,5 +1,4 @@
-from typing import Tuple, Dict, Any
-
+from typing import Any, Dict, Tuple
 
 class Metadata:
 
@@ -19,4 +18,3 @@ class Metadata:
 
     @doc.setter
     def doc(self, doc:str)->None: ...
-    

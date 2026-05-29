@@ -1,14 +1,16 @@
 from __future__ import annotations
-from typing import Dict, Any, TYPE_CHECKING
-from typeguard import typechecked
-import copy
 
-from .utils import in_annotations
+import copy
+from typing import TYPE_CHECKING, Any, Dict
+
+from typeguard import typechecked
+
 from .dtypes import dictionary
 from .metadata_serializer import MetadataSerializer
+from .utils import in_annotations
 
 if TYPE_CHECKING:
-    from tree_sitter import Node
+    pass
 
 
 class Metadata:
@@ -79,13 +81,13 @@ class Metadata:
             return self._custom_data[name]
         else:
             raise AttributeError(f"current metadata has no attribute '{name}'")
-    
+
     @typechecked
     def __setattr__(self, name:str, value:Any)->None:
         if hasattr(self.__class__, name) or in_annotations(name, self.__class__):
             super().__setattr__(name, value)
             return
-        
+
         if name in self._builtin_data:
             self._builtin_data[name] = value
             self._builtin_is_set[name] = True

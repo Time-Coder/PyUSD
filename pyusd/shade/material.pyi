@@ -1,9 +1,6 @@
-from .node_graph import NodeGraph
-from ..attribute import Attribute
-from ..dtypes import token
-from .outputs import Outputs
 from ..mtlx.material_x_config_api import MaterialXConfigAPI
-
+from .node_graph import NodeGraph
+from .outputs import Outputs
 
 class Material(NodeGraph):
     """A Material provides a container into which multiple "render contexts"

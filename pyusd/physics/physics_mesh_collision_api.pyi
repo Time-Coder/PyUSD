@@ -1,8 +1,6 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
 from ..dtypes import token
 from .physics import Physics
-
 
 class PhysicsMeshCollisionAPI(APISchemaBase):
     """Attributes to control how a Mesh is made into a collider.

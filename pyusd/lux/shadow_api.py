@@ -1,8 +1,8 @@
 from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
+from ..common import SchemaKind
 from ..dtypes import namespace
 from ..gf import color3f
-from ..common import SchemaKind
 
 
 class ShadowAPI(APISchemaBase):

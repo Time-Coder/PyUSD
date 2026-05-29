@@ -1,8 +1,8 @@
-from .attribute import Attribute
-from .relationship import Relationship
-from .dtypes import token, opaque, pathExpression
 from .api_schema_base import APISchemaBase
+from .attribute import Attribute
 from .common import SchemaKind
+from .dtypes import opaque, pathExpression, token
+from .relationship import Relationship
 
 
 class CollectionAPI(APISchemaBase):
@@ -144,7 +144,7 @@ class CollectionAPI(APISchemaBase):
     
     \\snippet examples_usd.cpp ApplyCollections
     """
-    
+
     schema_kind: SchemaKind = SchemaKind.MultipleApplyAPI
 
     meta = {

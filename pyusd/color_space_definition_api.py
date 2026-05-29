@@ -1,9 +1,8 @@
-from .prim import Prim
+from .api_schema_base import APISchemaBase
 from .attribute import Attribute
+from .common import SchemaKind
 from .dtypes import token
 from .gf import float2
-from .api_schema_base import APISchemaBase
-from .common import SchemaKind
 
 
 class ColorSpaceDefinitionAPI(APISchemaBase):
@@ -23,7 +22,7 @@ class ColorSpaceDefinitionAPI(APISchemaBase):
     """
 
     schema_kind = SchemaKind.MultipleApplyAPI
-    
+
     meta = {
         "customData": {
             "apiSchemaType": "multipleApply",

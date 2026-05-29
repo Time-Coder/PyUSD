@@ -1,9 +1,9 @@
-from ..geom.imageable import Imageable
 from ..attribute import Attribute
-from ..relationship import Relationship
-from ..dtypes import namespace
-from ..gf import point3f, quatf
 from ..common import SchemaKind
+from ..dtypes import namespace
+from ..geom.imageable import Imageable
+from ..gf import point3f, quatf
+from ..relationship import Relationship
 
 
 class PhysicsJoint(Imageable):

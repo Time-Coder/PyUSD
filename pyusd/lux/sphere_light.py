@@ -1,8 +1,7 @@
-from .boundable_light_base import BoundableLightBase
 from ..attribute import Attribute
-from ..dtypes import namespace
-from ..dtypes import token
 from ..common import SchemaKind
+from ..dtypes import namespace, token
+from .boundable_light_base import BoundableLightBase
 
 
 class SphereLight(BoundableLightBase):

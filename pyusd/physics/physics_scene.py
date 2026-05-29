@@ -1,8 +1,8 @@
-from ..typed import Typed
 from ..attribute import Attribute
+from ..common import SchemaKind
 from ..dtypes import namespace
 from ..gf import vector3f
-from ..common import SchemaKind
+from ..typed import Typed
 
 
 class PhysicsScene(Typed):

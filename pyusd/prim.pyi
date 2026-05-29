@@ -1,63 +1,63 @@
 from __future__ import annotations
-from typing import Dict, Union, Optional, List, Any, TypeVar, Type
 
-from .property import Property
-from .prim_metadata import PrimMetadata
-from .sdf import Specifier
-from .common import SchemaKind
-from .layer import Layer
-from .variant_sets import VariantSets
-from .model_api import ModelAPI
+from typing import Any, Dict, List, Optional, Type, TypeVar, Union
+
 from .clips_api import ClipsAPI
 from .collection_api import CollectionAPI
 from .color_space_api import ColorSpaceAPI
 from .color_space_definition_api import ColorSpaceDefinitionAPI
+from .common import SchemaKind
+from .layer import Layer
 from .lux.light_api import LightAPI
-from .lux.mesh_light_api import MeshLightAPI
-from .lux.volume_light_api import VolumeLightAPI
 from .lux.light_list_api import LightListAPI
 from .lux.list_api import ListAPI
-from .lux.shaping_api import ShapingAPI
+from .lux.mesh_light_api import MeshLightAPI
 from .lux.shadow_api import ShadowAPI
+from .lux.shaping_api import ShapingAPI
+from .lux.volume_light_api import VolumeLightAPI
 from .media.asset_previews_api import AssetPreviewsAPI
-from .physics.physics_rigid_body_api import PhysicsRigidBodyAPI
-from .physics.physics_mass_api import PhysicsMassAPI
+from .model_api import ModelAPI
+from .physics.physics_articulation_root_api import PhysicsArticulationRootAPI
 from .physics.physics_collision_api import PhysicsCollisionAPI
-from .physics.physics_mesh_collision_api import PhysicsMeshCollisionAPI
-from .physics.physics_material_api import PhysicsMaterialAPI
+from .physics.physics_drive_api import PhysicsDriveAPI
 from .physics.physics_filtered_pairs_api import PhysicsFilteredPairsAPI
 from .physics.physics_limit_api import PhysicsLimitAPI
-from .physics.physics_drive_api import PhysicsDriveAPI
-from .physics.physics_articulation_root_api import PhysicsArticulationRootAPI
-from .ri.statements_api import StatementsAPI
+from .physics.physics_mass_api import PhysicsMassAPI
+from .physics.physics_material_api import PhysicsMaterialAPI
+from .physics.physics_mesh_collision_api import PhysicsMeshCollisionAPI
+from .physics.physics_rigid_body_api import PhysicsRigidBodyAPI
+from .prim_metadata import PrimMetadata
+from .property import Property
 from .ri.ri_material_api import RiMaterialAPI
 from .ri.ri_spline_api import RiSplineAPI
+from .ri.statements_api import StatementsAPI
+from .sdf import Specifier
 from .semantics.semantics_labels_api import SemanticsLabelsAPI
-from .shade.node_def_api import NodeDefAPI
 from .shade.connectable_api import ConnectableAPI
-from .shade.material_binding_api import MaterialBindingAPI
 from .shade.coord_sys_api import CoordSysAPI
+from .shade.material_binding_api import MaterialBindingAPI
+from .shade.node_def_api import NodeDefAPI
 from .skel.skel_binding_api import SkelBindingAPI
+from .ui.accessibility_api import AccessibilityAPI
 from .ui.node_graph_node_api import NodeGraphNodeAPI
 from .ui.scene_graph_prim_api import SceneGraphPrimAPI
-from .ui.accessibility_api import AccessibilityAPI
-from .vol.particle_field_position_base_api import ParticleFieldPositionBaseAPI
+from .variant_sets import VariantSets
 from .vol.particle_field_kernel_base_api import ParticleFieldKernelBaseAPI
+from .vol.particle_field_position_base_api import ParticleFieldPositionBaseAPI
 from .vol.particle_field_radiance_base_api import ParticleFieldRadianceBaseAPI
-
 
 PrimType = TypeVar('PrimType', bound='Prim')
 
 class Prim:
-    
+
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
     meta: Dict[str, Any] = {}
 
     def __init__(self, name:str="", specifier:Specifier=Specifier.Def)->None: ...
-    
+
     @property
     def specifier(self)->Specifier: ...
-    
+
     @specifier.setter
     def specifier(self, specifier:Specifier)->None: ...
 
@@ -78,15 +78,15 @@ class Prim:
 
     @property
     def prop_names(self)->List[str]: ...
-    
+
     @property
     def props(self)->List[Property]: ...
 
     def child(self, name:str)->Prim: ...
-    
+
     @property
     def children(self)->List[Prim]: ...
-    
+
     @property
     def child_names(self)->List[str]: ...
 
@@ -96,11 +96,11 @@ class Prim:
     def add_child(self, prim:Prim)->None: ...
 
     def def_(self, prim_type:Type[PrimType], path:str)->PrimType: ...
-    
+
     def class_(self, path:str)->Prim: ...
-    
+
     def over_(self, path:str)->Prim: ...
-    
+
     def inherit(self, prim:Union[Prim, Layer], prepend:bool=True)->None: ...
 
     def remove_inherit(self, prim:Union[Prim, Layer])->None: ...
@@ -134,22 +134,22 @@ class Prim:
 
     @property
     def parent(self)->Optional[Prim]: ...
-    
+
     @property
     def layer(self)->Optional[Layer]: ...
 
     @property
     def path(self)->str: ...
-    
+
     def id(self, rel_layer:Optional[Union[str, Layer]]=None)->str: ...
 
     def __eq__(self, other:Any)->bool: ...
-    
+
     def __neq__(self, other:Any)->bool: ...
 
     @property
     def depth(self)->int: ...
-    
+
     def __str__(self)->str: ...
 
     @property

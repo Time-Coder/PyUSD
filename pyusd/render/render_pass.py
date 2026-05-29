@@ -1,10 +1,10 @@
-from ..typed import Typed
-from ..attribute import Attribute
-from ..relationship import Relationship
 from typing import List
-from ..dtypes import namespace
-from ..dtypes import asset, string, token
+
+from ..attribute import Attribute
 from ..common import SchemaKind
+from ..dtypes import asset, namespace, string, token
+from ..relationship import Relationship
+from ..typed import Typed
 
 
 class RenderPass(Typed):

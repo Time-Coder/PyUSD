@@ -1,8 +1,9 @@
-from .xformable import Xformable
-from ..attribute import Attribute
-from ..gf import float3
-from ..common import SchemaKind
 from typing import List
+
+from ..attribute import Attribute
+from ..common import SchemaKind
+from ..gf import float3
+from .xformable import Xformable
 
 
 class Boundable(Xformable):

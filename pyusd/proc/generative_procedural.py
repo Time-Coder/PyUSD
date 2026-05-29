@@ -1,7 +1,7 @@
-from ..geom.boundable import Boundable
 from ..attribute import Attribute
-from ..dtypes import token
 from ..common import SchemaKind
+from ..dtypes import token
+from ..geom.boundable import Boundable
 
 
 class GenerativeProcedural(Boundable):

@@ -1,10 +1,10 @@
-from .genVec3 import genVec3
-
 import ctypes
+
+from .genVec3 import genVec3
 
 
 class int3(genVec3):
-    
+
     _fields_ = [
         ('x', ctypes.c_int),
         ('y', ctypes.c_int),

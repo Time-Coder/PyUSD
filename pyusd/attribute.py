@@ -1,14 +1,15 @@
 from __future__ import annotations
-from typing import Dict, Any, TypeVar, Optional, List, TYPE_CHECKING
-from typeguard import typechecked
+
 import copy
+from typing import Any, Dict, Optional, TypeVar
 
-from .data import Data
-from .property import Property
-from .dtypes import token
-from .utils import in_annotations
+from typeguard import typechecked
+
 from .attribute_serializer import AttributeSerializer
-
+from .data import Data
+from .dtypes import token
+from .property import Property
+from .utils import in_annotations
 
 T = TypeVar('T')
 class Attribute(Property, Data[T]):
@@ -21,13 +22,13 @@ class Attribute(Property, Data[T]):
     def __init__(self, value_type:type, name:str="", value:Optional[T]=None, doc:str="", metadata:Optional[Dict[str, Any]]=None, is_leaf:bool=True, uniform:bool=False, custom:bool=False, fix_type:bool=True)->None:
         if metadata is None:
             metadata = {}
-        
+
         if isinstance(value_type, type) and issubclass(value_type, token) and value_type != token:
             metadata["allowedTokens"] = [member.value for member in value_type]
 
         Property.__init__(self, name, doc=doc, metadata=metadata, custom=custom, is_leaf=is_leaf)
         self._init(value_type, value, uniform, fix_type)
-    
+
     def _init(self, value_type:type, value:Optional[T]=None, uniform:bool=False, fix_type:bool=True)->None:
         Data.__init__(self, value_type, value)
         self._time_samples:Dict[float, T] = {}
@@ -48,11 +49,11 @@ class Attribute(Property, Data[T]):
     @property
     def timeSamples(self)->Dict[float, T]:
         return self._time_samples
-    
+
     @property
     def value(self)->T:
         return self._value
-    
+
     @value.setter
     def value(self, value:T)->None:
         if value is self:
@@ -91,12 +92,12 @@ class Attribute(Property, Data[T]):
             return getattr(self._value, name)
         else:
             return Property.__getattr__(self, name)
-        
+
     def __setattr__(self, name:str, value:Any)->None:
         if hasattr(self.__class__, name) or in_annotations(name, self.__class__):
             super().__setattr__(name, value)
             return
-        
+
         if "_children" not in self.__dict__ or "_value" not in self.__dict__:
             return Property.__setattr__(self, name, value)
 

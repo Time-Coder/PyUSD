@@ -1,6 +1,5 @@
 from ..api_schema_base import APISchemaBase
 
-
 class ParticleFieldRadianceBaseAPI(APISchemaBase):
     """Defines a base-class type applied schema that all applied schema
     that provides a ParticleField radiance definition will automatically

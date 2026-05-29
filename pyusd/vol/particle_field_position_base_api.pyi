@@ -1,6 +1,5 @@
 from ..api_schema_base import APISchemaBase
 
-
 class ParticleFieldPositionBaseAPI(APISchemaBase):
     """Defines a base-class type applied schema that all applied schema
     that provide the ParticleField position data will automatically apply.

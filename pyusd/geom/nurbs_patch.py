@@ -1,9 +1,10 @@
-from .point_based import PointBased
-from ..attribute import Attribute
-from ..dtypes import namespace, token, double
-from ..gf import double2, double3
-from ..common import SchemaKind
 from typing import List
+
+from ..attribute import Attribute
+from ..common import SchemaKind
+from ..dtypes import double, namespace, token
+from ..gf import double2, double3
+from .point_based import PointBased
 
 
 class NurbsPatch(PointBased):
@@ -55,7 +56,7 @@ class NurbsPatch(PointBased):
     although they do not subscribe to trim-curve-based shaping, subdivs are
     often considered a more flexible modeling primitive.
     """
-    
+
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     class Form(token):
@@ -86,13 +87,13 @@ class NurbsPatch(PointBased):
     uKnots: Attribute[List[double]] = Attribute(List[double], "uKnots", doc=
         """Knot vector for U direction providing U parameterization.
         The length of this array must be ( uVertexCount + uOrder ), and its
-        entries must take on monotonically increasing values."""  
+        entries must take on monotonically increasing values."""
     )
 
     vKnots: Attribute[List[double]] = Attribute(List[double], "vKnots", doc=
         """Knot vector for V direction providing U parameterization.
         The length of this array must be ( vVertexCount + vOrder ), and its
-        entries must take on monotonically increasing values."""  
+        entries must take on monotonically increasing values."""
     )
 
     uForm: Attribute[Form] = Attribute(Form, value=Form.Open, uniform=True,

@@ -1,8 +1,8 @@
-from .curves import Curves
-from ..attribute import Attribute
-from ..gf import vector3f
 from typing import List
 
+from ..attribute import Attribute
+from ..gf import vector3f
+from .curves import Curves
 
 class HermiteCurves(Curves):
     """This schema specifies a cubic hermite interpolated curve batch as
@@ -35,7 +35,7 @@ class HermiteCurves(Curves):
     also means that width and normal interpolation should be restricted to
     varying (linear), uniform (per curve element), or constant (per prim).
     """
-    
+
     def __init__(self, name:str="")->None: ...
 
     @property

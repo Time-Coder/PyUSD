@@ -1,7 +1,6 @@
 from ..api_schema_base import APISchemaBase
 from ..relationship import Relationship
 
-
 class CoordSysAPI(APISchemaBase):
     """UsdShadeCoordSysAPI provides a way to designate, name,
     and discover coordinate systems.

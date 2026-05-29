@@ -1,11 +1,4 @@
 from ..api_schema_base import APISchemaBase
-from .exposure import Exposure
-from .model import Model
-from .motion import Motion
-from .primvars import Primvars
-from .shutter import Shutter
-from .trim_curve import TrimCurve
-
 
 class PrimvarsAPI(APISchemaBase):
     """UsdGeomPrimvarsAPI encodes geometric "primitive variables",

@@ -1,5 +1,5 @@
-from ..geom.gprim import Gprim
 from ..common import SchemaKind
+from ..geom.gprim import Gprim
 
 
 class ParticleField(Gprim):

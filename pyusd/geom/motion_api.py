@@ -1,8 +1,7 @@
-from ..prim import Prim
-from ..attribute import Attribute
-from ..dtypes import namespace
 from ..api_schema_base import APISchemaBase
+from ..attribute import Attribute
 from ..common import SchemaKind
+from ..dtypes import namespace
 
 
 class MotionAPI(APISchemaBase):
@@ -17,7 +16,7 @@ class MotionAPI(APISchemaBase):
     \\ref UsdGeomMotionAPI_blurScale for use and implementation details.
     
     """
-    
+
     schema_kind = SchemaKind.SingleApplyAPI
 
     motion: Attribute[namespace] = Attribute(namespace, is_leaf=False)

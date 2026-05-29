@@ -1,8 +1,5 @@
 from ..typed import Typed
-from ..attribute import Attribute
-from ..dtypes import token
 from .ui import Ui
-
 
 class Backdrop(Typed):
     """Provides a 'group-box' for the purpose of node graph organization.

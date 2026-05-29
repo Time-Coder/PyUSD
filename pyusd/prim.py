@@ -1,21 +1,22 @@
 from __future__ import annotations
-from typing import Dict, Union, Optional, List, Any, TYPE_CHECKING, TypeVar, Type, Tuple
-from typeguard import typechecked
-from itertools import chain
 
-from .property import Property
-from .attribute import Attribute
-from .relationship import Relationship
-from .metadata import Metadata
-from .prim_metadata import PrimMetadata
-from .utils import infer_type, in_annotations, abspath
-from .sdf import Specifier
-from .common import SchemaKind
+from itertools import chain
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
+
+from typeguard import typechecked
+
 from .api_schema_base import APISchemaBase
 from .api_wrapper import APIWrapper
-from .variant_sets import VariantSets
+from .attribute import Attribute
+from .common import SchemaKind
 from .dtypes import namespace
+from .prim_metadata import PrimMetadata
 from .prim_serializer import PrimSerializer
+from .property import Property
+from .relationship import Relationship
+from .sdf import Specifier
+from .utils import abspath, in_annotations, infer_type
+from .variant_sets import VariantSets
 
 if TYPE_CHECKING:
     from .layer import Layer
@@ -41,7 +42,7 @@ class Prim:
     _apis: Dict[Tuple[str, str], APISchemaBase]
     _api_wrappers: Dict[str, APIWrapper]
     _is_variant: bool = False
-    
+
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
     meta: Dict[str, Any] = {}
 
@@ -56,7 +57,7 @@ class Prim:
 
         if not name.isidentifier():
             raise ValueError(f'"{name}" is not a valid name')
-        
+
         self._layer:Optional[Layer] = None
         self._name:str = name
         self._parent:Optional[Prim] = None
@@ -102,11 +103,11 @@ class Prim:
                 continue
 
             self._fetch_from_class(klass)
-    
+
     @property
     def specifier(self)->Specifier:
         return self._metadata.specifier
-    
+
     @specifier.setter
     @typechecked
     def specifier(self, specifier:Specifier)->None:
@@ -116,7 +117,7 @@ class Prim:
     def variant_sets(self)->VariantSets:
         return self._variant_sets
 
-    def _fetch_from_class(self, cls:Union[Type[Prim], Type[APISchemaBase]], instance_name:str="")->None:        
+    def _fetch_from_class(self, cls:Union[Type[Prim], Type[APISchemaBase]], instance_name:str="")->None:
         prefix = ""
         start_prop = None
         if instance_name:
@@ -160,7 +161,7 @@ class Prim:
         prop._parent_prim = self
         prop._parent_prop = None
         return prop
-    
+
     T = TypeVar('T')
     def create_attr(self, value_type:type, name:str, value:Optional[T]=None, doc:str="", metadata:Optional[Dict[str, Any]]=None, is_leaf:bool=True, uniform:bool=False, custom:bool=False, fix_type:bool=True)->Attribute[T]:
         ori_name = name
@@ -168,17 +169,17 @@ class Prim:
         name = names[0]
 
         if name not in self._props:
-            if 0 == len(names) - 1:
+            if len(names) - 1 == 0:
                 prop = self.create_prop(Attribute(value_type, name, value, doc, metadata, is_leaf, uniform, custom, fix_type))
             else:
                 prop = self.create_prop(Attribute(namespace, name, is_leaf=False))
         else:
             prop = self._props[name]
-            if 0 == len(names) - 1 and prop._value_state > Property.ValueState.NotAuthored:
+            if len(names) - 1 == 0 and prop._value_state > Property.ValueState.NotAuthored:
                 raise RuntimeError(f"Attribute {ori_name} already exists")
             else:
                 prop._value_state = Property.ValueState.NotAuthored
-        
+
         for i, name in enumerate(names[1:]):
             if name not in prop._children:
                 if i + 1 == len(names) - 1:
@@ -191,26 +192,26 @@ class Prim:
                     raise RuntimeError(f"Attribute {ori_name} already exists")
                 else:
                     prop._value_state = Property.ValueState.NotAuthored
-        
+
         return prop
-    
+
     def create_rel(self, name:str, doc:str="", metadata:Optional[Dict[str, Any]]=None, custom:bool=False, is_leaf:bool=True)->Relationship:
         ori_name = name
         names = name.split(":")
         name = names[0]
 
         if name not in self._props:
-            if 0 == len(names) - 1:
+            if len(names) - 1 == 0:
                 prop = self.create_prop(Relationship(name, doc, metadata, custom, is_leaf))
             else:
                 prop = self.create_prop(Attribute(namespace, name, is_leaf=False))
         else:
             prop = self._props[name]
-            if 0 == len(names) - 1 and prop._value_state > Property.ValueState.NotAuthored:
+            if len(names) - 1 == 0 and prop._value_state > Property.ValueState.NotAuthored:
                 raise RuntimeError(f"Relationship {ori_name} already exists")
             else:
                 prop._value_state = Property.ValueState.NotAuthored
-        
+
         for i, name in enumerate(names[1:]):
             if name not in prop._children:
                 if i + 1 == len(names) - 1:
@@ -223,7 +224,7 @@ class Prim:
                     raise RuntimeError(f"Relationship {ori_name} already exists")
                 else:
                     prop._value_state = Property.ValueState.NotAuthored
-        
+
         return prop
 
     def _has_prop(self, name:str)->bool:
@@ -232,13 +233,13 @@ class Prim:
 
         if name not in self._props:
             return False
-        
+
         prop = self._props[name]
         for name in names[1:]:
             if name not in prop._children:
                 return False
             prop = prop._children[name]
-        
+
         return True
 
     def has_prop(self, name:str, recursive:bool=True, specialize:bool=True)->bool:
@@ -247,7 +248,7 @@ class Prim:
         # Local
         if self._has_prop(name):
             return True
-        
+
         if recursive:
             # Inherits
             for prim in self._inherits:
@@ -258,13 +259,13 @@ class Prim:
 
                 if prim.has_prop(name, recursive, False):
                     return True
-                
+
             # Variants
             for variant_set in self._variant_sets.values():
                 if variant_set.selected_variant is not None:
                     if variant_set.selected_variant.has_prop(name, recursive, False):
                         return True
-            
+
             # References and Payloads
             for prim in chain(self._references, self._payloads):
                 if isinstance(prim, Layer):
@@ -274,7 +275,7 @@ class Prim:
 
                 if prim.has_prop(name, recursive, False):
                     return True
-            
+
             # Specializes
             if specialize:
                 for prim in self._specializes:
@@ -285,23 +286,23 @@ class Prim:
 
                     if prim.has_prop(name, recursive, True):
                         return True
-                
+
         return False
-    
+
     def _prop(self, name:str)->Property:
         names = name.split(":")
         name = names[0]
 
         if name not in self._props:
             raise KeyError(name)
-        
+
         prop = self._props[name]
         for name in names[1:]:
             if name not in prop._children:
                 raise KeyError(name)
-            
+
             prop = prop._children[name]
-        
+
         return prop
 
     def prop(self, name:str, recursive:bool=True, specialize:bool=True)->Property:
@@ -314,7 +315,7 @@ class Prim:
             return self._prop(name)
         except KeyError:
             pass
-        
+
         if recursive:
             # Inherits
             for prim in self._inherits:
@@ -360,9 +361,9 @@ class Prim:
                         return prim.prop(name, recursive, True)
                     except KeyError:
                         pass
-                
+
         raise KeyError(name)
-    
+
     def _getitem(self, path_items:List[str])->Prim:
         prim = self
         for path_item in path_items:
@@ -377,12 +378,12 @@ class Prim:
 
         path_items = path.split("/")
         return self._getitem(path_items)
-    
+
     def _setitem(self, path_items:List[str], prim:Prim)->None:
         name = path_items[-1]
         if not name.isidentifier():
             raise ValueError(f'"{name}" is not a valid name')
-        
+
         path_items = path_items[:-1]
         parent_prim = self
         specifier = (Specifier.Def if prim.specifier != Specifier.Over else Specifier.Over)
@@ -408,7 +409,7 @@ class Prim:
     def __setitem__(self, path:str, prim:Prim)->None:
         if path.startswith("/"):
             raise ValueError("path must be relative")
-        
+
         path_items = path.split("/")
         self._setitem(path_items, prim)
 
@@ -418,7 +419,7 @@ class Prim:
         parent_prim = self
         for path_item in path_items:
             parent_prim = parent_prim._children[path_item]
-        
+
         prim:Prim = parent_prim._children[name]
         prim._parent = None
         prim._set_layer(None)
@@ -428,14 +429,14 @@ class Prim:
     def __delitem__(self, path:str)->None:
         if path.startswith("/"):
             raise ValueError("path must be relative")
-        
+
         path_items = path.split("/")
         self._delitem(path_items)
 
     @property
     def prop_names(self)->List[str]:
         return list(self._props.keys())
-    
+
     @property
     def props(self)->List[Property]:
         return list(self._props.values())
@@ -443,11 +444,11 @@ class Prim:
     @typechecked
     def child(self, name:str)->Prim:
         return self._children[name]
-    
+
     @property
     def children(self)->List[Prim]:
         return list(self._children.values())
-    
+
     @property
     def child_names(self)->List[str]:
         return list(self._children.keys())
@@ -456,7 +457,7 @@ class Prim:
     def add_child(self, prim:Prim)->None:
         if prim._parent is self:
             return
-        
+
         prim.detach_from_parent()
         prim.detach_from_layer()
 
@@ -469,24 +470,24 @@ class Prim:
         prim = prim_type(specifier=Specifier.Def)
         self[path] = prim
         return prim
-    
+
     @typechecked
     def class_(self, path:str)->Prim:
         prim = Prim(specifier=Specifier.Class)
         self[path] = prim
         return prim
-    
+
     @typechecked
     def over_(self, path:str)->Prim:
         prim = Prim(specifier=Specifier.Over)
         self[path] = prim
         return prim
-    
+
     @typechecked
     def inherit(self, prim:Union[Prim, Layer], prepend:bool=True)->None:
         if prim in self._inherits:
             return
-        
+
         if prepend:
             self._inherits.insert(0, prim)
         else:
@@ -496,58 +497,58 @@ class Prim:
     def remove_inherit(self, prim:Union[Prim, Layer])->None:
         if prim not in self._inherits:
             return
-        
+
         self._inherits.remove(prim)
 
     @typechecked
-    def reference(self, prim:Union[Prim, Layer], prepend:bool=True)->None:            
+    def reference(self, prim:Union[Prim, Layer], prepend:bool=True)->None:
         if prim in self._references:
             return
-        
+
         if prepend:
             self._references.insert(0, prim)
         else:
             self._references.append(prim)
 
     @typechecked
-    def remove_reference(self, prim:Union[Prim, Layer])->None:            
+    def remove_reference(self, prim:Union[Prim, Layer])->None:
         if prim not in self._references:
             return
-        
+
         self._references.remove(prim)
 
     @typechecked
-    def payload(self, prim:Union[Prim, Layer], prepend:bool=True)->None:            
+    def payload(self, prim:Union[Prim, Layer], prepend:bool=True)->None:
         if prim in self._payloads:
             return
-        
+
         if prepend:
             self._payloads.insert(0, prim)
         else:
             self._payloads.append(prim)
 
     @typechecked
-    def remove_payload(self, prim:Union[Prim, Layer])->None:            
+    def remove_payload(self, prim:Union[Prim, Layer])->None:
         if prim not in self._payloads:
             return
-        
+
         self._payloads.remove(prim)
 
     @typechecked
-    def specialize(self, prim:Union[Prim, Layer], prepend:bool=True)->None:            
+    def specialize(self, prim:Union[Prim, Layer], prepend:bool=True)->None:
         if prim in self._specializes:
             return
-        
+
         if prepend:
             self._specializes.insert(0, prim)
         else:
             self._specializes.append(prim)
 
     @typechecked
-    def remove_specialize(self, prim:Union[Prim, Layer])->None:            
+    def remove_specialize(self, prim:Union[Prim, Layer])->None:
         if prim not in self._specializes:
             return
-        
+
         self._specializes.remove(prim)
 
     @typechecked
@@ -555,12 +556,12 @@ class Prim:
         if isinstance(prim, str):
             if prim not in self._children:
                 raise KeyError(prim)
-            
+
             prim = self._children[prim]
         else:
             if prim._parent is not self:
                 raise ValueError(f"{prim} is not a child of current prim")
-            
+
         prim._parent = None
         prim._set_layer(None)
         del self._children[prim.name]
@@ -569,13 +570,13 @@ class Prim:
     def detach_from_parent(self)->None:
         if self._parent is None:
             return
-        
+
         self._parent.remove_child(self)
 
     def detach_from_layer(self)->None:
         if self._layer is None or self._parent is not None:
             return
-        
+
         self._layer.remove_root_prim(self)
 
     @property
@@ -591,16 +592,16 @@ class Prim:
     def name(self, name:str)->None:
         if self._name == name:
             return
-        
+
         if not name.isidentifier():
             raise ValueError(f'"{name}" is not a valid name')
 
         old_parent = self._parent
         old_layer = self._layer
         if old_parent is None and old_layer is None:
-            self._name = name          
+            self._name = name
             return
-        
+
         if old_parent is not None:
             if name in old_parent._children:
                 raise ValueError(f'Prim with name "{name}" already exists in parent\'s children')
@@ -620,11 +621,11 @@ class Prim:
     @property
     def parent(self)->Optional[Prim]:
         return self._parent
-    
+
     @property
     def layer(self)->Optional[Layer]:
         return self._layer
-    
+
     @typechecked
     def _set_layer(self, layer:Optional[Layer])->None:
         self._layer = layer
@@ -643,15 +644,15 @@ class Prim:
             else:
                 if self.layer is not None:
                     path = "/" + path
-                    
+
                 return path
-    
+
     @typechecked
     def id(self, rel_layer:Optional[Union[str, Layer]]=None)->str:
         prefix:str = ""
         if self.layer is not None:
             prefix = self.layer.id(rel_layer)
-                
+
         return f"{prefix}<{self.path}>"
 
     def __eq__(self, other:Any)->bool:
@@ -661,7 +662,7 @@ class Prim:
             return (self.id() == abspath(other))
         else:
             return False
-    
+
     def __neq__(self, other:Any)->bool:
         if isinstance(other, Prim):
             return (self.id() != other.id())
@@ -681,11 +682,11 @@ class Prim:
                 prim = prim._parent
             else:
                 return depth
-            
+
     @property
     def is_variant(self)->bool:
         return self._is_variant
-    
+
     def __generate_name(self)->str:
         cls = self.__class__
         if cls not in Prim.__name_indices:
@@ -694,18 +695,18 @@ class Prim:
         index = Prim.__name_indices[cls]
         Prim.__name_indices[cls] += 1
         return cls.__name__ + str(index)
-    
+
     def __str__(self)->str:
         return self.__class__.__name__ + "(<" + self.path + ">)"
 
     def __getattr__(self, name:str)->Union[Property, APISchemaBase, APIWrapper]:
         if name in self._props:
             return self._props[name]
-        
+
         if name.endswith("_api"):
             if (name, "") in self._apis:
                 return self._apis[name, ""]
-        
+
             api_type = APISchemaBase.schema(name)
             if "customData" in api_type.meta and "apiSchemaCanOnlyApplyTo" in api_type.meta["customData"]:
                 allowed_types = api_type.meta["customData"]["apiSchemaCanOnlyApplyTo"]
@@ -729,7 +730,7 @@ class Prim:
         if hasattr(self.__class__, name) or in_annotations(name, self.__class__):
             super().__setattr__(name, value)
             return
-        
+
         from .attribute import Attribute
         from .relationship import Relationship
 
@@ -746,13 +747,13 @@ class Prim:
                         error_message = "cannot assign Relationship to Attribute"
 
                     raise TypeError(error_message)
-                
+
                 del self._props[name]
 
             if isinstance(prop, Relationship) and not is_rel:
                 if not prop._custom:
                     raise TypeError(f"cannot assign {value.__class__} object to Relationship")
-                
+
                 del self._props[name]
 
         if name not in self._props and isinstance(value, Property):
@@ -765,7 +766,7 @@ class Prim:
                 self.create_prop(cloned_value)
 
             return
-        
+
         if name not in self._props:
             try:
                 self.create_prop(self.prop(name, True).clone(False))
@@ -782,7 +783,7 @@ class Prim:
 
     def to_str(self, indents: int = 0)->str:
         return PrimSerializer.to_str(self, indents)
-    
+
     @classmethod
     def cls_to_str(cls)->str:
         return PrimSerializer.cls_to_str(cls)

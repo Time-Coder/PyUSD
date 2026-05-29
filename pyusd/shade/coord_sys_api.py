@@ -1,7 +1,6 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
-from ..relationship import Relationship
 from ..common import SchemaKind
+from ..relationship import Relationship
 
 
 class CoordSysAPI(APISchemaBase):

@@ -1,9 +1,9 @@
-from .imageable import Imageable
-from ..attribute import Attribute
-from ..dtypes import token
-from .xformop import XformOp
 from typing import List
 
+from ..attribute import Attribute
+from ..dtypes import token
+from .imageable import Imageable
+from .xformop import XformOp
 
 class Xformable(Imageable):
 

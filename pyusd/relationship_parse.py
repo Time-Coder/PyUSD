@@ -1,9 +1,9 @@
 from tree_sitter import Node
 
+from .metadata_parser import MetadataParser
+from .property import Property
 from .relationship import Relationship
 from .usda_parser import UsdaParser
-from .property import Property
-from .metadata_parser import MetadataParser
 
 
 class RelationshipParser:

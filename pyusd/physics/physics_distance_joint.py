@@ -1,7 +1,7 @@
-from .physics_joint import PhysicsJoint
 from ..attribute import Attribute
-from ..dtypes import namespace
 from ..common import SchemaKind
+from ..dtypes import namespace
+from .physics_joint import PhysicsJoint
 
 
 class PhysicsDistanceJoint(PhysicsJoint):

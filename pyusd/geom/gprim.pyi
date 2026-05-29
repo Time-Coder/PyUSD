@@ -1,8 +1,7 @@
 from ..attribute import Attribute
+from ..dtypes import token
 from .boundable import Boundable
 from .primvars import PrimVars
-from ..dtypes import token
-
 
 class Gprim(Boundable):
     """Base class for all geometric primitives.  

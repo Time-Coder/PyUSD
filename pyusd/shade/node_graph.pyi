@@ -1,6 +1,5 @@
 from ..typed import Typed
 
-
 class NodeGraph(Typed):
     """A node-graph is a container for shading nodes, as well as other 
     node-graphs. It has a public input interface and provides a list of public 

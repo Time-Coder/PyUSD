@@ -1,8 +1,5 @@
 from ..typed import Typed
-from ..attribute import Attribute
-from ..gf import vector3f
 from .physics import Physics
-
 
 class PhysicsScene(Typed):
     "General physics simulation properties, required for simulation."

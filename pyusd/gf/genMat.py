@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import ctypes
-from typing import Tuple, Union, Any, TypeAlias
-from .genVec import genVec, VecType
-from .genType import genType, MathForm
+from typing import Any, Tuple, TypeAlias, Union
+
+from .genType import MathForm, genType
+from .genVec import VecType, genVec
 from .helper import is_number
 
 
@@ -39,20 +40,20 @@ class genMat(genType, ctypes.Array):
 
         if n_args == 0:
             return
-        
+
         if n_args == 1:
             arg = args[0]
             if is_number(arg):
                 for i in range(n):
                     self[i, i] = arg
                 return
-            
+
             if isinstance(arg, genMat):
                 for i in range(self.rows):
                     for j in range(self.cols):
                         self[i, j] = arg[i, j]
                 return
-        
+
         for i_arg, arg in enumerate(args):
             if is_number(arg):
                 ctypes.Array.__setitem__(self, i, arg)
@@ -61,7 +62,7 @@ class genMat(genType, ctypes.Array):
                 if i == n_data:
                     if n_args != 1 and i_arg != n_args - 1:
                         raise ValueError(f"invalid arguments for {self.__class__.__name__}()")
-                    
+
                     return
 
             elif isinstance(arg, genVec):
@@ -73,12 +74,12 @@ class genMat(genType, ctypes.Array):
                     if i == n_data:
                         if n_args != 1 and (i_arg != n_args - 1 or sub_i_arg != sub_n_arg - 1):
                             raise ValueError(f"invalid arguments for {self.__class__.__name__}()")
-                        
+
                         return
-            
+
             else:
                 raise TypeError(f"invalid argument type(s) for {self.__class__.__name__}()")
-            
+
         raise ValueError(f"invalid arguments for {self.__class__.__name__}()")
 
     @property
@@ -88,19 +89,19 @@ class genMat(genType, ctypes.Array):
     @property
     def rows(self)->int:
         return self.shape[1]
-    
+
     @property
     def cols(self)->int:
         return self.shape[0]
-    
+
     @property
     def dtype(self)->type:
         return self._type_
-    
+
     @staticmethod
     def mat_type(dtype:type, shape:Tuple[int]):
         return genType.gen_type(MathForm.Mat, dtype, shape)
-    
+
     def __getitem__(self, index:Union[int,Tuple[int]])->Union[int,bool,float,genVec]:
         if isinstance(index, int):
             result_type = genVec.vec_type(self.dtype, self.rows)
@@ -110,7 +111,7 @@ class genMat(genType, ctypes.Array):
             return result
         elif isinstance(index, tuple):
             return ctypes.Array.__getitem__(self, index[0]*self.cols + index[1])
-    
+
     def __setitem__(self, index:Union[int,Tuple[int]], value:Union[float,int,bool,genVec])->None:
         if isinstance(index, int):
             for j in range(self.cols):
@@ -120,7 +121,7 @@ class genMat(genType, ctypes.Array):
 
     def __iter__(self)->genMatIterator:
         return genMatIterator(self)
-    
+
     def __contains__(self, value:Any)->bool:
         if is_number(value):
             for i in range(len(self)):
@@ -131,17 +132,17 @@ class genMat(genType, ctypes.Array):
             for i in range(self.cols):
                 if self[i] == value:
                     return True
-                
+
         return False
 
     def _op(self, operator:str, other:Union[float, bool, int, genMat, genVec])->Union[genMat, genVec]:
         if operator == "**" or (operator in ["/", "//", "%"] and isinstance(other, genType)):
             raise TypeError(f"unsupported operand type(s) for {operator}: '{self.__class__.__name__}' and '{other.__class__.__name__}'")
-        
+
         if operator == "*" and isinstance(other, genType):
             if not isinstance(other, (genMat, genVec)) or self.cols != (other.rows if isinstance(other, genMat) else len(other)):
                 raise TypeError(f"unsupported operand type(s) for {operator}: '{self.__class__.__name__}' and '{other.__class__.__name__}'")
-            
+
             result_dtype = self._bin_op_dtype(operator, self.dtype, other.dtype, False)
             result_shape = (self.rows, other.cols) if isinstance(other, genMat) else (self.rows,)
             result_type = self.gen_type(other.math_form, result_dtype, result_shape)
@@ -173,7 +174,7 @@ class genMat(genType, ctypes.Array):
         if operator == "*" and isinstance(other, genType):
             if not isinstance(other, genMat):
                 raise TypeError(f"unsupported operand type(s) for {operator}=: '{self.__class__.__name__}' and '{other.__class__.__name__}'")
-            
+
             if self.cols != other.rows or other.rows != other.cols:
                 raise TypeError(f"unsupported operand type(s) for {operator}=: '{self.__class__.__name__}' and '{other.__class__.__name__}'")
 
@@ -181,7 +182,7 @@ class genMat(genType, ctypes.Array):
             self[:] = result[:]
             self._update_data()
             return self
-            
+
         return genType._iop(self, operator, other)
 
 MatType: TypeAlias = Union[genMat, Tuple[VecType, ...]]

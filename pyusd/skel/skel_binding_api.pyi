@@ -1,12 +1,8 @@
+
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
-from ..relationship import Relationship
-from typing import List
-from ..gf import matrix4d
 from ..dtypes import token
 from .primvars import Primvars
 from .skel import Skel
-
 
 class SkelBindingAPI(APISchemaBase):
     """Provides API for authoring and extracting all the skinning-related

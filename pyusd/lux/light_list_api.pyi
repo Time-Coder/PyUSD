@@ -1,9 +1,7 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
-from ..relationship import Relationship
 from ..dtypes import token
+from ..relationship import Relationship
 from .light_list import LightList
-
 
 class LightListAPI(APISchemaBase):
     """API schema to support discovery and publishing of lights in a scene.

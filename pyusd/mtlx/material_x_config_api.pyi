@@ -1,8 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
-from ..dtypes import string
 from .config import Config
-
 
 class MaterialXConfigAPI(APISchemaBase):
     """MaterialXConfigAPI is an API schema that provides an interface for

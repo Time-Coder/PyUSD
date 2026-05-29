@@ -1,6 +1,6 @@
-from .genVec2 import genVec2
-
 import ctypes
+
+from .genVec2 import genVec2
 
 
 class float2(genVec2):

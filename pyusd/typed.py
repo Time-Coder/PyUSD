@@ -1,5 +1,5 @@
-from .prim import Prim
 from .common import SchemaKind
+from .prim import Prim
 
 
 class Typed(Prim):

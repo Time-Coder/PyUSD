@@ -1,15 +1,14 @@
-import itertools
-from typing import List, Set, Dict, Any
-from types import ModuleType
-import importlib
-import os
-import ctypes
-from decimal import Decimal
-from ctypes import Structure
 import copy
+import ctypes
+import importlib
+import itertools
+import os
+from ctypes import Structure
+from decimal import Decimal
+from types import ModuleType
+from typing import Any, Dict, List, Set
 
 import numpy as np
-
 
 _module_map:Dict[str, ModuleType] = {}
 
@@ -18,7 +17,7 @@ def in_annotations(name:str, cls:type)->bool:
         if hasattr(klass, '__annotations__'):
             if name in klass.__annotations__:
                 return True
-            
+
     return False
 
 def from_import(module_name:str, attr_name:str)->type:
@@ -29,7 +28,7 @@ def from_import(module_name:str, attr_name:str)->type:
         else:
             module = importlib.import_module(module_name)
         _module_map[module_name] = module
-    
+
     return getattr(_module_map[module_name], attr_name)
 
 def is_number(value:Any)->bool:
@@ -49,24 +48,24 @@ def is_number(value:Any)->bool:
 
 def generate_getter_swizzles(char_sets:List[str])->Set[str]:
     result:List[str] = []
-    
+
     for char_set in char_sets:
         for length in range(1, 4 + 1):
             for combo in itertools.product(char_set, repeat=length):
                 swizzle = ''.join(combo)
                 result.append(swizzle)
-    
+
     return result
 
 def generate_setter_swizzles(char_sets:List[str])->Set[str]:
     result:List[str] = []
-    
+
     for char_set in char_sets:
         for length in range(1, len(char_set) + 1):
             for combo in itertools.permutations(char_set, length):
                 swizzle = ''.join(combo)
                 result.append(swizzle)
-    
+
     return result
 
 def generate_swizzle_defines(type_name:str, dtype_name:str, char_sets:List[str])->str:
@@ -87,13 +86,13 @@ def generate_swizzle_defines(type_name:str, dtype_name:str, char_sets:List[str])
     @property
     def {swizzle}(self)->{return_type_name}: ...
 """
-        
+
         if swizzle in setter_swizzles:
             result += f"""
     @{swizzle}.setter
     def {swizzle}(self, value:{input_type_name})->None: ...
 """
-            
+
     return result
 
 
@@ -163,17 +162,17 @@ def patch_nparray():
                 __change_element(ele)
         except:
             pass
-            
+
     def array(*args, **kwargs):
         obj = args[0]
 
         if isinstance(obj, Structure) or not __has_structure(obj):
             return np_array(*args, **kwargs)
-        
+
         obj = copy.deepcopy(obj)
         if isinstance(obj, tuple):
             obj = list(obj)
-        
+
         __change_element(obj)
         return np_array(obj, *args[1:], **kwargs)
 

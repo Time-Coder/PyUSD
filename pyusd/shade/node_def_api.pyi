@@ -1,8 +1,6 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
 from ..dtypes import token
 from .info import Info
-
 
 class NodeDefAPI(APISchemaBase):
     """UsdShadeNodeDefAPI is an API schema that provides attributes

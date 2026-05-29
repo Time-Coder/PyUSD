@@ -1,9 +1,9 @@
 from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
-from ..relationship import Relationship
+from ..common import SchemaKind
 from ..dtypes import namespace
 from ..gf import vector3f
-from ..common import SchemaKind
+from ..relationship import Relationship
 
 
 class PhysicsRigidBodyAPI(APISchemaBase):

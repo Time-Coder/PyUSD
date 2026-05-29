@@ -1,7 +1,7 @@
 from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
-from ..dtypes import string, token
 from ..common import SchemaKind
+from ..dtypes import string, token
 
 
 class AccessibilityAPI(APISchemaBase):

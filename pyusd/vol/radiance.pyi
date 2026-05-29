@@ -1,7 +1,7 @@
-from ..attribute import Attribute
-from ..gf import float3, half3
 from typing import List
 
+from ..attribute import Attribute
+from ..gf import float3, half3
 
 class Radiance(Attribute):
 
