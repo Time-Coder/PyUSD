@@ -20,8 +20,10 @@ class Layer:
         self._root_prims:Dict[str, Prim] = {}
         self._default_prim:Optional[Prim] = None
         self._sub_layers:List[Layer] = []
+        self._relocates:Dict[str, str] = {}
         self._metadata:LayerMetadata = LayerMetadata(self, {
             "subLayers": [],
+            "relocates": {},
             "defaultPrim": None,
             "endTimeCode": None,
             "metersPerUnit": 1,
@@ -33,6 +35,12 @@ class Layer:
     @staticmethod
     def load(file_name:str)->Layer:
         return LayerParser.load(file_name)
+
+    def relocate(self, prim:Prim, new_path:str)->None:
+        self._relocates[prim] = f"<{new_path}>"
+
+    def remove_relacate(self, prim:Prim)->None:
+        del self._relocates[prim]
 
     @property
     def file_name(self)->str:

@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 class UsdaSerializer:
 
     @staticmethod
-    def value_str(value:Any, indents:int=0, degenerate_list:bool=False, rel_layer:Optional[Union[str, Layer]]="", need_quote:bool=True)->str:
+    def value_str(value:Any, indents:int=0, degenerate_list:bool=False, rel_layer:Optional[Union[str, Layer]]="", need_quote:bool=True, is_relocates:bool=False)->str:
         from .data import Data
         from .gf import genType, MathForm
         from .layer import Layer
@@ -48,6 +48,9 @@ class UsdaSerializer:
                 if isinstance(key, str):
                     result += f"{next_tabs}{UsdaSerializer.type_str(infer_type(subvalue))} {key} = {subvalue_str}\n"
                 else:
+                    if isinstance(key, Prim):
+                        key = f"<{key.path}>"
+                        
                     result += f"{next_tabs}{key}: {subvalue_str}\n"
             result += f"{tabs}}}"
             return result

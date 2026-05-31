@@ -23,7 +23,7 @@ class MetadataSerializer:
 
         builtin_str_list:List[str] = []
         for key, value in metadata._builtin_data.items():
-            is_ref = key in ["inherits", "references", "payloads", "specializes", "subLayers", "variantSets", "variants"]
+            is_ref = key in ["inherits", "references", "payloads", "specializes", "subLayers", "relocates", "variantSets", "variants"]
             use_ori_value = True
             ori_value = value
             if not full and not metadata._builtin_is_set[key]:
@@ -45,6 +45,8 @@ class MetadataSerializer:
                 value = metadata._parent._payloads
             elif key == "specializes":
                 value = metadata._parent._specializes
+            elif key == "relocates":
+                value = metadata._parent._relocates
             elif key == "variantSets":
                 value = list(metadata._parent._variant_sets.keys())
             elif key == "variants":
@@ -74,8 +76,13 @@ class MetadataSerializer:
                 elif isinstance(metadata._parent, Layer):
                     rel_layer = metadata._parent
 
-            value_str = UsdaSerializer.value_str(value, indents+1, degenerate_list=(is_ref and key != "subLayers"), rel_layer=rel_layer, need_quote=(not is_ref or key in ["variantSets", "variants"]))
-            if is_ref and key not in ["subLayers", "variants"]:
+            value_str = UsdaSerializer.value_str(
+                value, indents+1,
+                degenerate_list=(is_ref and key != "subLayers"),
+                rel_layer=rel_layer,
+                need_quote=(not is_ref or key in ["variantSets", "variants"])
+            )
+            if is_ref and key not in ["subLayers", "variants", "relocates"]:
                 builtin_str_list.append(f"{next_tabs}prepend {key} = {value_str}")
             else:
                 builtin_str_list.append(f"{next_tabs}{key} = {value_str}")

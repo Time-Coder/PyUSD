@@ -507,6 +507,9 @@ class Prim:
 
         return f"{prefix}<{self.path}>"
 
+    def __hash__(self)->int:
+        return id(self)
+
     def __eq__(self, other:Any)->bool:
         if isinstance(other, Prim):
             return (self.id() == other.id())
