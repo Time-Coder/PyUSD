@@ -24,22 +24,22 @@ from .dtypes import (
 )
 from .layer import Layer
 from .model_api import ModelAPI
-from .prim import Prim, PrimType
+from .prim import PrimSpec, PrimType
 from .property import Property
 from .relationship import Relationship
-from .stage import Stage, StagePrim, StageProperty
+from .stage import Prim, Stage, StageProperty
 from .typed import Typed
 from .utils import abspath
 
 __all__ = [
     "Layer",
     "Prim",
+    "PrimSpec",
     "PrimType",
     "Attribute",
     "Property",
     "Relationship",
     "Stage",
-    "StagePrim",
     "StageProperty",
     "Data",
     "double",

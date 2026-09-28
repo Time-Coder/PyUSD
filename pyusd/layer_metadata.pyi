@@ -2,14 +2,14 @@ from typing import List, Optional, Dict
 
 from .common import Axis
 from .metadata import Metadata
-from .prim import Prim
+from .prim import PrimSpec
 
 
 class LayerMetadata(Metadata):
 
     subLayers: List[str]
     relocates: Dict[str, str]
-    defaultPrim: Optional[Prim]
+    defaultPrim: Optional[PrimSpec]
     endTimeCode: Optional[float]
     metersPerUnit: Optional[float]
     startTimeCode: Optional[float]

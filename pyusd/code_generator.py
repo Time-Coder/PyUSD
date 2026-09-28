@@ -4,7 +4,7 @@ from types import ModuleType
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from tree_sitter import Node
-from typeguard import typechecked
+from beartype import beartype
 
 
 class CodeGenerator:
@@ -289,7 +289,7 @@ class CodeGenerator:
             return str(value)
 
     @staticmethod
-    @typechecked
+    @beartype
     def generate_schema(module: ModuleType)->None:
         from .api_schema_base import APISchemaBase
         from .typed import Typed
@@ -355,7 +355,7 @@ class CodeGenerator:
         return []
 
     def _find_schema_pyi_for_class(self, class_name: str, prim_pyi_path: str) -> Optional[str]:
-        if class_name == 'Prim':
+        if class_name in {'Prim', 'PrimSpec'}:
             return prim_pyi_path
 
         search_names = self._schema_class_name_candidates(class_name)

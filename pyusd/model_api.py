@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
-from typeguard import typechecked
+from beartype import beartype
 
 from .api_schema_base import APISchemaBase
 from .common import Kind, SchemaKind
@@ -45,11 +45,11 @@ class ModelAPI(APISchemaBase):
         return self._prim.metadata.kind
 
     @kind.setter
-    @typechecked
+    @beartype
     def kind(self, kind:Kind):
         self._prim.metadata.kind = kind
 
-    @typechecked
+    @beartype
     def is_kind(self, base_kind:Kind, validation:KindValidation=KindValidation.KindValidationModelHierarchy)->bool:
         """Return true if the prim's kind metadata is or inherits from
         \\p baseKind as defined by the Kind Registry.
@@ -91,7 +91,7 @@ class ModelAPI(APISchemaBase):
         return self._prim.metadata.assetInfo.identifier
 
     @asset_identifier.setter
-    @typechecked
+    @beartype
     def asset_identifier(self, identifier:Union[asset, str])->None:
         """Sets the model's asset identifier to the given asset path, \\p identifier.
         
@@ -111,7 +111,7 @@ class ModelAPI(APISchemaBase):
         return self._prim.metadata.assetInfo.name
 
     @asset_name.setter
-    @typechecked
+    @beartype
     def asset_name(self, asset_name:str)->None:
         """Sets the model's asset name to \\p assetName.
         
@@ -177,7 +177,7 @@ class ModelAPI(APISchemaBase):
         return self._prim.metadata.assetInfo
 
     @asset_info.setter
-    @typechecked
+    @beartype
     def asset_info(self, info:Dict[str, Any])->None:
         """Sets the model's assetInfo dictionary to \\p info in the current edit 
         target."""

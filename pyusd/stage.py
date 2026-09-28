@@ -14,16 +14,21 @@ from .composition import (
     property_value,
 )
 from .layer import Layer
-from .prim import Prim
+from .prim import PrimSpec
 from .property import Property
 from .relationship import Relationship
 from .sdf import Specifier
-from .utils import infer_type
+from .utils import in_annotations, infer_type
 
-PrimType = TypeVar("PrimType", bound=Prim)
+PrimType = TypeVar("PrimType", bound=PrimSpec)
 
 
 class StageImpl:
+    root_layer: Layer
+    edit_layer: Layer
+    layer_cache: LayerCache
+    _engine: CompositionEngine
+
     def __init__(self, root_layer: Layer, edit_layer: Optional[Layer] = None) -> None:
         self.root_layer = root_layer
         self.edit_layer = edit_layer or root_layer
@@ -32,7 +37,11 @@ class StageImpl:
 
 
 class Stage:
-    _impl_fields = {"root_layer", "edit_layer", "layer_cache", "_engine"}
+    _impl: StageImpl
+    root_layer: Layer
+    edit_layer: Layer
+    layer_cache: LayerCache
+    _engine: CompositionEngine
 
     def __init__(
         self,
@@ -53,7 +62,7 @@ class Stage:
         object.__setattr__(self, "_impl", StageImpl(resolved_root, edit_layer))
 
     def __getattr__(self, name: str) -> Any:
-        if name in self._impl_fields:
+        if name != "_impl" and in_annotations(name, self.__class__):
             return getattr(self._impl, name)
 
         raise AttributeError(name)
@@ -61,7 +70,7 @@ class Stage:
     def __setattr__(self, name: str, value: Any) -> None:
         if name == "_impl":
             object.__setattr__(self, name, value)
-        elif name in self._impl_fields and "_impl" in self.__dict__:
+        elif in_annotations(name, self.__class__) and "_impl" in self.__dict__:
             setattr(self._impl, name, value)
         else:
             object.__setattr__(self, name, value)
@@ -112,12 +121,12 @@ class Stage:
         return StageMetadata(self, None)
 
     @property
-    def default_prim(self) -> Optional[StagePrim]:
+    def default_prim(self) -> Optional[Prim]:
         default_prim = self._engine.resolve_metadata(None, "defaultPrim")
         if default_prim is None:
             return None
 
-        if isinstance(default_prim, Prim):
+        if isinstance(default_prim, PrimSpec):
             return self[default_prim.path]
 
         path = str(default_prim)
@@ -138,10 +147,10 @@ class Stage:
     def child_names(self, path: str = "/") -> List[str]:
         return self._engine.child_names(path)
 
-    def children(self, path: str = "/") -> List[StagePrim]:
+    def children(self, path: str = "/") -> List[Prim]:
         return [self[join_relative_path(path, name)] for name in self.child_names(path)]
 
-    def traverse(self, path: str = "/") -> Iterable[StagePrim]:
+    def traverse(self, path: str = "/") -> Iterable[Prim]:
         path = normalize_prim_path(path)
         if path != "/":
             yield self[path]
@@ -165,14 +174,14 @@ class Stage:
             self._engine.unloaded_payloads.add(normalize_prim_path(path))
         self.invalidate()
 
-    def __getitem__(self, path: str) -> StagePrim:
+    def __getitem__(self, path: str) -> Prim:
         path = normalize_prim_path(path)
         if path != "/" and not self.has_prim(path):
             raise KeyError(path)
 
-        return StagePrim(self, path)
+        return Prim(self, path)
 
-    def __setitem__(self, path: str, prim: Prim) -> None:
+    def __setitem__(self, path: str, prim: PrimSpec) -> None:
         self.edit_layer[normalize_prim_path(path)] = prim
         self.invalidate()
 
@@ -180,25 +189,25 @@ class Stage:
         del self.edit_layer[normalize_prim_path(path)]
         self.invalidate()
 
-    def def_(self, prim_type: Type[PrimType], path: str) -> StagePrim:
+    def def_(self, prim_type: Type[PrimType], path: str) -> Prim:
         prim = prim_type(specifier=Specifier.Def)
         self.edit_layer[normalize_prim_path(path)] = prim
         self.invalidate()
         return self[path]
 
-    def class_(self, path: str) -> StagePrim:
-        prim = Prim(specifier=Specifier.Class)
+    def class_(self, path: str) -> Prim:
+        prim = PrimSpec(specifier=Specifier.Class)
         self.edit_layer[normalize_prim_path(path)] = prim
         self.invalidate()
         return self[path]
 
-    def over_(self, path: str) -> StagePrim:
-        prim = Prim(specifier=Specifier.Over)
+    def over_(self, path: str) -> Prim:
+        prim = PrimSpec(specifier=Specifier.Over)
         self.edit_layer[normalize_prim_path(path)] = prim
         self.invalidate()
         return self[path]
 
-    def _ensure_edit_prim(self, path: str) -> Prim:
+    def _ensure_edit_prim(self, path: str) -> PrimSpec:
         path = normalize_prim_path(path)
         if path == "/":
             raise ValueError("cannot author the pseudo-root prim")
@@ -207,7 +216,7 @@ class Stage:
         if prim is not None:
             return prim
 
-        self.edit_layer[path] = Prim(specifier=Specifier.Over)
+        self.edit_layer[path] = PrimSpec(specifier=Specifier.Over)
         prim = prim_at(self.edit_layer, path)
         if prim is None:
             raise RuntimeError(f"failed to create edit prim at {path}")
@@ -315,9 +324,9 @@ class Stage:
 
         self.invalidate()
 
-    def _install_property(self, prim: Prim, prop_name: str, prop: Property) -> Property:
+    def _install_property(self, prim: PrimSpec, prop_name: str, prop: Property) -> Property:
         names = normalize_property_name(prop_name).split(":")
-        current: Union[Prim, Property] = prim
+        current: Union[PrimSpec, Property] = prim
         for name in names[:-1]:
             props = current._props
             if name not in props:
@@ -331,7 +340,7 @@ class Stage:
 
     def _ensure_edit_property(
         self,
-        prim: Prim,
+        prim: PrimSpec,
         prop_name: str,
         template: Optional[Property],
     ) -> Property:
@@ -349,7 +358,7 @@ class Stage:
 
     def _ensure_edit_attribute(
         self,
-        prim: Prim,
+        prim: PrimSpec,
         prop_name: str,
         template: Optional[Property],
         value: Any,
@@ -372,7 +381,7 @@ class Stage:
 
     def _ensure_edit_relationship(
         self,
-        prim: Prim,
+        prim: PrimSpec,
         prop_name: str,
         template: Optional[Property],
     ) -> Relationship:
@@ -392,7 +401,10 @@ class Stage:
         return rel
 
 
-class StagePrim:
+class Prim:
+    _stage: Stage
+    _path: str
+
     def __init__(self, stage: Stage, path: str) -> None:
         object.__setattr__(self, "_stage", stage)
         object.__setattr__(self, "_path", normalize_prim_path(path))
@@ -415,7 +427,7 @@ class StagePrim:
         return StageMetadata(self._stage, self._path)
 
     @property
-    def resolved_prim(self) -> Optional[Prim]:
+    def resolved_prim(self) -> Optional[PrimSpec]:
         strongest = self._stage._engine.prim_index(self._path).strongest_spec
         return strongest.prim if strongest is not None else None
 
@@ -433,7 +445,7 @@ class StagePrim:
         return self._stage.child_names(self._path)
 
     @property
-    def children(self) -> List[StagePrim]:
+    def children(self) -> List[Prim]:
         return [self.child(name) for name in self.child_names]
 
     @property
@@ -454,22 +466,22 @@ class StagePrim:
 
         return StageProperty(self._stage, self._path, name)
 
-    def child(self, name: str) -> StagePrim:
+    def child(self, name: str) -> Prim:
         return self[join_relative_path("", name)]
 
-    def def_(self, prim_type: Type[PrimType], path: str) -> StagePrim:
+    def def_(self, prim_type: Type[PrimType], path: str) -> Prim:
         return self._stage.def_(prim_type, join_relative_path(self._path, path))
 
-    def class_(self, path: str) -> StagePrim:
+    def class_(self, path: str) -> Prim:
         return self._stage.class_(join_relative_path(self._path, path))
 
-    def over_(self, path: str) -> StagePrim:
+    def over_(self, path: str) -> Prim:
         return self._stage.over_(join_relative_path(self._path, path))
 
-    def __getitem__(self, path: str) -> StagePrim:
+    def __getitem__(self, path: str) -> Prim:
         return self._stage[join_relative_path(self._path, path)]
 
-    def __setitem__(self, path: str, prim: Prim) -> None:
+    def __setitem__(self, path: str, prim: PrimSpec) -> None:
         self._stage[join_relative_path(self._path, path)] = prim
 
     def __delitem__(self, path: str) -> None:
@@ -479,20 +491,22 @@ class StagePrim:
         return StageProperty(self._stage, self._path, name)
 
     def __setattr__(self, name: str, value: Any) -> None:
-        if name.startswith("_") or hasattr(self.__class__, name):
+        if hasattr(self.__class__, name) or in_annotations(name, self.__class__):
             object.__setattr__(self, name, value)
             return
 
         self._stage._set_property(self._path, name, value)
 
     def __str__(self) -> str:
-        return f"StagePrim(<{self._path}>)"
+        return f"Prim(<{self._path}>)"
 
     def __repr__(self) -> str:
         return str(self)
-
-
 class StageProperty:
+    _stage: Stage
+    _prim_path: str
+    _prop_name: str
+
     def __init__(self, stage: Stage, prim_path: str, prop_name: str) -> None:
         object.__setattr__(self, "_stage", stage)
         object.__setattr__(self, "_prim_path", normalize_prim_path(prim_path))
@@ -656,7 +670,7 @@ class StageProperty:
         return StageProperty(self._stage, self._prim_path, child_name)
 
     def __setattr__(self, name: str, value: Any) -> None:
-        if name.startswith("_") or hasattr(self.__class__, name):
+        if hasattr(self.__class__, name) or in_annotations(name, self.__class__):
             object.__setattr__(self, name, value)
             return
 
@@ -690,6 +704,10 @@ class StageProperty:
 
 
 class StageMetadata:
+    _stage: Stage
+    _prim_path: Optional[str]
+    _prop_name: str
+
     def __init__(self, stage: Stage, prim_path: Optional[str], prop_name: str = "") -> None:
         object.__setattr__(self, "_stage", stage)
         object.__setattr__(self, "_prim_path", normalize_prim_path(prim_path) if prim_path else None)
@@ -710,7 +728,7 @@ class StageMetadata:
         return value
 
     def __setattr__(self, name: str, value: Any) -> None:
-        if name.startswith("_") or hasattr(self.__class__, name):
+        if hasattr(self.__class__, name) or in_annotations(name, self.__class__):
             object.__setattr__(self, name, value)
             return
 
@@ -732,7 +750,7 @@ def clone_for_edit(prop: Property) -> Property:
     return result
 
 
-def local_prop_at(prim: Prim, prop_name: str) -> Optional[Property]:
+def local_prop_at(prim: PrimSpec, prop_name: str) -> Optional[Property]:
     names = normalize_property_name(prop_name).split(":")
     current: Any = prim
     for name in names:
@@ -744,11 +762,11 @@ def local_prop_at(prim: Prim, prop_name: str) -> Optional[Property]:
 
 
 def is_relationship_value(value: Any) -> bool:
-    if isinstance(value, (Prim, StagePrim, Relationship)):
+    if isinstance(value, (PrimSpec, Prim, Relationship)):
         return True
 
     if isinstance(value, list) and value:
-        return all(isinstance(item, (Prim, StagePrim)) or is_path_target(item) for item in value)
+        return all(isinstance(item, (PrimSpec, Prim)) or is_path_target(item) for item in value)
 
     return is_path_target(value)
 
@@ -768,9 +786,9 @@ def coerce_relationship_targets(value: Any) -> List[Any]:
 
     result: List[Any] = []
     for item in value:
-        if isinstance(item, StagePrim):
+        if isinstance(item, Prim):
             result.append(f"<{item.path}>")
-        elif isinstance(item, Prim):
+        elif isinstance(item, PrimSpec):
             result.append(item)
         elif isinstance(item, str):
             if item.startswith("<") or item.startswith("@"):

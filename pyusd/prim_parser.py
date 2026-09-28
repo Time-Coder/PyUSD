@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, Dict, Type
 
 from .attribute_parser import AttributeParser
 from .metadata_parser import MetadataParser
-from .prim import Prim
+from .prim import PrimSpec
 from .property import Property
 from .relationship_parse import RelationshipParser
 from .sdf import Specifier
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 class PrimParser:
 
     @staticmethod
-    def parse(node:Node)->Prim:
+    def parse(node:Node)->PrimSpec:
         specifier = Specifier.Def
         type_name = ""
         name = ""
@@ -49,7 +49,7 @@ class PrimParser:
         return prim
 
     @staticmethod
-    def load_variant_set(parent_prim:Prim, node:Node):
+    def load_variant_set(parent_prim:PrimSpec, node:Node):
         name = ""
         for child in node.named_children:
             if child.type == "string" and not name:
@@ -84,7 +84,7 @@ class PrimParser:
         return variant
 
     @staticmethod
-    def load_block(prim:Prim, node:Node)->None:
+    def load_block(prim:PrimSpec, node:Node)->None:
 
         for child in node.named_children:
             if child.type == "prim_definition":
@@ -97,7 +97,7 @@ class PrimParser:
                 PrimParser.load_variant_set(prim, child)
 
     @staticmethod
-    def apply_loaded_metadata(prim:Prim, metadata:Dict[str, Any])->None:
+    def apply_loaded_metadata(prim:PrimSpec, metadata:Dict[str, Any])->None:
         field_to_attr = {
             "prepend inherits": "_inherits",
             "inherits": "_inherits",
@@ -137,7 +137,7 @@ class PrimParser:
             MetadataParser.set_authored(prim.metadata, key, value)
 
     @staticmethod
-    def create_loaded_prop(prim:Prim, prop:Property)->Property:
+    def create_loaded_prop(prim:PrimSpec, prop:Property)->Property:
         names = prop.name.split(":")
         prop._name = names[-1]
         if len(names) == 1:
@@ -160,12 +160,12 @@ class PrimParser:
         return Specifier.Def
 
     @classmethod
-    def prim_class(cls, type_name:str)->Type[Prim]:
+    def prim_class(cls, type_name:str)->Type[PrimSpec]:
         if not type_name:
-            return Prim
+            return PrimSpec
 
         if not hasattr(cls, "_LOAD_PRIM_TYPES"):
-            cls._LOAD_PRIM_TYPES = {"Prim": Prim}
+            cls._LOAD_PRIM_TYPES = {"Prim": PrimSpec, "PrimSpec": PrimSpec}
             package = importlib.import_module("pyusd")
             for module_info in pkgutil.walk_packages(package.__path__, package.__name__ + "."):
                 try:
@@ -174,7 +174,7 @@ class PrimParser:
                     continue
                 for name in getattr(module, "__all__", []):
                     value = getattr(module, name, None)
-                    if isinstance(value, type) and issubclass(value, Prim):
+                    if isinstance(value, type) and issubclass(value, PrimSpec):
                         cls._LOAD_PRIM_TYPES[value.__name__] = value
 
-        return cls._LOAD_PRIM_TYPES.get(type_name, Prim)
+        return cls._LOAD_PRIM_TYPES.get(type_name, PrimSpec)

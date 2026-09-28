@@ -3,8 +3,6 @@ from __future__ import annotations
 import copy
 from typing import TYPE_CHECKING, Any, Dict
 
-from typeguard import typechecked
-
 from .dtypes import dictionary
 from .metadata_serializer import MetadataSerializer
 from .utils import in_annotations
@@ -52,7 +50,6 @@ class Metadata:
         result._custom_is_set = copy.deepcopy(self._custom_is_set)
         return result
 
-    @typechecked
     def update(self, kwargs:Dict[str, Any])->None:
         custom_data = None
         if "customData" in kwargs:
@@ -75,7 +72,6 @@ class Metadata:
     def customData(self)->dictionary:
         return self._custom_data
 
-    @typechecked
     def __getattr__(self, name:str)->Any:
         if name in self._builtin_data:
             return self._builtin_data[name]
@@ -84,7 +80,6 @@ class Metadata:
         else:
             raise AttributeError(f"current metadata has no attribute '{name}'")
 
-    @typechecked
     def __setattr__(self, name:str, value:Any)->None:
         if hasattr(self.__class__, name) or in_annotations(name, self.__class__):
             super().__setattr__(name, value)

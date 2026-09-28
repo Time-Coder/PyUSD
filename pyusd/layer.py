@@ -2,17 +2,18 @@ from __future__ import annotations
 
 import os
 import uuid
-from typing import Any, ClassVar, Dict, List, Optional, Set, Type, Union
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union
 from weakref import WeakValueDictionary
 
-from typeguard import typechecked
+from beartype import beartype
 
 from .common import Axis
 from .layer_metadata import LayerMetadata
 from .layer_parser import LayerParser
 from .layer_serializer import LayerSerializer
-from .prim import Prim, PrimType
+from .prim import PrimSpec, PrimType
 from .sdf import Specifier
+from .utils import in_annotations
 
 
 class LayerImpl:
@@ -22,8 +23,8 @@ class LayerImpl:
     def __init__(self, file_name: str = "") -> None:
         self._file_name: str = file_name
         self._identifier: str = f"anon:{uuid.uuid4().hex}"
-        self._root_prims: Dict[str, Prim] = {}
-        self._default_prim: Optional[Prim] = None
+        self._root_prims: Dict[str, PrimSpec] = {}
+        self._default_prim: Optional[PrimSpec] = None
         self._sub_layers: List[Layer] = []
         self._relocates: Dict[str, str] = {}
         self._metadata: LayerMetadata = LayerMetadata(None, {
@@ -49,19 +50,17 @@ class LayerImpl:
 class Layer:
 
     _registry: ClassVar[WeakValueDictionary[str, LayerImpl]] = WeakValueDictionary()
-    _impl_fields: ClassVar[Set[str]] = {
-        "_file_name",
-        "_identifier",
-        "_root_prims",
-        "_default_prim",
-        "_sub_layers",
-        "_relocates",
-        "_metadata",
-        "_revision",
-        "_loaded",
-        "_dirty",
-    }
     _impl: LayerImpl
+    _file_name: str
+    _identifier: str
+    _root_prims: Dict[str, PrimSpec]
+    _default_prim: Optional[PrimSpec]
+    _sub_layers: List[Layer]
+    _relocates: Dict[str, str]
+    _metadata: LayerMetadata
+    _revision: int
+    _loaded: bool
+    _dirty: bool
 
     def __init__(self, file_name: str = "", _impl: Optional[LayerImpl] = None) -> None:
         if _impl is None:
@@ -76,7 +75,7 @@ class Layer:
         self._impl._metadata._parent = self
 
     def __getattr__(self, name: str) -> Any:
-        if name in self._impl_fields:
+        if name != "_impl" and in_annotations(name, self.__class__):
             return getattr(self._impl, name)
 
         raise AttributeError(name)
@@ -84,7 +83,7 @@ class Layer:
     def __setattr__(self, name: str, value: Any) -> None:
         if name == "_impl":
             object.__setattr__(self, name, value)
-        elif name in self._impl_fields and "_impl" in self.__dict__:
+        elif name != "_registry" and in_annotations(name, self.__class__) and "_impl" in self.__dict__:
             setattr(self._impl, name, value)
         else:
             object.__setattr__(self, name, value)
@@ -122,11 +121,11 @@ class Layer:
     def load(file_name:str)->Layer:
         return LayerParser.load(file_name)
 
-    def relocate(self, prim:Prim, new_path:str)->None:
+    def relocate(self, prim:PrimSpec, new_path:str)->None:
         self._relocates[prim] = f"<{new_path}>"
         self._touch()
 
-    def remove_relacate(self, prim:Prim)->None:
+    def remove_relacate(self, prim:PrimSpec)->None:
         del self._relocates[prim]
         self._touch()
 
@@ -139,12 +138,12 @@ class Layer:
         return self._metadata
 
     @property
-    def default_prim(self)->Prim:
+    def default_prim(self)->PrimSpec:
         return self._default_prim
 
     @default_prim.setter
-    @typechecked
-    def default_prim(self, prim:Prim)->None:
+    @beartype
+    def default_prim(self, prim:PrimSpec)->None:
         if prim.layer is None or prim.layer._impl is not self._impl:
             raise ValueError("Prim is not in current layer")
 
@@ -155,7 +154,6 @@ class Layer:
         self.metadata.defaultPrim = prim.name
         self._touch()
 
-    @typechecked
     def id(self, rel_layer:Optional[Union[str, Layer]]=None)->str:
         if not self._file_name:
             return f"@{self._identifier}@"
@@ -190,7 +188,7 @@ class Layer:
         else:
             return True
 
-    @typechecked
+    @beartype
     def include(self, layer:Layer, prepend:bool=True)->None:
         if layer in self._sub_layers:
             return
@@ -201,7 +199,7 @@ class Layer:
             self._sub_layers.append(layer)
         self._touch()
 
-    @typechecked
+    @beartype
     def remove_include(self, layer:Layer)->None:
         if layer not in self._sub_layers:
             return
@@ -209,8 +207,7 @@ class Layer:
         self._sub_layers.remove(layer)
         self._touch()
 
-    @typechecked
-    def __getitem__(self, path:str)->Prim:
+    def __getitem__(self, path:str)->PrimSpec:
         path_items = path[1:].split("/") if path.startswith("/") else path.split("/")
 
         root_name = path_items[0]
@@ -218,8 +215,7 @@ class Layer:
         root_prim = self._root_prims[root_name]
         return root_prim._getitem(path_items)
 
-    @typechecked
-    def __setitem__(self, path:str, prim:Prim)->None:
+    def __setitem__(self, path:str, prim:PrimSpec)->None:
         path_items = path[1:].split("/") if path.startswith("/") else path.split("/")
 
         root_name = path_items[0]
@@ -236,14 +232,13 @@ class Layer:
         path_items = path_items[1:]
         specifier = (Specifier.Def if prim.specifier != Specifier.Over else Specifier.Over)
         if root_name not in self._root_prims:
-            parent_prim = Prim(root_name, specifier=specifier)
+            parent_prim = PrimSpec(root_name, specifier=specifier)
             parent_prim._set_layer(self)
             self._root_prims[root_name] = parent_prim
         parent_prim = self._root_prims[root_name]
         parent_prim._setitem(path_items, prim)
         self._touch()
 
-    @typechecked
     def __delitem__(self, path:str)->None:
         path_items = path[1:].split("/") if path.startswith("/") else path.split("/")
 
@@ -252,7 +247,7 @@ class Layer:
             if root_name not in self._root_prims:
                 raise KeyError(root_name)
 
-            prim:Prim = self._root_prims[root_name]
+            prim:PrimSpec = self._root_prims[root_name]
             prim._set_layer(None)
             del self._root_prims[root_name]
             self._touch()
@@ -263,8 +258,7 @@ class Layer:
         parent_prim._delitem(path_items)
         self._touch()
 
-    @typechecked
-    def add_root_prim(self, prim:Prim)->None:
+    def add_root_prim(self, prim:PrimSpec)->None:
         if prim._parent is None and prim._layer is self:
             return
 
@@ -275,8 +269,7 @@ class Layer:
         prim._set_layer(self)
         self._touch()
 
-    @typechecked
-    def remove_root_prim(self, prim:Union[str, Prim])->Prim:
+    def remove_root_prim(self, prim:Union[str, PrimSpec])->PrimSpec:
         if isinstance(prim, str):
             if prim not in self._root_prims:
                 raise KeyError(prim)
@@ -291,26 +284,22 @@ class Layer:
         self._touch()
         return prim
 
-    @typechecked
     def def_(self, prim_type:Type[PrimType], path:str)->PrimType:
         prim = prim_type(specifier = Specifier.Def)
         self[path] = prim
         return prim
 
-    @typechecked
-    def class_(self, path:str)->Prim:
-        prim = Prim(specifier = Specifier.Class)
+    def class_(self, path:str)->PrimSpec:
+        prim = PrimSpec(specifier = Specifier.Class)
         self[path] = prim
         return prim
 
-    @typechecked
-    def over_(self, path:str)->Prim:
-        prim = Prim(specifier = Specifier.Over)
+    def over_(self, path:str)->PrimSpec:
+        prim = PrimSpec(specifier = Specifier.Over)
         self[path] = prim
         return prim
 
-    @typechecked
-    def root_prim(self, name:str)->Prim:
+    def root_prim(self, name:str)->PrimSpec:
         return self._root_prims[name]
 
     def __str__(self)->str:

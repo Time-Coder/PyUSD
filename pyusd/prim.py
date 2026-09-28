@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
-from typeguard import typechecked
-
 from .api_schema_base import APISchemaBase
 from .api_wrapper import APIWrapper
 from .attribute import Attribute
@@ -21,20 +19,20 @@ if TYPE_CHECKING:
     from .layer import Layer
 
 
-PrimType = TypeVar('PrimType', bound='Prim')
+PrimType = TypeVar('PrimType', bound='PrimSpec')
 
-class Prim:
+class PrimSpec:
 
     _name: str
     _layer: Optional[Layer]
     _metadata: PrimMetadata
-    _children: Dict[str, Prim]
-    _parent: Optional[Prim]
+    _children: Dict[str, PrimSpec]
+    _parent: Optional[PrimSpec]
     _props: Dict[str, Property]
-    _inherits: List[Prim]
-    _references: List[Prim]
-    _payloads: List[Prim]
-    _specializes: List[Prim]
+    _inherits: List[PrimSpec]
+    _references: List[PrimSpec]
+    _payloads: List[PrimSpec]
+    _specializes: List[PrimSpec]
     _variant_sets: VariantSets
     _apis: Dict[Tuple[str, str], APISchemaBase]
     _api_wrappers: Dict[str, APIWrapper]
@@ -57,13 +55,13 @@ class Prim:
 
         self._layer:Optional[Layer] = None
         self._name:str = name
-        self._parent:Optional[Prim] = None
-        self._children:Dict[str, Prim] = {}
+        self._parent:Optional[PrimSpec] = None
+        self._children:Dict[str, PrimSpec] = {}
         self._props:Dict[str, Property] = {}
-        self._inherits: List[Prim] = []
-        self._references: List[Prim] = []
-        self._payloads: List[Prim] = []
-        self._specializes: List[Prim] = []
+        self._inherits: List[PrimSpec] = []
+        self._references: List[PrimSpec] = []
+        self._payloads: List[PrimSpec] = []
+        self._specializes: List[PrimSpec] = []
         self._variant_sets: VariantSets = VariantSets(self)
         self._apis: Dict[Tuple[str, str], APISchemaBase] = {}
         self._api_wrappers: Dict[str, APIWrapper] = {}
@@ -71,7 +69,7 @@ class Prim:
 
         inherits = []
         for base in self.__class__.__bases__:
-            if not issubclass(base, Prim) or base is Prim:
+            if not issubclass(base, PrimSpec) or base is PrimSpec:
                 continue
 
             inherits.append(f"</{base.__name__}>")
@@ -96,7 +94,7 @@ class Prim:
         })
 
         for klass in reversed(self.__class__.__mro__):
-            if klass is Prim or not issubclass(klass, Prim):
+            if klass is PrimSpec or not issubclass(klass, PrimSpec):
                 continue
 
             self._fetch_from_class(klass)
@@ -113,7 +111,6 @@ class Prim:
         return self._metadata.specifier
 
     @specifier.setter
-    @typechecked
     def specifier(self, specifier:Specifier)->None:
         self._metadata.specifier = specifier
 
@@ -121,7 +118,7 @@ class Prim:
     def variant_sets(self)->VariantSets:
         return self._variant_sets
 
-    def _fetch_from_class(self, cls:Union[Type[Prim], Type[APISchemaBase]], instance_name:str="")->None:
+    def _fetch_from_class(self, cls:Union[Type[PrimSpec], Type[APISchemaBase]], instance_name:str="")->None:
         prefix = ""
         start = self
         if instance_name:
@@ -224,22 +221,21 @@ class Prim:
 
         return current
 
-    def _getitem(self, path_items:List[str])->Prim:
+    def _getitem(self, path_items:List[str])->PrimSpec:
         prim = self
         for path_item in path_items:
             prim = prim._children[path_item]
 
         return prim
 
-    @typechecked
-    def __getitem__(self, path:str)->Prim:
+    def __getitem__(self, path:str)->PrimSpec:
         if path.startswith("/"):
             raise ValueError("path must be relative")
 
         path_items = path.split("/")
         return self._getitem(path_items)
 
-    def _setitem(self, path_items:List[str], prim:Prim)->None:
+    def _setitem(self, path_items:List[str], prim:PrimSpec)->None:
         name = path_items[-1]
         if not name.isidentifier():
             raise ValueError(f'"{name}" is not a valid name')
@@ -249,7 +245,7 @@ class Prim:
         specifier = (Specifier.Def if prim.specifier != Specifier.Over else Specifier.Over)
         for path_item in path_items:
             if path_item not in parent_prim._children:
-                new_prim = Prim(path_item, specifier=specifier)
+                new_prim = PrimSpec(path_item, specifier=specifier)
                 new_prim._set_layer(self._layer)
                 new_prim._parent = parent_prim
                 parent_prim._children[path_item] = new_prim
@@ -266,8 +262,7 @@ class Prim:
         parent_prim._children[name] = prim
         self._touch()
 
-    @typechecked
-    def __setitem__(self, path:str, prim:Prim)->None:
+    def __setitem__(self, path:str, prim:PrimSpec)->None:
         if path.startswith("/"):
             raise ValueError("path must be relative")
 
@@ -281,13 +276,12 @@ class Prim:
         for path_item in path_items:
             parent_prim = parent_prim._children[path_item]
 
-        prim:Prim = parent_prim._children[name]
+        prim:PrimSpec = parent_prim._children[name]
         prim._parent = None
         prim._set_layer(None)
         del parent_prim._children[name]
         self._touch()
 
-    @typechecked
     def __delitem__(self, path:str)->None:
         if path.startswith("/"):
             raise ValueError("path must be relative")
@@ -303,20 +297,18 @@ class Prim:
     def props(self)->List[Property]:
         return list(self._props.values())
 
-    @typechecked
-    def child(self, name:str)->Prim:
+    def child(self, name:str)->PrimSpec:
         return self._children[name]
 
     @property
-    def children(self)->List[Prim]:
+    def children(self)->List[PrimSpec]:
         return list(self._children.values())
 
     @property
     def child_names(self)->List[str]:
         return list(self._children.keys())
 
-    @typechecked
-    def add_child(self, prim:Prim)->None:
+    def add_child(self, prim:PrimSpec)->None:
         if prim._parent is self:
             return
 
@@ -328,26 +320,22 @@ class Prim:
         prim._set_layer(self._layer)
         self._touch()
 
-    @typechecked
     def def_(self, prim_type:Type[PrimType], path:str)->PrimType:
         prim = prim_type(specifier=Specifier.Def)
         self[path] = prim
         return prim
 
-    @typechecked
-    def class_(self, path:str)->Prim:
-        prim = Prim(specifier=Specifier.Class)
+    def class_(self, path:str)->PrimSpec:
+        prim = PrimSpec(specifier=Specifier.Class)
         self[path] = prim
         return prim
 
-    @typechecked
-    def over_(self, path:str)->Prim:
-        prim = Prim(specifier=Specifier.Over)
+    def over_(self, path:str)->PrimSpec:
+        prim = PrimSpec(specifier=Specifier.Over)
         self[path] = prim
         return prim
 
-    @typechecked
-    def inherit(self, prim:Union[Prim, Layer], prepend:bool=True)->None:
+    def inherit(self, prim:Union[PrimSpec, Layer], prepend:bool=True)->None:
         if prim in self._inherits:
             return
 
@@ -357,16 +345,14 @@ class Prim:
             self._inherits.append(prim)
         self._touch()
 
-    @typechecked
-    def remove_inherit(self, prim:Union[Prim, Layer])->None:
+    def remove_inherit(self, prim:Union[PrimSpec, Layer])->None:
         if prim not in self._inherits:
             return
 
         self._inherits.remove(prim)
         self._touch()
 
-    @typechecked
-    def reference(self, prim:Union[Prim, Layer], prepend:bool=True)->None:
+    def reference(self, prim:Union[PrimSpec, Layer], prepend:bool=True)->None:
         if prim in self._references:
             return
 
@@ -376,16 +362,14 @@ class Prim:
             self._references.append(prim)
         self._touch()
 
-    @typechecked
-    def remove_reference(self, prim:Union[Prim, Layer])->None:
+    def remove_reference(self, prim:Union[PrimSpec, Layer])->None:
         if prim not in self._references:
             return
 
         self._references.remove(prim)
         self._touch()
 
-    @typechecked
-    def payload(self, prim:Union[Prim, Layer], prepend:bool=True)->None:
+    def payload(self, prim:Union[PrimSpec, Layer], prepend:bool=True)->None:
         if prim in self._payloads:
             return
 
@@ -395,16 +379,14 @@ class Prim:
             self._payloads.append(prim)
         self._touch()
 
-    @typechecked
-    def remove_payload(self, prim:Union[Prim, Layer])->None:
+    def remove_payload(self, prim:Union[PrimSpec, Layer])->None:
         if prim not in self._payloads:
             return
 
         self._payloads.remove(prim)
         self._touch()
 
-    @typechecked
-    def specialize(self, prim:Union[Prim, Layer], prepend:bool=True)->None:
+    def specialize(self, prim:Union[PrimSpec, Layer], prepend:bool=True)->None:
         if prim in self._specializes:
             return
 
@@ -414,16 +396,14 @@ class Prim:
             self._specializes.append(prim)
         self._touch()
 
-    @typechecked
-    def remove_specialize(self, prim:Union[Prim, Layer])->None:
+    def remove_specialize(self, prim:Union[PrimSpec, Layer])->None:
         if prim not in self._specializes:
             return
 
         self._specializes.remove(prim)
         self._touch()
 
-    @typechecked
-    def remove_child(self, prim:Union[str, Prim])->Prim:
+    def remove_child(self, prim:Union[str, PrimSpec])->PrimSpec:
         if isinstance(prim, str):
             if prim not in self._children:
                 raise KeyError(prim)
@@ -459,7 +439,6 @@ class Prim:
         return self._name
 
     @name.setter
-    @typechecked
     def name(self, name:str)->None:
         if self._name == name:
             return
@@ -490,14 +469,13 @@ class Prim:
             old_layer.add_root_prim(self)
 
     @property
-    def parent(self)->Optional[Prim]:
+    def parent(self)->Optional[PrimSpec]:
         return self._parent
 
     @property
     def layer(self)->Optional[Layer]:
         return self._layer
 
-    @typechecked
     def _set_layer(self, layer:Optional[Layer])->None:
         self._layer = layer
         for child in self._children.values():
@@ -506,7 +484,7 @@ class Prim:
     @property
     def path(self)->str:
         path:str = self._name
-        prim:Prim = self
+        prim:PrimSpec = self
         while True:
             if prim._parent is not None:
                 if not prim._parent._is_variant:
@@ -518,7 +496,6 @@ class Prim:
 
                 return path
 
-    @typechecked
     def id(self, rel_layer:Optional[Union[str, Layer]]=None)->str:
         prefix:str = ""
         if self.layer is not None:
@@ -530,7 +507,7 @@ class Prim:
         return id(self)
 
     def __eq__(self, other:Any)->bool:
-        if isinstance(other, Prim):
+        if isinstance(other, PrimSpec):
             return (self.id() == other.id())
         elif isinstance(other, str):
             return (self.id() == abspath(other))
@@ -538,7 +515,7 @@ class Prim:
             return False
 
     def __neq__(self, other:Any)->bool:
-        if isinstance(other, Prim):
+        if isinstance(other, PrimSpec):
             return (self.id() != other.id())
         elif isinstance(other, str):
             return (self.id() != abspath(other))
@@ -548,7 +525,7 @@ class Prim:
     @property
     def depth(self)->int:
         depth:int = 0
-        prim:Prim = self
+        prim:PrimSpec = self
         while True:
             if prim._parent is not None:
                 if not prim._parent._is_variant:
@@ -596,12 +573,12 @@ class Prim:
         from .attribute import Attribute
         from .relationship import Relationship
 
-        is_rel:bool = (isinstance(value, Prim) or (isinstance(value, list) and len(value) > 0 and all(isinstance(item, Prim) for item in value)) or isinstance(value, Relationship))
+        is_rel:bool = (isinstance(value, PrimSpec) or (isinstance(value, list) and len(value) > 0 and all(isinstance(item, PrimSpec) for item in value)) or isinstance(value, Relationship))
         if name in self._props:
             prop = self._props[name]
             if isinstance(prop, Attribute) and is_rel:
                 if not prop._custom:
-                    if isinstance(value, Prim):
+                    if isinstance(value, PrimSpec):
                         error_message = "cannot assign Prim to Attribute"
                     elif isinstance(value, list):
                         error_message = "cannot assign List[Prim] to Attribute"
@@ -640,6 +617,7 @@ class Prim:
 
     def to_str(self, indents: int = 0)->str:
         return PrimSerializer.to_str(self, indents)
+
 
     @classmethod
     def cls_to_str(cls)->str:

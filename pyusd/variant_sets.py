@@ -5,13 +5,13 @@ from typing import TYPE_CHECKING, Dict, ItemsView, Iterator, KeysView, ValuesVie
 from .variant_set import VariantSet
 
 if TYPE_CHECKING:
-    from .prim import Prim
+    from .prim import PrimSpec
 
 
 class VariantSets:
 
-    def __init__(self, parent_prim:Prim)->None:
-        self._parent_prim:Prim = parent_prim
+    def __init__(self, parent_prim:PrimSpec)->None:
+        self._parent_prim:PrimSpec = parent_prim
         self._variant_sets:Dict[str, VariantSet] = {}
 
     def __getitem__(self, name:str)->VariantSet:

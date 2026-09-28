@@ -8,18 +8,18 @@ from .property import Property
 from .sdf import Specifier
 
 if TYPE_CHECKING:
-    from .prim import Prim
+    from .prim import PrimSpec
 
 
 class PrimSerializer:
 
     @staticmethod
-    def to_str(prim: Prim, indents: int)->str:
+    def to_str(prim: PrimSpec, indents: int)->str:
         tabs = "    " * indents
         prim_type_name = prim.__class__.__name__
         if prim._is_variant:
             result = f'{tabs}"{prim.name}"'
-        elif prim_type_name == "Prim" or prim.specifier != Specifier.Def:
+        elif prim_type_name in {"Prim", "PrimSpec"} or prim.specifier != Specifier.Def:
             result = f'{tabs}{prim.specifier} "{prim.name}"'
         else:
             result = f'{tabs}{prim.specifier} {prim_type_name} "{prim.name}"'
@@ -60,7 +60,7 @@ class PrimSerializer:
         return result
 
     @staticmethod
-    def cls_to_str(cls: Type[Prim])->str:
+    def cls_to_str(cls: Type[PrimSpec])->str:
         prim_type_name = cls.__name__
         if cls.schema_kind == SchemaKind.ConcreteTyped:
             result = f'class {prim_type_name} "{prim_type_name}"'
@@ -75,7 +75,7 @@ class PrimSerializer:
         update_metadata = {}
         inherits = []
         for base in cls.__bases__:
-            if not issubclass(base, Prim) or base == Prim:
+            if not issubclass(base, PrimSpec) or base == PrimSpec:
                 continue
 
             inherits.append(f"</{base.__name__}>")

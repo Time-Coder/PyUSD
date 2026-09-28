@@ -14,7 +14,7 @@ class MetadataSerializer:
     @staticmethod
     def to_str(metadata:Metadata, indents:int=0, full:bool=False)->str:
         from .layer import Layer
-        from .prim import Prim
+        from .prim import PrimSpec
 
         tabs = "    " * indents
         next_tabs = "    " * (indents + 1)
@@ -71,7 +71,7 @@ class MetadataSerializer:
 
             rel_layer = None
             if metadata._parent is not None:
-                if isinstance(metadata._parent, Prim) and metadata._parent.layer is not None:
+                if isinstance(metadata._parent, PrimSpec) and metadata._parent.layer is not None:
                     rel_layer = metadata._parent.layer
                 elif isinstance(metadata._parent, Layer):
                     rel_layer = metadata._parent

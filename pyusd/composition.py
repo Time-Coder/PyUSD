@@ -8,7 +8,7 @@ from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 from .attribute import Attribute
 from .layer import Layer, LayerImpl
-from .prim import Prim
+from .prim import PrimSpec
 from .property import Property
 from .relationship import Relationship
 
@@ -31,7 +31,7 @@ class ArcTarget:
 
 @dataclass(frozen=True)
 class SourcePrimSpec:
-    prim: Prim
+    prim: PrimSpec
     layer: Layer
     composed_path: str
     source_path: str
@@ -277,7 +277,7 @@ class CompositionEngine:
         return tuple((id(layer._impl), layer.revision) for layer in layer_stack)
 
     def resolve_arc_target(self, arc: Any, owner_layer: Layer) -> Optional[ArcTarget]:
-        if isinstance(arc, Prim):
+        if isinstance(arc, PrimSpec):
             if arc.layer is None:
                 return None
 
@@ -538,7 +538,7 @@ class CompositionEngine:
 
     def _iter_relocates(self, layer: Layer) -> Iterable[Tuple[str, str]]:
         for source, dest in layer._relocates.items():
-            source_path = source.path if isinstance(source, Prim) else str(source)
+            source_path = source.path if isinstance(source, PrimSpec) else str(source)
 
             yield path_from_reference_text(source_path), path_from_reference_text(str(dest))
 
@@ -666,7 +666,7 @@ def join_path(base: str, suffix: str) -> str:
     return normalize_prim_path(base + "/" + suffix)
 
 
-def prim_at(layer: Layer, path: str) -> Optional[Prim]:
+def prim_at(layer: Layer, path: str) -> Optional[PrimSpec]:
     parts = path_items(path)
     if not parts:
         return None
@@ -678,7 +678,7 @@ def prim_at(layer: Layer, path: str) -> Optional[Prim]:
     return prim_descendant(prim, "/".join(parts[1:]))
 
 
-def prim_descendant(prim: Prim, suffix: str) -> Optional[Prim]:
+def prim_descendant(prim: PrimSpec, suffix: str) -> Optional[PrimSpec]:
     suffix = str(suffix).strip("/")
     if not suffix:
         return prim
@@ -693,7 +693,7 @@ def prim_descendant(prim: Prim, suffix: str) -> Optional[Prim]:
     return current
 
 
-def prop_at(prim: Prim, prop_name: str) -> Optional[Property]:
+def prop_at(prim: PrimSpec, prop_name: str) -> Optional[Property]:
     names = normalize_property_name(prop_name).split(":")
     if not names or not names[0]:
         return None

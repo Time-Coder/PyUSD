@@ -14,7 +14,7 @@ authors = [
 dependencies = [
     "tree-sitter",
     "tree-sitter-usd",
-    "typeguard"
+    "beartype"
 ]
 
 [project.optional-dependencies]

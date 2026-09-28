@@ -3,8 +3,6 @@ from __future__ import annotations
 import copy
 from typing import Any, Dict, Optional, TypeVar
 
-from typeguard import typechecked
-
 from .attribute_serializer import AttributeSerializer
 from .data import Data
 from .dtypes import token
@@ -18,7 +16,6 @@ class Attribute(Property, Data[T]):
     _uniform: bool
     _fix_type: bool
 
-    @typechecked
     def __init__(self, value_type:type, name:str="", value:Optional[T]=None, doc:str="", metadata:Optional[Dict[str, Any]]=None, is_leaf:bool=True, uniform:bool=False, custom:bool=False, fix_type:bool=True)->None:
         if metadata is None:
             metadata = {}
@@ -80,7 +77,6 @@ class Attribute(Property, Data[T]):
         return self._uniform
 
     @uniform.setter
-    @typechecked
     def uniform(self, flag:bool)->None:
         self._uniform = flag
         self._touch()

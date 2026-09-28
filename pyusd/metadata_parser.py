@@ -8,14 +8,14 @@ from .metadata import Metadata
 from .usda_parser import UsdaParser
 
 if TYPE_CHECKING:
-    from .prim import Prim
+    from .prim import PrimSpec
     from .property import Property
 
 
 class MetadataParser:
 
     @staticmethod
-    def parse(node:tree_sitter.Node, parent:Optional[Union[Prim, Property]]=None, defaults:Optional[Dict[str, Any]]=None)->Metadata:
+    def parse(node:tree_sitter.Node, parent:Optional[Union[PrimSpec, Property]]=None, defaults:Optional[Dict[str, Any]]=None)->Metadata:
         if defaults is None:
             defaults = {}
 

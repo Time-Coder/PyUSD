@@ -3,8 +3,6 @@ from __future__ import annotations
 from enum import IntEnum
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
-from typeguard import typechecked
-
 from .common import SchemaKind
 from .metadata import Metadata
 from .property_serializer import PropertySerializer
@@ -13,7 +11,7 @@ from .utils import in_annotations, infer_type
 if TYPE_CHECKING:
     from .api_schema_base import APISchemaBase
     from .attribute import Attribute
-    from .prim import Prim
+    from .prim import PrimSpec
     from .relationship import Relationship
 
 
@@ -25,7 +23,7 @@ class Property:
         Authored = 2
         Cleared = 3
 
-    _parent: Optional[Union[Prim, Property]]
+    _parent: Optional[Union[PrimSpec, Property]]
     _name: str
     _metadata: Metadata
     _props: Dict[str, Property]
@@ -35,7 +33,6 @@ class Property:
 
     meta: Dict[str, Any] = {}
 
-    @typechecked
     def __init__(self, name:str="", doc:str="", metadata:Optional[Dict[str, Any]]=None, custom:bool=False, is_leaf:bool=True)->None:
         if metadata is None:
             metadata = {}
@@ -51,7 +48,7 @@ class Property:
 
         self.__doc__ = doc
 
-        self._parent: Optional[Union[Prim, Property]] = None
+        self._parent: Optional[Union[PrimSpec, Property]] = None
         self._name:str = name
         self._metadata:Metadata = Metadata(self, metadata)
         self._props:Dict[str, Property] = {}
@@ -102,7 +99,7 @@ class Property:
             self._parent._touch()
 
     @property
-    def parent(self)->Optional[Union[Prim, Property]]:
+    def parent(self)->Optional[Union[PrimSpec, Property]]:
         return self._parent
 
     @property
@@ -115,9 +112,9 @@ class Property:
 
     @property
     def full_name(self)->str:
-        from .prim import Prim
+        from .prim import PrimSpec
 
-        if self._parent is None or isinstance(self._parent, Prim):
+        if self._parent is None or isinstance(self._parent, PrimSpec):
             return self._name
 
         return self._parent.full_name + ":" + self._name
@@ -141,7 +138,7 @@ class Property:
     def custom(self)->bool:
         return self._custom
 
-    def rel(self, prim:Prim)->Relationship:
+    def rel(self, prim:PrimSpec)->Relationship:
         if self.__class__.__name__ != "Property":
             raise AttributeError(f"'{self.__class__.__name__}' object has not attribute 'rel'")
 
@@ -175,11 +172,11 @@ class Property:
             else:
                 self._props[child_name].update_children(child)
 
-    def __get__(self, instance:Union[Prim, Property, APISchemaBase], owner)->Property:
+    def __get__(self, instance:Union[PrimSpec, Property, APISchemaBase], owner)->Property:
         from .api_schema_base import APISchemaBase
-        from .prim import Prim
+        from .prim import PrimSpec
 
-        if isinstance(instance, Prim):
+        if isinstance(instance, PrimSpec):
             return instance._props[self._name]
         elif isinstance(instance, Property):
             return instance._props[self._name]
@@ -193,9 +190,9 @@ class Property:
 
     def __set__(self, instance, value:Any):
         from .api_schema_base import APISchemaBase
-        from .prim import Prim
+        from .prim import PrimSpec
 
-        if isinstance(instance, Prim):
+        if isinstance(instance, PrimSpec):
             instance._props[self._name].set(value)
         elif isinstance(instance, Property):
             instance._props[self._name].set(value)
@@ -219,15 +216,15 @@ class Property:
             return
 
         from .attribute import Attribute
-        from .prim import Prim
+        from .prim import PrimSpec
         from .relationship import Relationship
 
-        is_rel:bool = (isinstance(value, Prim) or (isinstance(value, list) and all(isinstance(item, Prim) for item in value)) or isinstance(value, Relationship))
+        is_rel:bool = (isinstance(value, PrimSpec) or (isinstance(value, list) and all(isinstance(item, PrimSpec) for item in value)) or isinstance(value, Relationship))
         if name in self._props:
             prop = self._props[name]
             if isinstance(prop, Attribute) and is_rel:
                 if not prop._custom:
-                    if isinstance(value, Prim):
+                    if isinstance(value, PrimSpec):
                         error_message = "cannot assign Prim to Attribute"
                     elif isinstance(value, list):
                         error_message = "cannot assign List[Prim] to Attribute"
@@ -260,7 +257,7 @@ class Property:
             return
 
         if name not in self._props:
-            if not isinstance(value, Prim):
+            if not isinstance(value, PrimSpec):
                 if isinstance(self, Attribute):
                     target_type = self._type
                     target_uniform = self._uniform

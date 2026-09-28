@@ -14,7 +14,7 @@ class UsdaSerializer:
         from .data import Data
         from .gf import genType, MathForm
         from .layer import Layer
-        from .prim import Prim
+        from .prim import PrimSpec
         from .dtypes import asset
 
         tabs = "    " * indents
@@ -48,7 +48,7 @@ class UsdaSerializer:
                 if isinstance(key, str):
                     result += f"{next_tabs}{UsdaSerializer.type_str(infer_type(subvalue))} {key} = {subvalue_str}\n"
                 else:
-                    if isinstance(key, Prim):
+                    if isinstance(key, PrimSpec):
                         key = f"<{key.path}>"
                         
                     result += f"{next_tabs}{key}: {subvalue_str}\n"
@@ -90,7 +90,7 @@ class UsdaSerializer:
             return UsdaSerializer.value_str(value.value)
         elif isinstance(value, asset):
             return f'@{value}@'
-        elif isinstance(value, (Prim, Layer)):
+        elif isinstance(value, (PrimSpec, Layer)):
             return value.id(rel_layer)
         elif isinstance(value, float):
             if value.is_integer():

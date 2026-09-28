@@ -8,7 +8,7 @@ from .property import Property
 from .utils import camel_to_snake
 
 if TYPE_CHECKING:
-    from .prim import Prim
+    from .prim import PrimSpec
 
 class APISchemaBase:
     """The base class for all \\em API schemas.
@@ -79,7 +79,7 @@ class APISchemaBase:
     _all_schemas: Optional[List[APISchemaBase]] = None
     _all_schemas_dict: Optional[Dict[str, APISchemaBase]] = None
 
-    def __init__(self, prim:Prim, instance_name:str="")->None:
+    def __init__(self, prim:PrimSpec, instance_name:str="")->None:
         self._prim = prim
         self._instance_name = instance_name
         self._namespace_prefix = ""

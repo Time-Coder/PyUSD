@@ -3,23 +3,20 @@ from __future__ import annotations
 import copy
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
-from typeguard import typechecked
-
 from .property import Property
 from .relationship_serializer import RelationshipSerializer
 
 if TYPE_CHECKING:
-    from .prim import Prim
+    from .prim import PrimSpec
 
 
 class Relationship(Property):
 
-    _targets: List[Prim]
+    _targets: List[PrimSpec]
 
-    @typechecked
     def __init__(self, name:str="", doc:str="", metadata:Optional[Dict[str, Any]]=None, custom:bool=False, is_leaf:bool=True)->None:
         Property.__init__(self, name, doc=doc, metadata=metadata, custom=custom, is_leaf=is_leaf)
-        self._targets:List[Prim] = []
+        self._targets:List[PrimSpec] = []
 
     @property
     def value_state(self)->Property.ValueState:
@@ -33,7 +30,7 @@ class Relationship(Property):
         result._targets = copy.copy(self._targets)
         return result
 
-    def set(self, prims:Union[List[Prim], Prim, Relationship])->None:
+    def set(self, prims:Union[List[PrimSpec], PrimSpec, Relationship])->None:
         if isinstance(prims, list):
             self._targets = prims
         elif isinstance(prims, Relationship):
@@ -43,24 +40,24 @@ class Relationship(Property):
         self._value_state = Property.ValueState.Authored
         self._touch()
 
-    def get(self)->List[Prim]:
+    def get(self)->List[PrimSpec]:
         return self._targets
 
     @property
-    def targets(self)->List[Prim]:
+    def targets(self)->List[PrimSpec]:
         return self._targets
 
-    def rel(self, prim:Prim)->None:
+    def rel(self, prim:PrimSpec)->None:
         self._targets.append(prim)
         self._value_state = Property.ValueState.Authored
         self._touch()
 
-    def add_target(self, prim:Prim)->None:
+    def add_target(self, prim:PrimSpec)->None:
         self._targets.append(prim)
         self._value_state = Property.ValueState.Authored
         self._touch()
 
-    def remove_target(self, prim:Prim)->None:
+    def remove_target(self, prim:PrimSpec)->None:
         self._targets.remove(prim)
         self._value_state = Property.ValueState.Authored
         self._touch()

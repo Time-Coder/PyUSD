@@ -1,7 +1,5 @@
 from typing import Any
 
-from typeguard import typechecked
-
 from ..attribute import Attribute
 from ..dtypes import double, namespace
 from ..gf import double3, matrix4d, quatd
@@ -29,7 +27,6 @@ class XformOp(Attribute):
     orient: Attribute[quatd] = Attribute(quatd, value=(1, 0, 0, 0), is_leaf=False)
     transform: Attribute[matrix4d] = Attribute(matrix4d, value=matrix4d(), is_leaf=False)
 
-    @typechecked
     def __init__(self)->None:
         Attribute.__init__(self, namespace, "xformOp", is_leaf=False)
 

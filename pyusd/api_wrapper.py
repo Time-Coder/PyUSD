@@ -5,15 +5,15 @@ from typing import TYPE_CHECKING, Type
 from .api_schema_base import APISchemaBase
 
 if TYPE_CHECKING:
-    from .prim import Prim
+    from .prim import PrimSpec
 
 
 class APIWrapper:
 
-    def __init__(self, api_key:str, api_type: Type[APISchemaBase], prim: Prim)->None:
+    def __init__(self, api_key:str, api_type: Type[APISchemaBase], prim: PrimSpec)->None:
         self._api_key: str = api_key
         self._api_type: Type[APISchemaBase] = api_type
-        self._prim: Prim = prim
+        self._prim: PrimSpec = prim
 
     def __call__(self, instance_name:str)->APISchemaBase:
         if (self._api_key, instance_name) not in self._prim._apis:

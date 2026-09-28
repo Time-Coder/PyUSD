@@ -1,7 +1,5 @@
 from typing import Any, Generic, Iterable, Optional, TypeVar
 
-from typeguard import typechecked
-
 from .dtypes import namespace, token
 from .utils import (
     analyze_list_type,
@@ -51,7 +49,6 @@ class Data(Generic[T]):
     def is_namespace(self)->bool:
         return (self._type == namespace)
 
-    @typechecked
     def value_str(self, indent:int=0)->str:
         return UsdaSerializer.value_str(self.value, indent)
 
