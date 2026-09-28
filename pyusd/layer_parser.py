@@ -21,6 +21,9 @@ class LayerParser:
 
         layer = Layer(file_name)
 
+        if layer._loaded:
+            return layer
+
         with open(file_name, "rb") as f:
             code = f.read()
 
@@ -35,7 +38,7 @@ class LayerParser:
                 sub_layers = metadata.pop("subLayers", None)
                 if sub_layers is not None:
                     layer._sub_layers = [
-                        Layer(UsdaParser.resolve_asset_path(str(item).strip("@")))
+                        Layer(UsdaParser.resolve_asset_path(file_name, str(item).strip("@")))
                         for item in UsdaParser.as_list(sub_layers)
                     ]
                     layer._metadata._builtin_is_set["subLayers"] = True
@@ -49,4 +52,6 @@ class LayerParser:
             layer._default_prim = layer._root_prims.get(str(pending_default_prim))
             MetadataParser.set_authored(layer._metadata, "defaultPrim", pending_default_prim)
 
+        layer._loaded = True
+        layer._dirty = False
         return layer

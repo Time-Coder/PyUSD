@@ -27,6 +27,7 @@ from .model_api import ModelAPI
 from .prim import Prim, PrimType
 from .property import Property
 from .relationship import Relationship
+from .stage import Stage, StagePrim, StageProperty
 from .typed import Typed
 from .utils import abspath
 
@@ -37,6 +38,9 @@ __all__ = [
     "Attribute",
     "Property",
     "Relationship",
+    "Stage",
+    "StagePrim",
+    "StageProperty",
     "Data",
     "double",
     "half",

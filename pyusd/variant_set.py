@@ -30,6 +30,7 @@ class VariantSet:
 
     def select_variant(self, name:str)->Optional[Prim]:
         self._selected_variant = self._variants[name]
+        self._parent_prim._touch()
         return self._selected_variant
 
     @property
@@ -44,6 +45,7 @@ class VariantSet:
             variant._is_variant = True
             variant._parent = self._parent_prim
             self._variants[name] = variant
+            self._parent_prim._touch()
 
         return self._variants[name]
 

@@ -5,6 +5,7 @@ import pkgutil
 from typing import TYPE_CHECKING, Any, Dict, Type
 
 from .attribute_parser import AttributeParser
+from .metadata_parser import MetadataParser
 from .prim import Prim
 from .property import Property
 from .relationship_parse import RelationshipParser
@@ -97,8 +98,6 @@ class PrimParser:
 
     @staticmethod
     def apply_loaded_metadata(prim:Prim, metadata:Dict[str, Any])->None:
-        from .metadata import Metadata
-
         field_to_attr = {
             "prepend inherits": "_inherits",
             "inherits": "_inherits",
@@ -135,7 +134,7 @@ class PrimParser:
             prim.metadata._builtin_is_set["variants"] = True
 
         for key, value in remaining.items():
-            Metadata._set_authored(prim.metadata, key, value)
+            MetadataParser.set_authored(prim.metadata, key, value)
 
     @staticmethod
     def create_loaded_prop(prim:Prim, prop:Property)->Property:

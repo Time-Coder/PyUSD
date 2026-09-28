@@ -85,6 +85,7 @@ class Property:
         result._parent = None
         result._name = self._name
         result._metadata = self._metadata.clone()
+        result._metadata._parent = result
         result._props = {}
         result._custom = self._custom
         result._is_leaf = self._is_leaf
@@ -95,6 +96,10 @@ class Property:
                 result._props[name]._parent = result
 
         return result
+
+    def _touch(self) -> None:
+        if self._parent is not None and hasattr(self._parent, "_touch"):
+            self._parent._touch()
 
     @property
     def parent(self)->Optional[Union[Prim, Property]]:

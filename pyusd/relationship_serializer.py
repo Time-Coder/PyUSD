@@ -22,7 +22,7 @@ class RelationshipSerializer:
 
             line = f"{tabs}{prefix}rel {rel.full_name}"
             if rel.value_state in [Property.ValueState.Authored, Property.ValueState.Cleared]:
-                line += f" = {UsdaSerializer.value_str(rel._targets, indents, True)}"
+                line += f" = {UsdaSerializer.value_str(rel._targets, indents, True, need_quote=False)}"
 
             metadata_str = rel._metadata.to_str(indents, full=full)
             if metadata_str:

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Dict, List, Optional, Type, Union
+import uuid
+from typing import Any, ClassVar, Dict, List, Optional, Set, Type, Union
+from weakref import WeakValueDictionary
 
 from typeguard import typechecked
 
@@ -13,15 +15,18 @@ from .prim import Prim, PrimType
 from .sdf import Specifier
 
 
-class Layer:
+class LayerImpl:
 
-    def __init__(self, file_name:str="")->None:
-        self._file_name:str = file_name
-        self._root_prims:Dict[str, Prim] = {}
-        self._default_prim:Optional[Prim] = None
-        self._sub_layers:List[Layer] = []
-        self._relocates:Dict[str, str] = {}
-        self._metadata:LayerMetadata = LayerMetadata(self, {
+    global_revision = 0
+
+    def __init__(self, file_name: str = "") -> None:
+        self._file_name: str = file_name
+        self._identifier: str = f"anon:{uuid.uuid4().hex}"
+        self._root_prims: Dict[str, Prim] = {}
+        self._default_prim: Optional[Prim] = None
+        self._sub_layers: List[Layer] = []
+        self._relocates: Dict[str, str] = {}
+        self._metadata: LayerMetadata = LayerMetadata(None, {
             "subLayers": [],
             "relocates": {},
             "defaultPrim": None,
@@ -31,6 +36,87 @@ class Layer:
             "timeCodesPerSecond": 60,
             "upAxis": Axis.Y
         })
+        self._revision = 0
+        self._loaded = False
+        self._dirty = False
+
+    def touch(self) -> None:
+        self._revision += 1
+        self._dirty = True
+        LayerImpl.global_revision += 1
+
+
+class Layer:
+
+    _registry: ClassVar[WeakValueDictionary[str, LayerImpl]] = WeakValueDictionary()
+    _impl_fields: ClassVar[Set[str]] = {
+        "_file_name",
+        "_identifier",
+        "_root_prims",
+        "_default_prim",
+        "_sub_layers",
+        "_relocates",
+        "_metadata",
+        "_revision",
+        "_loaded",
+        "_dirty",
+    }
+    _impl: LayerImpl
+
+    def __init__(self, file_name: str = "", _impl: Optional[LayerImpl] = None) -> None:
+        if _impl is None:
+            key = self._registry_key(file_name)
+            _impl = self._registry.get(key) if key else None
+            if _impl is None:
+                _impl = LayerImpl(file_name)
+                if key:
+                    self._registry[key] = _impl
+
+        object.__setattr__(self, "_impl", _impl)
+        self._impl._metadata._parent = self
+
+    def __getattr__(self, name: str) -> Any:
+        if name in self._impl_fields:
+            return getattr(self._impl, name)
+
+        raise AttributeError(name)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name == "_impl":
+            object.__setattr__(self, name, value)
+        elif name in self._impl_fields and "_impl" in self.__dict__:
+            setattr(self._impl, name, value)
+        else:
+            object.__setattr__(self, name, value)
+
+    @staticmethod
+    def _registry_key(file_name: str, anchor_file: str = "") -> str:
+        if not file_name:
+            return ""
+
+        file_name = str(file_name).strip("@")
+        if not os.path.isabs(file_name):
+            base_dir = os.path.dirname(os.path.abspath(anchor_file)) if anchor_file else os.getcwd()
+            file_name = os.path.join(base_dir, file_name)
+
+        return os.path.normcase(os.path.abspath(file_name)).replace("\\", "/")
+
+    @classmethod
+    def _from_impl(cls, impl: LayerImpl) -> Layer:
+        return cls(_impl=impl)
+
+    @classmethod
+    def _lookup(cls, file_name: str, anchor_file: str = "") -> Optional[Layer]:
+        key = cls._registry_key(file_name, anchor_file)
+        impl = cls._registry.get(key) if key else None
+        return cls._from_impl(impl) if impl is not None else None
+
+    @property
+    def revision(self) -> int:
+        return self._impl._revision
+
+    def _touch(self) -> None:
+        self._impl.touch()
 
     @staticmethod
     def load(file_name:str)->Layer:
@@ -38,9 +124,11 @@ class Layer:
 
     def relocate(self, prim:Prim, new_path:str)->None:
         self._relocates[prim] = f"<{new_path}>"
+        self._touch()
 
     def remove_relacate(self, prim:Prim)->None:
         del self._relocates[prim]
+        self._touch()
 
     @property
     def file_name(self)->str:
@@ -57,7 +145,7 @@ class Layer:
     @default_prim.setter
     @typechecked
     def default_prim(self, prim:Prim)->None:
-        if prim.layer is None or os.path.abspath(self._file_name) != os.path.abspath(prim.layer.file_name):
+        if prim.layer is None or prim.layer._impl is not self._impl:
             raise ValueError("Prim is not in current layer")
 
         if prim.depth != 0:
@@ -65,9 +153,13 @@ class Layer:
 
         self._default_prim = prim
         self.metadata.defaultPrim = prim.name
+        self._touch()
 
     @typechecked
     def id(self, rel_layer:Optional[Union[str, Layer]]=None)->str:
+        if not self._file_name:
+            return f"@{self._identifier}@"
+
         result:str = "@" + os.path.abspath(self._file_name).replace("\\", "/") + "@"
         if isinstance(rel_layer, Layer):
             rel_layer = rel_layer.file_name
@@ -107,6 +199,7 @@ class Layer:
             self._sub_layers.insert(0, layer)
         else:
             self._sub_layers.append(layer)
+        self._touch()
 
     @typechecked
     def remove_include(self, layer:Layer)->None:
@@ -114,13 +207,11 @@ class Layer:
             return
 
         self._sub_layers.remove(layer)
+        self._touch()
 
     @typechecked
     def __getitem__(self, path:str)->Prim:
-        if path.startswith("/"):
-            path_items = path[1:].split("/")
-        else:
-            path_items = path.split("/")
+        path_items = path[1:].split("/") if path.startswith("/") else path.split("/")
 
         root_name = path_items[0]
         path_items = path_items[1:]
@@ -129,10 +220,7 @@ class Layer:
 
     @typechecked
     def __setitem__(self, path:str, prim:Prim)->None:
-        if path.startswith("/"):
-            path_items = path[1:].split("/")
-        else:
-            path_items = path.split("/")
+        path_items = path[1:].split("/") if path.startswith("/") else path.split("/")
 
         root_name = path_items[0]
         if len(path_items) == 1:
@@ -142,6 +230,7 @@ class Layer:
             prim._name = root_name
             prim._set_layer(self)
             self._root_prims[root_name] = prim
+            self._touch()
             return
 
         path_items = path_items[1:]
@@ -152,13 +241,11 @@ class Layer:
             self._root_prims[root_name] = parent_prim
         parent_prim = self._root_prims[root_name]
         parent_prim._setitem(path_items, prim)
+        self._touch()
 
     @typechecked
     def __delitem__(self, path:str)->None:
-        if path.startswith("/"):
-            path_items = path[1:].split("/")
-        else:
-            path_items = path.split("/")
+        path_items = path[1:].split("/") if path.startswith("/") else path.split("/")
 
         root_name = path_items[0]
         if len(path_items) == 1:
@@ -168,11 +255,13 @@ class Layer:
             prim:Prim = self._root_prims[root_name]
             prim._set_layer(None)
             del self._root_prims[root_name]
+            self._touch()
             return
 
         path_items = path_items[1:]
         parent_prim = self._root_prims[root_name]
         parent_prim._delitem(path_items)
+        self._touch()
 
     @typechecked
     def add_root_prim(self, prim:Prim)->None:
@@ -184,6 +273,7 @@ class Layer:
 
         self._root_prims[prim.name] = prim
         prim._set_layer(self)
+        self._touch()
 
     @typechecked
     def remove_root_prim(self, prim:Union[str, Prim])->Prim:
@@ -198,6 +288,7 @@ class Layer:
 
         prim._set_layer(None)
         del self._root_prims[prim.name]
+        self._touch()
         return prim
 
     @typechecked
@@ -227,6 +318,8 @@ class Layer:
 
     def save(self, file_name:str="")->None:
         LayerSerializer.save(self, file_name)
+        self._impl._dirty = False
+        self._impl._loaded = True
 
     def to_str(self)->str:
         return LayerSerializer.to_str(self)

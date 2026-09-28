@@ -61,10 +61,12 @@ class Attribute(Property, Data[T]):
 
         self._value = self._convert_from(value)
         self._value_state = Attribute.ValueState.Authored
+        self._touch()
 
     def clear(self)->None:
         self._value = None
         self._value_state = Attribute.ValueState.Cleared
+        self._touch()
 
     @property
     def value_state(self)->Attribute.ValueState:
@@ -81,6 +83,7 @@ class Attribute(Property, Data[T]):
     @typechecked
     def uniform(self, flag:bool)->None:
         self._uniform = flag
+        self._touch()
 
     def __getattr__(self, name:str)->Any:
         if "_props" not in self.__dict__ or "_value" not in self.__dict__:

@@ -69,6 +69,8 @@ class Metadata:
                 if key not in self._custom_is_set:
                     self._custom_is_set[key] = False
 
+        self._notify_change()
+
     @property
     def customData(self)->dictionary:
         return self._custom_data
@@ -94,6 +96,13 @@ class Metadata:
         else:
             self._custom_data[name] = value
             self._custom_is_set[name] = True
+
+        self._notify_change()
+
+    def _notify_change(self) -> None:
+        parent = self._parent
+        if parent is not None and hasattr(parent, "_touch"):
+            parent._touch()
 
     def to_str(self, indents:int=0, full:bool=False)->str:
         return MetadataSerializer.to_str(self, indents, full)

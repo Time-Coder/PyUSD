@@ -41,6 +41,7 @@ class Relationship(Property):
         else:
             self._targets = [prims]
         self._value_state = Property.ValueState.Authored
+        self._touch()
 
     def get(self)->List[Prim]:
         return self._targets
@@ -52,14 +53,17 @@ class Relationship(Property):
     def rel(self, prim:Prim)->None:
         self._targets.append(prim)
         self._value_state = Property.ValueState.Authored
+        self._touch()
 
     def add_target(self, prim:Prim)->None:
         self._targets.append(prim)
         self._value_state = Property.ValueState.Authored
+        self._touch()
 
     def remove_target(self, prim:Prim)->None:
         self._targets.remove(prim)
         self._value_state = Property.ValueState.Authored
+        self._touch()
 
     def __str__(self)->str:
         if len(self._targets) == 0:

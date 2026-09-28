@@ -28,9 +28,13 @@ class MetadataParser:
     @staticmethod
     def set_authored(metadata:Metadata, key:str, value:Any)->None:
         clean_key = key.split(" ", 1)[1] if key.startswith(("prepend ", "append ")) else key
-        metadata.update({key: value})
         if clean_key in metadata._builtin_data:
+            metadata.update({key: value})
             metadata._builtin_is_set[clean_key] = True
+        elif clean_key == "customData":
+            metadata.update({"customData": value})
+            for sub_key in value:
+                metadata._custom_is_set[sub_key] = True
         else:
             metadata._custom_data[clean_key] = value
             metadata._custom_is_set[clean_key] = True

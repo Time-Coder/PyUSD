@@ -1,0 +1,3 @@
+[submodule "openusd_core_spec"]
+	path = openusd_core_spec
+	url = https://github.com/aousd/specifications-public.git

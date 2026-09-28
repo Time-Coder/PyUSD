@@ -101,6 +101,13 @@ class Prim:
 
             self._fetch_from_class(klass)
 
+    def _touch(self) -> None:
+        prim = self
+        while prim._layer is None and prim._parent is not None:
+            prim = prim._parent
+        if prim._layer is not None:
+            prim._layer._touch()
+
     @property
     def specifier(self)->Specifier:
         return self._metadata.specifier
@@ -146,6 +153,7 @@ class Prim:
     def create_prop(self, prop:Property)->Property:
         self._props[prop.name] = prop
         prop._parent = self
+        self._touch()
         return prop
 
     T = TypeVar('T')
@@ -256,6 +264,7 @@ class Prim:
         prim._name = name
         prim._set_layer(self._layer)
         parent_prim._children[name] = prim
+        self._touch()
 
     @typechecked
     def __setitem__(self, path:str, prim:Prim)->None:
@@ -276,6 +285,7 @@ class Prim:
         prim._parent = None
         prim._set_layer(None)
         del parent_prim._children[name]
+        self._touch()
 
     @typechecked
     def __delitem__(self, path:str)->None:
@@ -316,6 +326,7 @@ class Prim:
         self._children[prim.name] = prim
         prim._parent = self
         prim._set_layer(self._layer)
+        self._touch()
 
     @typechecked
     def def_(self, prim_type:Type[PrimType], path:str)->PrimType:
@@ -344,6 +355,7 @@ class Prim:
             self._inherits.insert(0, prim)
         else:
             self._inherits.append(prim)
+        self._touch()
 
     @typechecked
     def remove_inherit(self, prim:Union[Prim, Layer])->None:
@@ -351,6 +363,7 @@ class Prim:
             return
 
         self._inherits.remove(prim)
+        self._touch()
 
     @typechecked
     def reference(self, prim:Union[Prim, Layer], prepend:bool=True)->None:
@@ -361,6 +374,7 @@ class Prim:
             self._references.insert(0, prim)
         else:
             self._references.append(prim)
+        self._touch()
 
     @typechecked
     def remove_reference(self, prim:Union[Prim, Layer])->None:
@@ -368,6 +382,7 @@ class Prim:
             return
 
         self._references.remove(prim)
+        self._touch()
 
     @typechecked
     def payload(self, prim:Union[Prim, Layer], prepend:bool=True)->None:
@@ -378,6 +393,7 @@ class Prim:
             self._payloads.insert(0, prim)
         else:
             self._payloads.append(prim)
+        self._touch()
 
     @typechecked
     def remove_payload(self, prim:Union[Prim, Layer])->None:
@@ -385,6 +401,7 @@ class Prim:
             return
 
         self._payloads.remove(prim)
+        self._touch()
 
     @typechecked
     def specialize(self, prim:Union[Prim, Layer], prepend:bool=True)->None:
@@ -395,6 +412,7 @@ class Prim:
             self._specializes.insert(0, prim)
         else:
             self._specializes.append(prim)
+        self._touch()
 
     @typechecked
     def remove_specialize(self, prim:Union[Prim, Layer])->None:
@@ -402,6 +420,7 @@ class Prim:
             return
 
         self._specializes.remove(prim)
+        self._touch()
 
     @typechecked
     def remove_child(self, prim:Union[str, Prim])->Prim:
@@ -617,6 +636,7 @@ class Prim:
                 self.create_prop(Attribute(infer_type(value), name, uniform=False, custom=True, is_leaf=False, fix_type=False))
 
         self._props[name].set(value)
+        self._touch()
 
     def to_str(self, indents: int = 0)->str:
         return PrimSerializer.to_str(self, indents)
