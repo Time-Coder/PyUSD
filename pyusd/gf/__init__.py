@@ -22,6 +22,9 @@ from .alias import (
     vector3f,
     vector3h,
 )
+from .bool2 import bool2
+from .bool3 import bool3
+from .bool4 import bool4
 from .double2 import double2
 from .double3 import double3
 from .double4 import double4
@@ -96,7 +99,7 @@ from .genMat2 import Mat2Type, genMat2
 from .genMat3 import Mat3Type, genMat3
 from .genMat4 import Mat4Type, genMat4
 from .genQuat import QuatType, genQuat
-from .genType import MathForm, Number, genType
+from .genType import MathForm, genType
 from .genVec import VecType, genVec
 from .genVec2 import Vec2Type, genVec2
 from .genVec3 import Vec3Type, genVec3
@@ -104,16 +107,20 @@ from .genVec4 import Vec4Type, genVec4
 from .half2 import half2
 from .half3 import half3
 from .half4 import half4
-from .helper import patch_nparray
+from .helper import Number, patch_nparray
 from .int2 import int2
 from .int3 import int3
 from .int4 import int4
+from .matrix2b import matrix2b
 from .matrix2d import matrix2d
 from .matrix2f import matrix2f
+from .matrix3b import matrix3b
 from .matrix3d import matrix3d
 from .matrix3f import matrix3f
+from .matrix4b import matrix4b
 from .matrix4d import matrix4d
 from .matrix4f import matrix4f
+from .quatb import quatb
 from .quatd import quatd
 from .quatf import quatf
 from .quath import quath
@@ -130,13 +137,15 @@ __all__ = [
     "genMat3", "Mat3Type",
     "genMat4", "Mat4Type",
     "genQuat", "QuatType",
+    "bool2", "bool3", "bool4",
     "int2", "int3", "int4",
     "half2", "half3", "half4",
     "float2", "float3", "float4",
     "double2", "double3", "double4",
+    "matrix2b", "matrix3b", "matrix4b",
     "matrix2f", "matrix3f", "matrix4f",
     "matrix2d", "matrix3d", "matrix4d",
-    "quatf", "quatd", "quath",
+    "quatb", "quatf", "quatd", "quath",
     "color3h", "color3f", "color3d",
     "color4h", "color4f", "color4d",
     "texCoord2h", "texCoord2f", "texCoord2d",

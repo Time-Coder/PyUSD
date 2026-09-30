@@ -11,7 +11,7 @@ class Skel(Attribute):
         """An (optional) array of tokens defining the list of
         joints to which jointIndices apply. If not defined, jointIndices applies
         to the ordered list of joints defined in the bound Skeleton's *joints*
-        attribute. If undefined on a primitive, the primitive inherits the 
+        attribute. If undefined on a primitive, the primitive inherits the
         value of the nearest ancestor prim, if any."""
 
     @joints.setter

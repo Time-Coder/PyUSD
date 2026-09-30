@@ -8,9 +8,9 @@ from .gprim import Gprim
 
 
 class Cylinder(Gprim):
-    """Defines a primitive cylinder with closed ends, centered at the 
+    """Defines a primitive cylinder with closed ends, centered at the
     origin, whose spine is along the specified \\em axis.
-    
+
     The fallback values for Cube, Sphere, Cone, and Cylinder are set so that
     they all pack into the same volume/bounds."""
 
@@ -27,14 +27,14 @@ class Cylinder(Gprim):
     height: Attribute[double] = Attribute(double, value=2.0, doc=
         """The size of the cylinder's spine along the specified
         \\em axis.  If you author \\em height you must also author \\em extent.
-        
+
         \\sa GetExtentAttr()"""
     )
 
     radius: Attribute[double] = Attribute(double, value=1.0, doc=
         """The radius of the cylinder. If you author \\em radius
         you must also author \\em extent.
-        
+
         \\sa GetExtentAttr()"""
     )
 

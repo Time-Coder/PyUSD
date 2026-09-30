@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Type
 from .api_schema_base import APISchemaBase
 
 if TYPE_CHECKING:
-    from .prim import PrimSpec
+    from .prim_spec import PrimSpec
 
 
 class APIWrapper:

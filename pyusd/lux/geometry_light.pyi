@@ -17,4 +17,3 @@ class GeometryLight(NonboundableLightBase):
 
     @geometry.setter
     def geometry(self, value:Relationship)->None: ...
-

@@ -3,43 +3,72 @@ from typing import Any
 from ..attribute import Attribute
 from ..dtypes import double, namespace
 from ..gf import double3, matrix4d, quatd
+from ..property import Property
 
 
 class XformOp(Attribute):
 
-    translateX: Attribute[double] = Attribute(double, value=0, is_leaf=False)
-    translateY: Attribute[double] = Attribute(double, value=0, is_leaf=False)
-    translateZ: Attribute[double] = Attribute(double, value=0, is_leaf=False)
-    translate: Attribute[double3] = Attribute(double3, value=(0, 0, 0), is_leaf=False)
-    scale: Attribute[double3] = Attribute(double3, value=(1, 1, 1), is_leaf=False)
-    scaleX: Attribute[double] = Attribute(double, value=1, is_leaf=False)
-    scaleY: Attribute[double] = Attribute(double, value=1, is_leaf=False)
-    scaleZ: Attribute[double] = Attribute(double, value=1, is_leaf=False)
-    rotateX: Attribute[double] = Attribute(double, value=0, is_leaf=False)
-    rotateY: Attribute[double] = Attribute(double, value=0, is_leaf=False)
-    rotateZ: Attribute[double] = Attribute(double, value=0, is_leaf=False)
-    rotateXYZ: Attribute[double3] = Attribute(double3, value=(0, 0, 0), is_leaf=False)
-    rotateXZY: Attribute[double3] = Attribute(double3, value=(0, 0, 0), is_leaf=False)
-    rotateYXZ: Attribute[double3] = Attribute(double3, value=(0, 0, 0), is_leaf=False)
-    rotateYZX: Attribute[double3] = Attribute(double3, value=(0, 0, 0), is_leaf=False)
-    rotateZXY: Attribute[double3] = Attribute(double3, value=(0, 0, 0), is_leaf=False)
-    rotateZYX: Attribute[double3] = Attribute(double3, value=(0, 0, 0), is_leaf=False)
-    orient: Attribute[quatd] = Attribute(quatd, value=(1, 0, 0, 0), is_leaf=False)
+    translateX: Attribute[double] = Attribute(double, value=0.0, is_leaf=False)
+    translateY: Attribute[double] = Attribute(double, value=0.0, is_leaf=False)
+    translateZ: Attribute[double] = Attribute(double, value=0.0, is_leaf=False)
+    translate: Attribute[double3] = Attribute(double3, value=(0.0, 0.0, 0.0), is_leaf=False)
+    scale: Attribute[double3] = Attribute(double3, value=(1.0, 1.0, 1.0), is_leaf=False)
+    scaleX: Attribute[double] = Attribute(double, value=1.0, is_leaf=False)
+    scaleY: Attribute[double] = Attribute(double, value=1.0, is_leaf=False)
+    scaleZ: Attribute[double] = Attribute(double, value=1.0, is_leaf=False)
+    rotateX: Attribute[double] = Attribute(double, value=0.0, is_leaf=False)
+    rotateY: Attribute[double] = Attribute(double, value=0.0, is_leaf=False)
+    rotateZ: Attribute[double] = Attribute(double, value=0.0, is_leaf=False)
+    rotateXYZ: Attribute[double3] = Attribute(double3, value=(0.0, 0.0, 0.0), is_leaf=False)
+    rotateXZY: Attribute[double3] = Attribute(double3, value=(0.0, 0.0, 0.0), is_leaf=False)
+    rotateYXZ: Attribute[double3] = Attribute(double3, value=(0.0, 0.0, 0.0), is_leaf=False)
+    rotateYZX: Attribute[double3] = Attribute(double3, value=(0.0, 0.0, 0.0), is_leaf=False)
+    rotateZXY: Attribute[double3] = Attribute(double3, value=(0.0, 0.0, 0.0), is_leaf=False)
+    rotateZYX: Attribute[double3] = Attribute(double3, value=(0.0, 0.0, 0.0), is_leaf=False)
+    orient: Attribute[quatd] = Attribute(quatd, value=(1.0, 0.0, 0.0, 0.0), is_leaf=False)
     transform: Attribute[matrix4d] = Attribute(matrix4d, value=matrix4d(), is_leaf=False)
 
     def __init__(self)->None:
         Attribute.__init__(self, namespace, "xformOp", is_leaf=False)
 
+    def _owner_prim(self):
+        """The prim this op namespace is installed on, if any."""
+        from ..prim_spec import PrimSpec
+
+        owner = self
+        while owner is not None:
+            parent = owner._parent
+            if parent is None:
+                return None
+
+            if isinstance(parent, PrimSpec):
+                return parent
+
+            owner = parent
+
+        return None
+
     def __setattr__(self, name: str, value: Any) -> None:
         Attribute.__setattr__(self, name, value)
 
-        if "_props" not in self.__dict__ or "_parent_prim" not in self.__dict__:
+        if "_props" not in self.__dict__ or name not in self._props:
             return
 
-        if name not in self._props:
+        parent_prim = self._owner_prim()
+        if parent_prim is None:
             return
 
         full_name = self._name + ":" + name
+        order = parent_prim.xformOpOrder
+        current = order.get()
+        if current is None:
+            current = []
+            order.value = current
 
-        if full_name not in self._parent_prim.xformOpOrder:
-            self._parent_prim.xformOpOrder.append(full_name)
+        if full_name in current:
+            return
+
+        # xformOpOrder starts out as a schema fallback; authoring it is what makes
+        # the op part of the transform stack, so the opinion has to be marked.
+        current.append(full_name)
+        order._value_state = Property.ValueState.Authored

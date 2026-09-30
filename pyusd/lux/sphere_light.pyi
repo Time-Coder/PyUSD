@@ -7,10 +7,10 @@ class SphereLight(BoundableLightBase):
     "Light emitted outward from a sphere."
 
     @property
-    def light(self) -> Light: ...
+    def inputs(self) -> Inputs: ...
 
     @property
-    def inputs(self) -> Inputs: ...
+    def light(self) -> Light: ...
 
     @property
     def treatAsPoint(self)->Attribute[bool]:
@@ -21,4 +21,3 @@ class SphereLight(BoundableLightBase):
 
     @treatAsPoint.setter
     def treatAsPoint(self, value:bool)->None: ...
-

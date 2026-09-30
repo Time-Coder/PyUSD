@@ -7,7 +7,7 @@ class Volume(Gprim):
     of FieldBase primitives bound together in this volume. Each
     FieldBase primitive is specified as a relationship with a
     namespace prefix of "field".
-    
+
     The relationship name is used by the renderer to associate
     individual fields with the named input parameters on the volume
     shader. Using this indirect approach to connecting fields to

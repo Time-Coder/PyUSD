@@ -10,10 +10,10 @@ from ..typed import Typed
 class SkelAnimation(Typed):
     """Describes a skel animation, where joint animation is stored in a
     vectorized form.
-    
+
     See the extended \\ref UsdSkel_SkelAnimation "Skel Animation"
     documentation for more information.
-    
+
     """
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
@@ -34,21 +34,21 @@ class SkelAnimation(Typed):
     )
 
     translations = Attribute(List[float3],
-        doc="""Joint-local translations of all affected joints. Array length 
+        doc="""Joint-local translations of all affected joints. Array length
         should match the size of the *joints* attribute.
         """
     )
 
     rotations = Attribute(List[quatf],
-        doc="""Joint-local unit quaternion rotations of all affected joints, 
-        in 32-bit precision. Array length should match the size of the 
+        doc="""Joint-local unit quaternion rotations of all affected joints,
+        in 32-bit precision. Array length should match the size of the
         *joints* attribute.
         """
     )
 
     scales = Attribute(List[half3],
         doc="""Joint-local scales of all affected joints, in
-        16 bit precision. Array length should match the size of the *joints* 
+        16 bit precision. Array length should match the size of the *joints*
         attribute.
         """
     )

@@ -8,10 +8,10 @@ class SkelBindingAPI(APISchemaBase):
     """Provides API for authoring and extracting all the skinning-related
     data that lives in the "geometry hierarchy" of prims and models that want
     to be skeletally deformed.
-    
+
     See the extended \\ref UsdSkel_BindingAPI "UsdSkelBindingAPI schema"
     documentation for more about bindings and how they apply in a scene graph.
-    
+
     """
 
 
@@ -24,4 +24,3 @@ class SkelBindingAPI(APISchemaBase):
 
     @property
     def primvars(self) -> Primvars: ...
-

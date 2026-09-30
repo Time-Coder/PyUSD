@@ -1,26 +1,33 @@
+"""Stage: a composed view over a root layer, and the edit target that authors it.
+
+The prim view lives in :mod:`pyusd.prim`; property, metadata, and variant views in
+their own modules. This module holds the stage itself plus the plumbing that
+writes opinions into the edit layer.
+"""
+
 from __future__ import annotations
 
 import os
-from typing import Any, Iterable, List, Optional, Type, TypeVar, Union
+from typing import Any, Iterable, List, Optional, Type, Union, cast
 
 from .attribute import Attribute
-from .composition import (
-    CompositionEngine,
-    LayerCache,
-    normalize_prim_path,
-    normalize_property_name,
-    path_items,
-    prim_at,
-    property_value,
-)
+from .composition import CompositionEngine, LayerCache
 from .layer import Layer
-from .prim import PrimSpec
+from .prim import Prim, PrimType
+from .prim_spec import PrimSpec
 from .property import Property
 from .relationship import Relationship
 from .sdf import Specifier
-from .utils import in_annotations, infer_type
-
-PrimType = TypeVar("PrimType", bound=PrimSpec)
+from .stage_metadata import StageMetadata
+from .stage_property import StageProperty
+from .utils import (
+    in_annotations,
+    infer_type,
+    join_relative_path,
+    normalize_prim_path,
+    normalize_property_name,
+    prim_at,
+)
 
 
 class StageImpl:
@@ -144,6 +151,17 @@ class Stage:
     def has_prim(self, path: str) -> bool:
         return self._engine.has_prim(path)
 
+    def stage_has_prim(self, path: str) -> Optional[Prim]:
+        """Return the prim view at ``path``, or None when it is not populated."""
+        path = normalize_prim_path(path)
+        if path == "/":
+            return self[path]
+
+        if not self.has_prim(path):
+            return None
+
+        return self[path]
+
     def child_names(self, path: str = "/") -> List[str]:
         return self._engine.child_names(path)
 
@@ -189,21 +207,19 @@ class Stage:
         del self.edit_layer[normalize_prim_path(path)]
         self.invalidate()
 
-    def def_(self, prim_type: Type[PrimType], path: str) -> Prim:
-        prim = prim_type(specifier=Specifier.Def)
-        self.edit_layer[normalize_prim_path(path)] = prim
+    def def_(self, prim_type: Type[PrimType], path: str) -> PrimType:
+        self.edit_layer[normalize_prim_path(path)] = self._new_spec(prim_type, Specifier.Def)
         self.invalidate()
-        return self[path]
+        # The prim was just defined as prim_type, but __getitem__ only promises Prim.
+        return cast(PrimType, self[path])
 
     def class_(self, path: str) -> Prim:
-        prim = PrimSpec(specifier=Specifier.Class)
-        self.edit_layer[normalize_prim_path(path)] = prim
+        self.edit_layer[normalize_prim_path(path)] = self._new_spec(None, Specifier.Class)
         self.invalidate()
         return self[path]
 
     def over_(self, path: str) -> Prim:
-        prim = PrimSpec(specifier=Specifier.Over)
-        self.edit_layer[normalize_prim_path(path)] = prim
+        self.edit_layer[normalize_prim_path(path)] = self._new_spec(None, Specifier.Over)
         self.invalidate()
         return self[path]
 
@@ -236,9 +252,9 @@ class Stage:
             self.invalidate()
             return prop
 
-        if isinstance(template, Relationship) or is_relationship_value(value):
+        if isinstance(template, Relationship) or StageProperty._is_relationship_value(value):
             rel = self._ensure_edit_relationship(edit_prim, prop_name, template)
-            rel._targets = coerce_relationship_targets(value)
+            rel._targets = StageProperty._coerce_relationship_targets(value)
             rel._value_state = Property.ValueState.Authored
             self.invalidate()
             return rel
@@ -302,7 +318,7 @@ class Stage:
         )
         rel._value_state = Property.ValueState.NotAuthored
         if targets is not None:
-            rel._targets = coerce_relationship_targets(targets)
+            rel._targets = StageProperty._coerce_relationship_targets(targets)
             rel._value_state = Property.ValueState.Authored
         self._install_property(edit_prim, prop_name, rel)
         self.invalidate()
@@ -345,12 +361,12 @@ class Stage:
         template: Optional[Property],
     ) -> Property:
         prop_name = normalize_property_name(prop_name)
-        existing = local_prop_at(prim, prop_name)
+        existing = self._local_prop_at(prim, prop_name)
         if existing is not None:
             return existing
 
         if template is not None:
-            prop = clone_for_edit(template)
+            prop = self._clone_for_edit(template)
         else:
             prop = Property(prop_name.split(":")[-1], custom=True, is_leaf=False)
 
@@ -363,12 +379,12 @@ class Stage:
         template: Optional[Property],
         value: Any,
     ) -> Attribute:
-        existing = local_prop_at(prim, prop_name)
+        existing = self._local_prop_at(prim, prop_name)
         if isinstance(existing, Attribute):
             return existing
 
         if isinstance(template, Attribute):
-            attr = clone_for_edit(template)
+            attr = self._clone_for_edit(template)
             if not isinstance(attr, Attribute):
                 raise TypeError("template clone did not produce an Attribute")
         else:
@@ -385,12 +401,12 @@ class Stage:
         prop_name: str,
         template: Optional[Property],
     ) -> Relationship:
-        existing = local_prop_at(prim, prop_name)
+        existing = self._local_prop_at(prim, prop_name)
         if isinstance(existing, Relationship):
             return existing
 
         if isinstance(template, Relationship):
-            rel = clone_for_edit(template)
+            rel = self._clone_for_edit(template)
             if not isinstance(rel, Relationship):
                 raise TypeError("template clone did not produce a Relationship")
         else:
@@ -400,414 +416,45 @@ class Stage:
         self._install_property(prim, prop_name, rel)
         return rel
 
+    @staticmethod
+    def _new_spec(prim_type: Optional[type], specifier: Specifier) -> PrimSpec:
+        """Create plain storage for a prim, recording the type it was defined with.
 
-class Prim:
-    _stage: Stage
-    _path: str
+        The schema class is only a type token here: it is never instantiated, and
+        the resulting spec carries no materialised properties. Declarations are
+        resolved later, against the registry, by typeName.
+        """
+        prim = PrimSpec(specifier=specifier)
+        if prim_type is not None and prim_type.__name__ != "PrimSpec":
+            prim._metadata._builtin_data["typeName"] = prim_type.__name__
 
-    def __init__(self, stage: Stage, path: str) -> None:
-        object.__setattr__(self, "_stage", stage)
-        object.__setattr__(self, "_path", normalize_prim_path(path))
+        return prim
 
-    @property
-    def stage(self) -> Stage:
-        return self._stage
-
-    @property
-    def path(self) -> str:
-        return self._path
-
-    @property
-    def name(self) -> str:
-        items = path_items(self._path)
-        return items[-1] if items else ""
-
-    @property
-    def metadata(self) -> StageMetadata:
-        return StageMetadata(self._stage, self._path)
-
-    @property
-    def resolved_prim(self) -> Optional[PrimSpec]:
-        strongest = self._stage._engine.prim_index(self._path).strongest_spec
-        return strongest.prim if strongest is not None else None
-
-    @property
-    def specifier(self) -> Optional[Specifier]:
-        prim = self.resolved_prim
-        return prim.specifier if prim is not None else None
-
-    @property
-    def type_name(self) -> Optional[str]:
-        return self._stage._engine.resolve_metadata(self._path, "typeName")
-
-    @property
-    def child_names(self) -> List[str]:
-        return self._stage.child_names(self._path)
-
-    @property
-    def children(self) -> List[Prim]:
-        return [self.child(name) for name in self.child_names]
-
-    @property
-    def prop_names(self) -> List[str]:
-        names = self._stage._engine.property_names(self._path)
-        return [name for name in names if ":" not in name]
-
-    @property
-    def props(self) -> List[StageProperty]:
-        return [StageProperty(self._stage, self._path, name) for name in self.prop_names]
-
-    def has_prop(self, name: str) -> bool:
-        return self._stage._engine.resolve_property(self._path, name) is not None
-
-    def prop(self, name: str) -> StageProperty:
-        if not self.has_prop(name):
-            raise KeyError(name)
-
-        return StageProperty(self._stage, self._path, name)
-
-    def child(self, name: str) -> Prim:
-        return self[join_relative_path("", name)]
-
-    def def_(self, prim_type: Type[PrimType], path: str) -> Prim:
-        return self._stage.def_(prim_type, join_relative_path(self._path, path))
-
-    def class_(self, path: str) -> Prim:
-        return self._stage.class_(join_relative_path(self._path, path))
-
-    def over_(self, path: str) -> Prim:
-        return self._stage.over_(join_relative_path(self._path, path))
-
-    def __getitem__(self, path: str) -> Prim:
-        return self._stage[join_relative_path(self._path, path)]
-
-    def __setitem__(self, path: str, prim: PrimSpec) -> None:
-        self._stage[join_relative_path(self._path, path)] = prim
-
-    def __delitem__(self, path: str) -> None:
-        del self._stage[join_relative_path(self._path, path)]
-
-    def __getattr__(self, name: str) -> StageProperty:
-        return StageProperty(self._stage, self._path, name)
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        if hasattr(self.__class__, name) or in_annotations(name, self.__class__):
-            object.__setattr__(self, name, value)
-            return
-
-        self._stage._set_property(self._path, name, value)
-
-    def __str__(self) -> str:
-        return f"Prim(<{self._path}>)"
-
-    def __repr__(self) -> str:
-        return str(self)
-class StageProperty:
-    _stage: Stage
-    _prim_path: str
-    _prop_name: str
-
-    def __init__(self, stage: Stage, prim_path: str, prop_name: str) -> None:
-        object.__setattr__(self, "_stage", stage)
-        object.__setattr__(self, "_prim_path", normalize_prim_path(prim_path))
-        object.__setattr__(self, "_prop_name", normalize_property_name(prop_name))
-
-    @property
-    def stage(self) -> Stage:
-        return self._stage
-
-    @property
-    def prim_path(self) -> str:
-        return self._prim_path
-
-    @property
-    def name(self) -> str:
-        return self._prop_name.split(":")[-1]
-
-    @property
-    def full_name(self) -> str:
-        return self._prop_name
-
-    @property
-    def path(self) -> str:
-        return f"{self._prim_path}.{self._prop_name}"
-
-    @property
-    def metadata(self) -> StageMetadata:
-        return StageMetadata(self._stage, self._prim_path, self._prop_name)
-
-    @property
-    def resolved_property(self) -> Optional[Property]:
-        return self._stage._engine.resolve_property(self._prim_path, self._prop_name)
-
-    @property
-    def exists(self) -> bool:
-        return self.resolved_property is not None
-
-    @property
-    def value(self) -> Any:
-        return self.get()
-
-    @value.setter
-    def value(self, value: Any) -> None:
-        self.set(value)
-
-    @property
-    def targets(self) -> List[Any]:
-        prop = self.resolved_property
-        if isinstance(prop, Relationship):
-            return prop.targets
-
-        return []
-
-    @property
-    def timeSamples(self) -> dict:
-        prop = self.resolved_property
-        if isinstance(prop, Attribute):
-            return prop.timeSamples
-
-        return {}
-
-    @property
-    def value_state(self) -> Optional[Property.ValueState]:
-        prop = self.resolved_property
-        return prop.value_state if prop is not None else None
-
-    @property
-    def type(self) -> Optional[type]:
-        prop = self.resolved_property
-        return prop.type if isinstance(prop, Attribute) else None
-
-    @property
-    def type_name(self) -> str:
-        prop = self.resolved_property
-        return prop.type_name if isinstance(prop, Attribute) else ""
-
-    @property
-    def custom(self) -> bool:
-        prop = self.resolved_property
-        return prop.custom if prop is not None else True
-
-    @property
-    def is_leaf(self) -> bool:
-        prop = self.resolved_property
-        return prop.is_leaf if prop is not None else True
-
-    def get(self) -> Any:
-        return property_value(self.resolved_property)
-
-    def set(self, value: Any) -> None:
-        self._stage._set_property(self._prim_path, self._prop_name, value)
-
-    def clear(self) -> None:
-        prop = self._stage._ensure_edit_property(
-            self._stage._ensure_edit_prim(self._prim_path),
-            self._prop_name,
-            self.resolved_property,
-        )
-        if isinstance(prop, Attribute):
-            prop.clear()
-        elif isinstance(prop, Relationship):
-            prop._targets = []
-            prop._value_state = Property.ValueState.Cleared
+    @staticmethod
+    def _clone_for_edit(prop: Property) -> Property:
+        """A detached copy of a resolved property, ready to be authored over."""
+        result = prop.clone()
+        result._parent = None
+        if isinstance(result, Attribute):
+            result._time_samples = {}
+            result._value_state = Property.ValueState.NotAuthored
+        elif isinstance(result, Relationship):
+            result._targets = []
+            result._value_state = Property.ValueState.NotAuthored
         else:
-            prop._value_state = Property.ValueState.Cleared
-        self._stage.invalidate()
+            result._value_state = Property.ValueState.NotAuthored
 
-    def create(
-        self,
-        value_type: type,
-        value: Any = None,
-        uniform: bool = False,
-        custom: bool = True,
-        fix_type: bool = True,
-    ) -> StageProperty:
-        return self._stage._create_attribute(
-            self._prim_path,
-            self._prop_name,
-            value_type,
-            value=value,
-            uniform=uniform,
-            custom=custom,
-            fix_type=fix_type,
-        )
+        return result
 
-    def rel(self, prim: Any) -> StageProperty:
-        return self._stage._create_relationship(self._prim_path, self._prop_name, prim)
+    @staticmethod
+    def _local_prop_at(prim: PrimSpec, prop_name: str) -> Optional[Property]:
+        """The property already authored on this spec, without consulting composition."""
+        names = normalize_property_name(prop_name).split(":")
+        current: Any = prim
+        for name in names:
+            if name not in current._props:
+                return None
 
-    def add_target(self, prim: Any) -> None:
-        rel = self._stage._ensure_edit_relationship(
-            self._stage._ensure_edit_prim(self._prim_path),
-            self._prop_name,
-            self.resolved_property,
-        )
-        rel._targets.extend(coerce_relationship_targets(prim))
-        rel._value_state = Property.ValueState.Authored
-        self._stage.invalidate()
+            current = current._props[name]
 
-    def remove_target(self, prim: Any) -> None:
-        targets = coerce_relationship_targets(prim)
-        rel = self._stage._ensure_edit_relationship(
-            self._stage._ensure_edit_prim(self._prim_path),
-            self._prop_name,
-            self.resolved_property,
-        )
-        for target in targets:
-            if target in rel._targets:
-                rel._targets.remove(target)
-        rel._value_state = Property.ValueState.Authored
-        self._stage.invalidate()
-
-    def __getattr__(self, name: str) -> Any:
-        child_name = self._prop_name + ":" + name
-        if self._stage._engine.resolve_property(self._prim_path, child_name) is not None:
-            return StageProperty(self._stage, self._prim_path, child_name)
-
-        value = self.get()
-        if value is not None and hasattr(value, name):
-            return getattr(value, name)
-
-        return StageProperty(self._stage, self._prim_path, child_name)
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        if hasattr(self.__class__, name) or in_annotations(name, self.__class__):
-            object.__setattr__(self, name, value)
-            return
-
-        self._stage._set_property(self._prim_path, self._prop_name + ":" + name, value)
-
-    def __str__(self) -> str:
-        return str(self.get())
-
-    def __repr__(self) -> str:
-        return repr(self.get())
-
-    def __bool__(self) -> bool:
-        return bool(self.get())
-
-    def __len__(self) -> int:
-        return len(self.get())
-
-    def __iter__(self):
-        return iter(self.get())
-
-    def __getitem__(self, key: Any) -> Any:
-        return self.get()[key]
-
-    def __eq__(self, other: Any) -> bool:
-        if isinstance(other, StageProperty):
-            other = other.get()
-        return self.get() == other
-
-    def __ne__(self, other: Any) -> bool:
-        return not self.__eq__(other)
-
-
-class StageMetadata:
-    _stage: Stage
-    _prim_path: Optional[str]
-    _prop_name: str
-
-    def __init__(self, stage: Stage, prim_path: Optional[str], prop_name: str = "") -> None:
-        object.__setattr__(self, "_stage", stage)
-        object.__setattr__(self, "_prim_path", normalize_prim_path(prim_path) if prim_path else None)
-        object.__setattr__(self, "_prop_name", normalize_property_name(prop_name) if prop_name else "")
-
-    def get(self, key: str, default: Any = None) -> Any:
-        value = self._stage._engine.resolve_metadata(self._prim_path, key, self._prop_name)
-        return default if value is None else value
-
-    def set(self, key: str, value: Any) -> None:
-        self._stage._set_metadata(self._prim_path, key, value, self._prop_name)
-
-    def __getattr__(self, name: str) -> Any:
-        value = self._stage._engine.resolve_metadata(self._prim_path, name, self._prop_name)
-        if value is None:
-            raise AttributeError(name)
-
-        return value
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        if hasattr(self.__class__, name) or in_annotations(name, self.__class__):
-            object.__setattr__(self, name, value)
-            return
-
-        self.set(name, value)
-
-
-def clone_for_edit(prop: Property) -> Property:
-    result = prop.clone()
-    result._parent = None
-    if isinstance(result, Attribute):
-        result._time_samples = {}
-        result._value_state = Property.ValueState.NotAuthored
-    elif isinstance(result, Relationship):
-        result._targets = []
-        result._value_state = Property.ValueState.NotAuthored
-    else:
-        result._value_state = Property.ValueState.NotAuthored
-
-    return result
-
-
-def local_prop_at(prim: PrimSpec, prop_name: str) -> Optional[Property]:
-    names = normalize_property_name(prop_name).split(":")
-    current: Any = prim
-    for name in names:
-        if name not in current._props:
-            return None
-        current = current._props[name]
-
-    return current
-
-
-def is_relationship_value(value: Any) -> bool:
-    if isinstance(value, (PrimSpec, Prim, Relationship)):
-        return True
-
-    if isinstance(value, list) and value:
-        return all(isinstance(item, (PrimSpec, Prim)) or is_path_target(item) for item in value)
-
-    return is_path_target(value)
-
-
-def is_path_target(value: Any) -> bool:
-    return isinstance(value, str) and (
-        value.startswith("<") or value.startswith("/") or value.startswith("@")
-    )
-
-
-def coerce_relationship_targets(value: Any) -> List[Any]:
-    if isinstance(value, Relationship):
-        return list(value.targets)
-
-    if not isinstance(value, list):
-        value = [value]
-
-    result: List[Any] = []
-    for item in value:
-        if isinstance(item, Prim):
-            result.append(f"<{item.path}>")
-        elif isinstance(item, PrimSpec):
-            result.append(item)
-        elif isinstance(item, str):
-            if item.startswith("<") or item.startswith("@"):
-                result.append(item)
-            else:
-                result.append(f"<{normalize_prim_path(item)}>")
-        else:
-            result.append(item)
-
-    return result
-
-
-def join_relative_path(base_path: str, path: str) -> str:
-    base_path = normalize_prim_path(base_path) if base_path else ""
-    path = str(path)
-    if path.startswith("/"):
-        return normalize_prim_path(path)
-
-    if not base_path or base_path == "/":
-        return normalize_prim_path("/" + path)
-
-    return normalize_prim_path(base_path + "/" + path)
+        return current

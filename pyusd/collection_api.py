@@ -141,7 +141,7 @@ class CollectionAPI(APISchemaBase):
     include the root path `</>`.
 
     \\section usd_collectionapi_creating_cpp Creating Collections in C++
-    
+
     \\snippet examples_usd.cpp ApplyCollections
     """
 
@@ -160,9 +160,9 @@ class CollectionAPI(APISchemaBase):
             "schemaTokens": {
                 "exclude": {
                     "doc": """
-                    This is the token used to exclude a path from a collection. 
+                    This is the token used to exclude a path from a collection.
                     Although it is not a possible value for the "expansionRule"
-                    attribute, it is used as the expansionRule for excluded paths 
+                    attribute, it is used as the expansionRule for excluded paths
                     in UsdCollectionAPI::MembershipQuery::IsPathIncluded.
                     """
                 }
@@ -205,10 +205,10 @@ class CollectionAPI(APISchemaBase):
         reason about. Finally, it is invalid for a collection to exclude
         paths that are not included in it. The presence of such "orphaned"
         excluded paths will not affect the set of paths included in the
-        collection, but may affect the performance of querying membership of 
+        collection, but may affect the performance of querying membership of
         a path in the collection (see
-        UsdCollectionAPI::MembershipQuery::IsPathIncluded) 
-        or of enumerating the objects belonging to the collection (see 
+        UsdCollectionAPI::MembershipQuery::IsPathIncluded)
+        or of enumerating the objects belonging to the collection (see
         UsdCollectionAPI::GetIncludedObjects)."""
     )
     membershipExpression: Attribute[pathExpression] = Attribute(pathExpression, uniform=True, doc=
@@ -243,8 +243,8 @@ class CollectionAPI(APISchemaBase):
                 "apiName": "Collection"
             }
         },
-        doc="""This property represents the collection for the purpose of 
-        allowing another collection to include it. When this property is 
+        doc="""This property represents the collection for the purpose of
+        allowing another collection to include it. When this property is
         targeted by another collection's <i>includes</i> relationship, the rules
         of this collection will be inserted into the rules of the collection
         that includes it.

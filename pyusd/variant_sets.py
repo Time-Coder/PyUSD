@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Dict, ItemsView, Iterator, KeysView, ValuesVie
 from .variant_set import VariantSet
 
 if TYPE_CHECKING:
-    from .prim import PrimSpec
+    from .prim_spec import PrimSpec
 
 
 class VariantSets:
@@ -29,7 +29,7 @@ class VariantSets:
     def values(self)->ValuesView[VariantSet]:
         return self._variant_sets.values()
 
-    def items(self)->ItemsView[VariantSet]:
+    def items(self)->ItemsView[str, VariantSet]:
         return self._variant_sets.items()
 
     def __iter__(self)->Iterator[str]:

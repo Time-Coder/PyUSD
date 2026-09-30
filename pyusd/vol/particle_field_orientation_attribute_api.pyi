@@ -7,16 +7,16 @@ from ..gf import quatf, quath
 class ParticleFieldOrientationAttributeAPI(APISchemaBase):
     """A ParticleField related applied schema that provides an
     orientations attribute to define the orientation of the particles.
-    
+
     Attributes are provided in both `float` and `half` types for some
     easy data footprint affordance, data consumers should prefer
     `float` version if available.
-    
+
     The length of this attribute is expected to match the length of
     the provided position data. If it is too long it will be truncated
     to the number of particles define by the position data. If it is
     too short it will be ignored.
-    
+
     If the attribute is ignored or not populated, then a default value
     of no rotation should be applied to the kernel instantiated at each
     particle.
@@ -36,4 +36,3 @@ class ParticleFieldOrientationAttributeAPI(APISchemaBase):
 
     @orientationsh.setter
     def orientationsh(self, value:List[quath])->None: ...
-

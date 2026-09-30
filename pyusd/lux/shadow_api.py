@@ -45,7 +45,7 @@ class ShadowAPI(APISchemaBase):
     )
     inputs.shadow.distance = Attribute(float,
         doc="""The maximum distance shadows are cast. The distance is
-        measured as the distance between the point on the surface and the 
+        measured as the distance between the point on the surface and the
         occluder.
         The default value (-1) indicates no limit.
 
@@ -59,13 +59,13 @@ class ShadowAPI(APISchemaBase):
         }
     )
     inputs.shadow.falloff = Attribute(float,
-        doc="""The size of the shadow falloff zone within the shadow max 
-        distance, which can be used to hide the hard cut-off for shadows seen 
-        stretching past the max distance. The falloff zone is the area that 
-        fades from full shadowing at the beginning of the falloff zone to no 
-        shadowing at the max distance from the occluder. The falloff zone 
-        distance cannot exceed the shadow max distance. A falloff value equal 
-        to or less than zero (with -1 as the default) indicates no falloff. 
+        doc="""The size of the shadow falloff zone within the shadow max
+        distance, which can be used to hide the hard cut-off for shadows seen
+        stretching past the max distance. The falloff zone is the area that
+        fades from full shadowing at the beginning of the falloff zone to no
+        shadowing at the max distance from the occluder. The falloff zone
+        distance cannot exceed the shadow max distance. A falloff value equal
+        to or less than zero (with -1 as the default) indicates no falloff.
 
         """,
         metadata={

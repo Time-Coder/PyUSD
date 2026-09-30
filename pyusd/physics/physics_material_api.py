@@ -5,8 +5,8 @@ from ..dtypes import namespace
 
 
 class PhysicsMaterialAPI(APISchemaBase):
-    """ Adds simulation material properties to a Material. All collisions 
-    that have a relationship to this material will have their collision response 
+    """ Adds simulation material properties to a Material. All collisions
+    that have a relationship to this material will have their collision response
     defined through this material.
     """
 
@@ -49,7 +49,7 @@ class PhysicsMaterialAPI(APISchemaBase):
     physics.density = Attribute(float,
         doc="""If non-zero, defines the density of the material. This can be
         used for body mass computation, see PhysicsMassAPI.
-        Note that if the density is 0.0 it is ignored. 
+        Note that if the density is 0.0 it is ignored.
         Units: mass/distance/distance/distance.
         """,
         metadata={

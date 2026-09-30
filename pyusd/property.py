@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union, cast
 
 from .common import SchemaKind
 from .metadata import Metadata
@@ -11,8 +11,14 @@ from .utils import in_annotations, infer_type
 if TYPE_CHECKING:
     from .api_schema_base import APISchemaBase
     from .attribute import Attribute
-    from .prim import PrimSpec
+    from .prim_spec import PrimSpec
     from .relationship import Relationship
+
+# Fields Property.clone manages itself; anything else on a subclass instance is
+# state the clone has to carry over.
+_CLONE_MANAGED_FIELDS = frozenset(
+    {"_parent", "_name", "_metadata", "_props", "_custom", "_is_leaf", "_value_state"}
+)
 
 
 class Property:
@@ -23,7 +29,11 @@ class Property:
         Authored = 2
         Cleared = 3
 
-    _parent: Optional[Union[PrimSpec, Property]]
+    # Any rather than Union[PrimSpec, Property]: a self-referential annotation in
+    # this class body makes type checkers treat the attribute as read-only, which
+    # breaks the legitimate `prop._parent = prim` assignments below. Metadata
+    # declares its own `_parent` as Any for the same reason.
+    _parent: Any
     _name: str
     _metadata: Metadata
     _props: Dict[str, Property]
@@ -87,6 +97,16 @@ class Property:
         result._custom = self._custom
         result._is_leaf = self._is_leaf
         result._value_state = self._value_state
+
+        # Reclassing never runs the subclass __init__, so anything a subclass
+        # stored beyond the Property/Attribute contract is carried over here.
+        # Subclass clones (Attribute.clone) still overwrite the fields they own.
+        for key, value in self.__dict__.items():
+            if key in _CLONE_MANAGED_FIELDS or key in result.__dict__:
+                continue
+
+            result.__dict__[key] = value
+
         if clone_child:
             for name, child in self._props.items():
                 result._props[name] = child.clone()
@@ -112,7 +132,7 @@ class Property:
 
     @property
     def full_name(self)->str:
-        from .prim import PrimSpec
+        from .prim_spec import PrimSpec
 
         if self._parent is None or isinstance(self._parent, PrimSpec):
             return self._name
@@ -124,7 +144,9 @@ class Property:
         if self._parent is None:
             return self.full_name
 
-        return self._parent.path + "." + self.full_name
+        # The parent chain already carries the namespace prefix, so the leaf name
+        # is appended here; using full_name would repeat it at every level.
+        return self._parent.path + "." + self._name
 
     @property
     def metadata(self)->Metadata:
@@ -146,7 +168,7 @@ class Property:
         self.__class__ = Relationship
         self._targets = [prim]
         self._value_state = Property.ValueState.Authored
-        return self
+        return cast(Relationship, self)
 
     def create(self, value_type:type, value:Optional[Any]=None, uniform:bool=False, custom:bool=False, fix_type:bool=True)->Attribute:
         if self.__class__.__name__ != "Property":
@@ -155,9 +177,12 @@ class Property:
         from .attribute import Attribute
         self.__class__ = Attribute
         self._custom = custom
-        Attribute._init(self, value_type, value=value, uniform=uniform, fix_type=fix_type)
+        # The __class__ swap above already made this an Attribute; the cast just
+        # lets the type checker see that before _init's Self-typed call.
+        attribute = cast(Attribute, self)
+        attribute._init(value_type, value=value, uniform=uniform, fix_type=fix_type)
         self._value_state = Property.ValueState.NotAuthored
-        return self
+        return attribute
 
     def create_prop(self, prop:Property)->Property:
         self._props[prop.name] = prop
@@ -174,11 +199,9 @@ class Property:
 
     def __get__(self, instance:Union[PrimSpec, Property, APISchemaBase], owner)->Property:
         from .api_schema_base import APISchemaBase
-        from .prim import PrimSpec
+        from .prim_spec import PrimSpec
 
-        if isinstance(instance, PrimSpec):
-            return instance._props[self._name]
-        elif isinstance(instance, Property):
+        if isinstance(instance, (PrimSpec, Property)):
             return instance._props[self._name]
         elif isinstance(instance, APISchemaBase):
             if instance.schema_kind == SchemaKind.MultipleApplyAPI:
@@ -190,11 +213,9 @@ class Property:
 
     def __set__(self, instance, value:Any):
         from .api_schema_base import APISchemaBase
-        from .prim import PrimSpec
+        from .prim_spec import PrimSpec
 
-        if isinstance(instance, PrimSpec):
-            instance._props[self._name].set(value)
-        elif isinstance(instance, Property):
+        if isinstance(instance, (PrimSpec, Property)):
             instance._props[self._name].set(value)
         elif isinstance(instance, APISchemaBase):
             if instance.schema_kind == SchemaKind.MultipleApplyAPI:
@@ -216,7 +237,7 @@ class Property:
             return
 
         from .attribute import Attribute
-        from .prim import PrimSpec
+        from .prim_spec import PrimSpec
         from .relationship import Relationship
 
         is_rel:bool = (isinstance(value, PrimSpec) or (isinstance(value, list) and all(isinstance(item, PrimSpec) for item in value)) or isinstance(value, Relationship))
@@ -241,9 +262,8 @@ class Property:
 
                 del self._props[name]
 
-        if name not in self._props:
-            if self._is_leaf:
-                raise AttributeError("leaf Property cannot create child Property")
+        if name not in self._props and self._is_leaf:
+            raise AttributeError("leaf Property cannot create child Property")
 
         if name not in self._props and isinstance(value, Property):
             if value._parent is None:
@@ -271,9 +291,14 @@ class Property:
 
                 self.create_prop(Attribute(target_type, name, uniform=target_uniform, custom=target_custom, is_leaf=(not target_custom), fix_type=target_fix_type))
             else:
-                self.create_prop(Relationship(name, custom=target_custom, is_leaf=False))
+                # A PrimSpec target means a new relationship, and there is no
+                # source Property here to inherit flags from, so it is custom.
+                self.create_prop(Relationship(name, custom=True, is_leaf=False))
 
-        self._props[name].set(value)
+        # Both branches above leave an Attribute or a Relationship in place, and
+        # set() comes from Data on those; the dict itself is typed as Property.
+        prop = cast(Union[Attribute, Relationship], self._props[name])
+        prop.set(value)
 
     def to_str(self, indents:int=0, full:bool=False)->str:
         return PropertySerializer.to_str(self, indents, full)

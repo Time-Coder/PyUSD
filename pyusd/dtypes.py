@@ -1,5 +1,5 @@
 from enum import ReprEnum
-from typing import Any, Dict
+from typing import Any
 
 
 class double(float):
@@ -25,19 +25,16 @@ class token(str, ReprEnum):
     def __new__(cls, *values):
         "values must already be of type `str`"
         if len(values) > 3:
-            raise TypeError('too many arguments for str(): %r' % (values, ))
-        if len(values) == 1:
+            raise TypeError(f'too many arguments for str(): {values!r}')
+        if len(values) == 1 and not isinstance(values[0], str):
             # it must be a string
-            if not isinstance(values[0], str):
-                raise TypeError('%r is not a string' % (values[0], ))
-        if len(values) >= 2:
+            raise TypeError(f'{values[0]!r} is not a string')
+        if len(values) >= 2 and not isinstance(values[1], str):
             # check that encoding argument is a string
-            if not isinstance(values[1], str):
-                raise TypeError('encoding must be a string, not %r' % (values[1], ))
-        if len(values) == 3:
+            raise TypeError(f'encoding must be a string, not {values[1]!r}')
+        if len(values) == 3 and not isinstance(values[2], str):
             # check that errors argument is a string
-            if not isinstance(values[2], str):
-                raise TypeError('errors must be a string, not %r' % (values[2]))
+            raise TypeError(f'errors must be a string, not {values[2]!r}')
         value = str(*values)
         member = str.__new__(cls, value)
         member._value_ = value
@@ -100,7 +97,15 @@ class dictionary(dict):
             return
 
         if key in self and isinstance(self[key], dict) and isinstance(value, dict):
-            dictionary.update(self[key], value)
+            # Merge through the subclass, not the unbound method: the existing
+            # value is often a plain dict (schema metadata arriving from a USDA
+            # literal), and dictionary.update on it would look for update_one.
+            # Converting first also keeps the invariant that anything stored here
+            # supports attribute access.
+            if not isinstance(self[key], dictionary):
+                self[key] = dictionary(self[key])
+
+            self[key].update(value)
         elif list_op == "prepend":
             self[key][:0] = value
         elif list_op == "append":
@@ -108,6 +113,14 @@ class dictionary(dict):
         else:
             self[key] = value
 
-    def update(self, kwargs:Dict[str, Any])->None:
-        for key, value in kwargs.items():
-            self.update_one(key, value)
+    def update(self, *args: Any, **kwargs: Any)->None:
+        # dict.update accepts several shapes. The single-mapping form is routed
+        # through update_one so the "prepend "/"append " metadata keys work;
+        # anything else keeps the plain dict behaviour.
+        if len(args) == 1 and not kwargs and isinstance(args[0], dict):
+            for key, value in args[0].items():
+                self.update_one(key, value)
+
+            return
+
+        dict.update(self, *args, **kwargs)

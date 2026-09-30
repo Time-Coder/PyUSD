@@ -8,7 +8,7 @@ from .metadata import Metadata
 from .usda_parser import UsdaParser
 
 if TYPE_CHECKING:
-    from .prim import PrimSpec
+    from .prim_spec import PrimSpec
     from .property import Property
 
 

@@ -6,11 +6,11 @@ from ..geom.boundable import Boundable
 from ..gf import matrix4d
 
 class Skeleton(Boundable):
-    """Describes a skeleton. 
-    
+    """Describes a skeleton.
+
     See the extended \\ref UsdSkel_Skeleton "Skeleton Schema" documentation for
     more information.
-    
+
     """
 
     @property
@@ -28,7 +28,7 @@ class Skeleton(Boundable):
     @property
     def jointNames(self)->Attribute[List[token]]:
         """If authored, provides a unique name per joint. This may be
-        optionally set to provide better names when translating to DCC apps 
+        optionally set to provide better names when translating to DCC apps
         that require unique joint names."""
 
     @jointNames.setter
@@ -52,4 +52,3 @@ class Skeleton(Boundable):
 
     @restTransforms.setter
     def restTransforms(self, value:List[matrix4d])->None: ...
-

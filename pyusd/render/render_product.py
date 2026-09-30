@@ -12,12 +12,12 @@ class RenderProduct(RenderSettingsBase):
     buffer.  It also provides all the controls established in
     UsdRenderSettingsBase as optional overrides to whatever the
     owning UsdRenderSettings prim dictates.
-    
+
     Specific renderers may support additional settings, such
     as a way to configure compression settings, filetype metadata,
     and so forth.  Such settings can be encoded using
     renderer-specific API schemas applied to the product prim.
-    
+
     """
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
@@ -36,12 +36,12 @@ class RenderProduct(RenderSettingsBase):
     productType = Attribute(ProductType,
         uniform=True,
         doc="""
-        The type of output to produce. Allowed values are ones most 
+        The type of output to produce. Allowed values are ones most
         renderers should be able to support.
-        Renderers that support custom output types are encouraged to supply an 
+        Renderers that support custom output types are encouraged to supply an
         applied API schema that will add an `token myRenderContext:productType`
         attribute (e.g. `token ri:productType`), which will override this
-        attribute's value for that renderer. 
+        attribute's value for that renderer.
 
         - "raster": This is the default type and indicates a 2D raster image of
           pixels.

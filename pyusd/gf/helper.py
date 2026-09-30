@@ -6,17 +6,20 @@ import os
 from ctypes import Structure
 from decimal import Decimal
 from types import ModuleType
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, Iterable, List, TypeAlias, Union
 
 import numpy as np
+
+# The scalar side of the gf type split, as opposed to the genType containers. It
+# lives here rather than in genType so is_number can use it without a cycle.
+Number: TypeAlias = Union[float, int, bool, Decimal]
 
 _module_map:Dict[str, ModuleType] = {}
 
 def in_annotations(name:str, cls:type)->bool:
     for klass in cls.__mro__:
-        if hasattr(klass, '__annotations__'):
-            if name in klass.__annotations__:
-                return True
+        if hasattr(klass, '__annotations__') and name in klass.__annotations__:
+            return True
 
     return False
 
@@ -32,6 +35,12 @@ def from_import(module_name:str, attr_name:str)->type:
     return getattr(_module_map[module_name], attr_name)
 
 def is_number(value:Any)->bool:
+    """Whether ``value`` is a scalar rather than one of the gf containers.
+
+    Deliberately not a TypeGuard: the accepted types include ctypes scalars and
+    the hand-written dtypes wrappers, so a guard would claim more than it can
+    prove and pushes errors downstream instead of removing them.
+    """
     return isinstance(value, (
         float, bool, int, Decimal,
         ctypes.c_bool, ctypes.c_int8, ctypes.c_uint8,
@@ -46,7 +55,7 @@ def is_number(value:Any)->bool:
         'bool'
     )
 
-def generate_getter_swizzles(char_sets:List[str])->Set[str]:
+def generate_getter_swizzles(char_sets:Iterable[str])->List[str]:
     result:List[str] = []
 
     for char_set in char_sets:
@@ -57,7 +66,7 @@ def generate_getter_swizzles(char_sets:List[str])->Set[str]:
 
     return result
 
-def generate_setter_swizzles(char_sets:List[str])->Set[str]:
+def generate_setter_swizzles(char_sets:Iterable[str])->List[str]:
     result:List[str] = []
 
     for char_set in char_sets:
@@ -71,8 +80,8 @@ def generate_setter_swizzles(char_sets:List[str])->Set[str]:
 def generate_swizzle_defines(type_name:str, dtype_name:str, char_sets:List[str])->str:
     result:str = ""
     vec_basename = type_name[:-1]
-    getter_swizzles:Set[str] = generate_getter_swizzles(char_sets)
-    setter_swizzles:Set[str] = generate_setter_swizzles(char_sets)
+    getter_swizzles:List[str] = generate_getter_swizzles(char_sets)
+    setter_swizzles:List[str] = generate_setter_swizzles(char_sets)
     for swizzle in getter_swizzles:
         return_type_name:str = dtype_name
         input_type_name:str = "Union[bool, int, float]"
@@ -98,10 +107,12 @@ def generate_swizzle_defines(type_name:str, dtype_name:str, char_sets:List[str])
 
 if __name__ == "__main__":
     self_folder = os.path.dirname(os.path.abspath(__file__))
+    # genType.gen_type builds "{dtype_name}{n}" for vectors, so a bool vector is
+    # bool2/bool3/bool4. The GLSL-style bvec* names never resolve to a module.
     vec_infos = [
-        ('bvec2', 'bool', ['xy', 'rg', 'st']),
-        ('bvec3', 'bool', ['xyz', 'rgb', 'stp']),
-        ('bvec4', 'bool', ['xyzw', 'rgba', 'stpq']),
+        ('bool2', 'bool', ['xy', 'rg', 'st']),
+        ('bool3', 'bool', ['xyz', 'rgb', 'stp']),
+        ('bool4', 'bool', ['xyzw', 'rgba', 'stpq']),
         ('int2', 'int', ['xy', 'rg', 'st']),
         ('int3', 'int', ['xyz', 'rgb', 'stp']),
         ('int4', 'int', ['xyzw', 'rgba', 'stpq']),
@@ -123,7 +134,8 @@ if __name__ == "__main__":
         num:str = vec_inf[0][-1]
         in_file_name:str = f"{self_folder}/genVec{num}.pyi.in"
         if in_file_name not in pyi_in_contents:
-            pyi_in_contents[in_file_name] = open(in_file_name).read()
+            with open(in_file_name) as in_file:
+                pyi_in_contents[in_file_name] = in_file.read()
 
         with open(f"{self_folder}/{vec_inf[0]}.pyi", "w") as out_file:
             swizzle_defines:str = generate_swizzle_defines(*vec_inf)
@@ -144,7 +156,8 @@ def patch_nparray():
             for ele in arr:
                 if __has_structure(ele):
                     return True
-        except:
+        except TypeError:
+            # Not iterable, so it cannot hold nested structures.
             pass
 
         return False
@@ -160,7 +173,8 @@ def patch_nparray():
                     arr[i] = list(ele)
 
                 __change_element(ele)
-        except:
+        except TypeError:
+            # Not mutable/iterable; nothing to rewrite in place.
             pass
 
     def array(*args, **kwargs):
@@ -176,4 +190,7 @@ def patch_nparray():
         __change_element(obj)
         return np_array(obj, *args[1:], **kwargs)
 
-    np.array = array
+    # numpy types array as an attribute but the stub describes it as a set of
+    # overloads, so a checker cannot see that swapping in a replacement function
+    # is exactly what this patch does.
+    np.array = array  # ty: ignore

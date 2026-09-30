@@ -29,7 +29,7 @@ class PhysicsRevoluteJoint(PhysicsJoint):
         }
     )
     physics.lowerLimit = Attribute(float,
-        doc="""Lower limit. Units: degrees. -inf means not limited in 
+        doc="""Lower limit. Units: degrees. -inf means not limited in
         negative direction.
         """,
         metadata={
@@ -40,7 +40,7 @@ class PhysicsRevoluteJoint(PhysicsJoint):
         }
     )
     physics.upperLimit = Attribute(float,
-        doc="""Upper limit. Units: degrees. inf means not limited in 
+        doc="""Upper limit. Units: degrees. inf means not limited in
         positive direction.
         """,
         metadata={

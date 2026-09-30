@@ -11,7 +11,7 @@ class Cone(Gprim):
     """Defines a primitive cone, centered at the origin, whose spine
     is along the specified \\em axis, with the apex of the cone pointing
     in the direction of the positive axis.
-    
+
     The fallback values for Cube, Sphere, Cone, and Cylinder are set so that
     they all pack into the same volume/bounds."""
 
@@ -28,14 +28,14 @@ class Cone(Gprim):
     height: Attribute[double] = Attribute(double, "height", value=2.0, doc=
         """The length of the cone's spine along the specified
         \\em axis.  If you author \\em height you must also author \\em extent.
-        
+
         \\sa GetExtentAttr()"""
     )
 
     radius: Attribute[double] = Attribute(double, "radius", value=1.0, doc=
         """The radius of the cone.  If you
         author \\em radius you must also author \\em extent.
-        
+
         \\sa GetExtentAttr()"""
     )
 

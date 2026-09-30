@@ -1,13 +1,12 @@
 from ..api_schema_base import APISchemaBase
 from ..dtypes import token
-from ..relationship import Relationship
 from .light_list import LightList
 
 class ListAPI(APISchemaBase):
     """
     \\deprecated
     Use LightListAPI instead
-    
+
     """
 
 
@@ -18,11 +17,3 @@ class ListAPI(APISchemaBase):
 
     @property
     def lightList(self) -> LightList: ...
-
-    @property
-    def lightList(self)->Relationship:
-        """Relationship to lights in the scene."""
-
-    @lightList.setter
-    def lightList(self, value:Relationship)->None: ...
-

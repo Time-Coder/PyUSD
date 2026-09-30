@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import ctypes
 import math
-from typing import Any, Tuple, TypeAlias, Union
+from typing import Any, Tuple, TypeAlias, Union, cast
 
-from .genType import MathForm, Number, genType
+from .genType import MathForm, genType
 from .genVec import genVec
 from .genVec3 import genVec3
-from .helper import is_number
+from .helper import Number, is_number
 
 
 class genQuat(genType, ctypes.Structure):
@@ -49,7 +49,11 @@ class genQuat(genType, ctypes.Structure):
 
     @property
     def w(self)->float:
-        return super().w
+        # The ctypes field descriptor lands on the concrete subclass that declares
+        # _fields_, which sits before genQuat in the MRO, so instance reads never
+        # reach this property; super() cannot see the descriptor either, so going
+        # through Structure is what makes the body work when it is called.
+        return float(ctypes.Structure.__getattribute__(self, "w"))
 
     @w.setter
     def w(self, w:float)->None:
@@ -58,7 +62,11 @@ class genQuat(genType, ctypes.Structure):
 
     @property
     def x(self)->float:
-        return super().x
+        # The ctypes field descriptor lands on the concrete subclass that declares
+        # _fields_, which sits before genQuat in the MRO, so instance reads never
+        # reach this property; super() cannot see the descriptor either, so going
+        # through Structure is what makes the body work when it is called.
+        return float(ctypes.Structure.__getattribute__(self, "x"))
 
     @x.setter
     def x(self, x:float)->None:
@@ -67,7 +75,11 @@ class genQuat(genType, ctypes.Structure):
 
     @property
     def y(self)->float:
-        return super().y
+        # The ctypes field descriptor lands on the concrete subclass that declares
+        # _fields_, which sits before genQuat in the MRO, so instance reads never
+        # reach this property; super() cannot see the descriptor either, so going
+        # through Structure is what makes the body work when it is called.
+        return float(ctypes.Structure.__getattribute__(self, "y"))
 
     @y.setter
     def y(self, y:float)->None:
@@ -76,7 +88,11 @@ class genQuat(genType, ctypes.Structure):
 
     @property
     def z(self)->float:
-        return super().z
+        # The ctypes field descriptor lands on the concrete subclass that declares
+        # _fields_, which sits before genQuat in the MRO, so instance reads never
+        # reach this property; super() cannot see the descriptor either, so going
+        # through Structure is what makes the body work when it is called.
+        return float(ctypes.Structure.__getattribute__(self, "z"))
 
     @z.setter
     def z(self, z:float)->None:
@@ -133,7 +149,7 @@ class genQuat(genType, ctypes.Structure):
         else:
             raise IndexError("index out of range")
 
-    def _op(self, operator:str, other:Union[float, bool, int, genQuat, genVec])->Union[genQuat, genVec]:
+    def _op(self, operator:str, other:Union[float, bool, int, genType])->Union[genQuat, genVec]:
         if operator == "**" or (operator in ["/", "//", "%"] and isinstance(other, genType)):
             raise TypeError(f"unsupported operand type(s) for {operator}: '{self.__class__.__name__}' and '{other.__class__.__name__}'")
 
@@ -161,9 +177,10 @@ class genQuat(genType, ctypes.Structure):
         if isinstance(other, genType) and not isinstance(other, genQuat):
             raise TypeError(f"unsupported operand type(s) for {operator}: '{self.__class__.__name__}' and '{other.__class__.__name__}'")
 
-        return genType._op(self, operator, other)
+        # See genMat._op: the base preserves the math form, so the result is one.
+        return cast("Union[genQuat, genVec]", genType._op(self, operator, other))
 
-    def _iop(self, operator:str, other:Union[float, bool, int, genQuat])->genQuat:
+    def _iop(self, operator:str, other:Union[float, bool, int, genType])->genQuat:
         if operator == "**" or (operator in ["/", "//", "%"] and isinstance(other, genType)):
             raise TypeError(f"unsupported operand type(s) for {operator}=: '{self.__class__.__name__}' and '{other.__class__.__name__}'")
 
@@ -185,14 +202,16 @@ class genQuat(genType, ctypes.Structure):
         if isinstance(other, genType) and not isinstance(other, genQuat):
             raise TypeError(f"unsupported operand type(s) for {operator}=: '{self.__class__.__name__}' and '{other.__class__.__name__}'")
 
-        return genType._iop(self, operator, other)
+        return cast(genQuat, genType._iop(self, operator, other))
 
     def __iter__(self):
-        for field_name, _ in self._fields_:
+        for field in self._fields_:
+            field_name = field[0]
             yield getattr(self, field_name)
 
     def __contains__(self, value:Any):
-        for field_name, _ in self._fields_:
+        for field in self._fields_:
+            field_name = field[0]
             field_value = getattr(self, field_name)
             if field_value == value:
                 return True

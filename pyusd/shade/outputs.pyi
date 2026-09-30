@@ -13,7 +13,7 @@ class Outputs(Attribute):
 
     @property
     def displacement(self)->Attribute[token]:
-        """Represents the universal "displacement" output terminal of a 
+        """Represents the universal "displacement" output terminal of a
         material."""
 
     @displacement.setter

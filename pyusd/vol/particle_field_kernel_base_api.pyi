@@ -8,4 +8,3 @@ class ParticleFieldKernelBaseAPI(APISchemaBase):
     The purpose of this base class is to allow validation to enforce
     that a kernel definition is present for a ParticleField
     """
-

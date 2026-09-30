@@ -1,7 +1,7 @@
 from typing import Tuple, TypeAlias, Union
 
-from .genType import Number
 from .genVec import genVec
+from .helper import Number
 
 
 class genVec3(genVec):

@@ -3,8 +3,11 @@ from __future__ import annotations
 import ctypes
 import math
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple, TypeAlias, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union, cast
 
+from .helper import (
+    Number as Number,  # re-exported: defined in helper so is_number can use it
+)
 from .helper import from_import, is_number
 
 
@@ -23,7 +26,7 @@ class genType:
         float, ctypes.c_float, ctypes.c_double
     ]
     __uint_index:int = __type_order.index(ctypes.c_uint)
-    __gen_type_map:Dict[Tuple[MathForm, type, int], type] = {}
+    __gen_type_map:Dict[Tuple[MathForm, type, Tuple[int, ...]], type] = {}
     __dtype_name_map:Dict[type, str] = {
         ctypes.c_bool: 'bool',
         ctypes.c_int: 'int',
@@ -61,6 +64,22 @@ class genType:
     def __init__(self):
         self._on_changed:Optional[Callable[[], None]] = None
 
+    # genType models a fixed-size container: math_form, dtype, shape and every
+    # element-wise operator below are defined in terms of these. Each concrete
+    # subclass (genVec, genMat, genQuat) implements them, so declaring them here
+    # is what lets the element-wise helpers in funcs.py be typed against genType.
+    def __len__(self)->int:
+        raise NotImplementedError(f"{type(self).__name__} does not implement __len__")
+
+    def __getitem__(self, index:Any)->Any:
+        raise NotImplementedError(f"{type(self).__name__} does not implement __getitem__")
+
+    def __setitem__(self, index:Any, value:Any)->None:
+        raise NotImplementedError(f"{type(self).__name__} does not implement __setitem__")
+
+    def __iter__(self)->Any:
+        raise NotImplementedError(f"{type(self).__name__} does not implement __iter__")
+
     def __str__(self)->str:
         return f"{self.__class__.__name__}({', '.join([str(value) for value in self])})"
 
@@ -80,19 +99,19 @@ class genType:
 
     @property
     def math_form(self)->MathForm:
-        pass
+        raise NotImplementedError(f"{type(self).__name__} does not define math_form")
 
     @property
     def dtype(self)->type:
-        pass
+        raise NotImplementedError(f"{type(self).__name__} does not define dtype")
 
     @property
-    def shape(self)->Tuple[int]:
-        pass
+    def shape(self)->Tuple[int, ...]:
+        raise NotImplementedError(f"{type(self).__name__} does not define shape")
 
     @staticmethod
-    def gen_type(math_form:MathForm, dtype:type, shape:Tuple[int])->type:
-        key:Tuple[MathForm, type, int] = (math_form, dtype, shape)
+    def gen_type(math_form:MathForm, dtype:type, shape:Tuple[int, ...])->type:
+        key:Tuple[MathForm, type, Tuple[int, ...]] = (math_form, dtype, shape)
         dtype_name:str = genType.__dtype_name_map[dtype]
         suffix:str = dtype_name[0]
         if key not in genType.__gen_type_map:
@@ -116,7 +135,7 @@ class genType:
 
         self._on_changed()
 
-    def _update_data(self, indices:Optional[List[int]] = None):
+    def _update_data(self, indices:Optional[Iterable[int]] = None):
         self._call_on_changed()
 
     @staticmethod
@@ -132,8 +151,8 @@ class genType:
 
     @staticmethod
     def _bin_op_type(operator:str, value1:Union[float, bool, int, genType], value2:Union[float, bool, int, genType])->type:
-        value1_dtype:type = type(value1) if is_number(value1) else value1.dtype
-        value2_dtype:type = type(value2) if is_number(value2) else value2.dtype
+        value1_dtype:type = type(value1) if is_number(value1) else cast(genType, value1).dtype
+        value2_dtype:type = type(value2) if is_number(value2) else cast(genType, value2).dtype
 
         if isinstance(value1, genType) and isinstance(value2, genType) and not value1._is_homo(value2):
             raise TypeError(f"unsupported operand type(s) for {operator}: '{value1.__class__.__name__}' and '{value2.__class__.__name__}'")
@@ -149,7 +168,7 @@ class genType:
                 second_has_negative = (value2 < 0)
 
         math_form:Optional[MathForm] = None
-        shape:Optional[Tuple[int]] = (1,)
+        shape:Optional[Tuple[int, ...]] = (1,)
         if isinstance(value1, genType):
             math_form = value1.math_form
             shape = value1.shape
@@ -158,7 +177,7 @@ class genType:
             shape = value2.shape
 
         result_dtype:type = genType._bin_op_dtype(operator, value1_dtype, value2_dtype, second_has_negative)
-        result_type:type = genType.gen_type(math_form, result_dtype, shape)
+        result_type:type = genType.gen_type(cast(MathForm, math_form), result_dtype, shape)
         return result_type
 
     def __neg__(self)->genType:
@@ -179,13 +198,22 @@ class genType:
             self.shape == other.shape
         )
 
+    @staticmethod
+    def _at(other:Any, index:Any)->Any:
+        """Element ``index`` of a shape-matched operand.
+
+        Only call this when _is_homo(other) holds, which means the other side is a
+        genType of the same shape; the cast records what the runtime guarantees.
+        """
+        return cast(genType, other)[index]
+
     def _op(self, operator:str, other:Union[float, bool, int, genType])->genType:
         result_type = self._bin_op_type(operator, self, other)
         result:genType = result_type()
         other_is_homo:bool = self._is_homo(other)
         operator_func:Callable[[Any,Any], Any] = self._operator_funcs[operator]
         for i in range(len(result)):
-            result[i] = operator_func(self[i], other[i] if other_is_homo else other)
+            result[i] = operator_func(self[i], genType._at(other, i) if other_is_homo else other)
 
         return result
 
@@ -205,7 +233,7 @@ class genType:
 
         operator_func:Callable[[Any,Any], Any] = self._operator_funcs[operator]
         for i in range(len(self)):
-            self[i] = operator_func(self[i], other[i] if other_is_homo else other)
+            self[i] = operator_func(self[i], genType._at(other, i) if other_is_homo else other)
 
         self._update_data()
 
@@ -221,7 +249,7 @@ class genType:
 
         operator_func:Callable[[Any,Any], Any] = self._operator_funcs[operator]
         for i in range(len(self)):
-            result[i] = operator_func(self[i], other[i] if other_is_homo else other)
+            result[i] = operator_func(self[i], genType._at(other, i) if other_is_homo else other)
 
         return result
 
@@ -298,28 +326,20 @@ class genType:
     def __ipow__(self, other:Union[float, bool, int, genType]):
         return self._iop("**", other)
 
-    def __eq__(self, other:Union[float, bool, int, genType])->bool:
+    def __eq__(self, other:object)->bool:
         if not isinstance(other, self.__class__):
             return False
 
-        for i in range(len(self)):
-            if self[i] != other[i]:
-                return False
-
-        return True
+        return all(self[i] == other[i] for i in range(len(self)))  # type: ignore[index]
 
     def __req__(self, other:Union[float, bool, int, genType])->bool:
         return (self == other)
 
-    def __ne__(self, other:Union[float, bool, int, genType])->bool:
+    def __ne__(self, other:object)->bool:
         if not isinstance(other, self.__class__):
             return True
 
-        for i in range(len(self)):
-            if self[i] != other[i]:
-                return True
-
-        return False
+        return any(self[i] != other[i] for i in range(len(self)))  # type: ignore[index]
 
     def __rne__(self, other:Union[float, bool, int, genType])->bool:
         return (self != other)
@@ -347,6 +367,3 @@ class genType:
 
     def __rle__(self, other:Union[float, bool, int, genType])->genType:
         return self._compare_rop("<=", other)
-
-
-Number:TypeAlias = Union[float, int]

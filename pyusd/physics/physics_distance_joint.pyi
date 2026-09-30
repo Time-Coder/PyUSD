@@ -8,4 +8,3 @@ class PhysicsDistanceJoint(PhysicsJoint):
 
     @property
     def physics(self) -> Physics: ...
-

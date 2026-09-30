@@ -5,7 +5,7 @@ from .physics_joint import PhysicsJoint
 
 
 class PhysicsPrismaticJoint(PhysicsJoint):
-    """Predefined prismatic joint type (translation along prismatic 
+    """Predefined prismatic joint type (translation along prismatic
     joint axis is permitted.)
     """
 
@@ -29,7 +29,7 @@ class PhysicsPrismaticJoint(PhysicsJoint):
         }
     )
     physics.lowerLimit = Attribute(float,
-        doc="""Lower limit. Units: distance. -inf means not limited in 
+        doc="""Lower limit. Units: distance. -inf means not limited in
         negative direction.
         """,
         metadata={
@@ -40,7 +40,7 @@ class PhysicsPrismaticJoint(PhysicsJoint):
         }
     )
     physics.upperLimit = Attribute(float,
-        doc="""Upper limit. Units: distance. inf means not limited in 
+        doc="""Upper limit. Units: distance. inf means not limited in
         positive direction.
         """,
         metadata={

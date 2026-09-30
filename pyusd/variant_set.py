@@ -13,7 +13,7 @@ from typing import (
 from .variant_set_serializer import VariantSetSerializer
 
 if TYPE_CHECKING:
-    from .prim import PrimSpec
+    from .prim_spec import PrimSpec
 
 
 class VariantSet:
@@ -34,12 +34,12 @@ class VariantSet:
         return self._selected_variant
 
     @property
-    def selected_variant(self)->PrimSpec:
+    def selected_variant(self)->Optional[PrimSpec]:
         return self._selected_variant
 
     def __getitem__(self, name:str)->PrimSpec:
         if name not in self._variants:
-            from .prim import PrimSpec
+            from .prim_spec import PrimSpec
 
             variant = PrimSpec(name)
             variant._is_variant = True

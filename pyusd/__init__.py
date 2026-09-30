@@ -24,16 +24,22 @@ from .dtypes import (
 )
 from .layer import Layer
 from .model_api import ModelAPI
-from .prim import PrimSpec, PrimType
+from .prim import Prim, PrimType
+from .prim_spec import PrimSpec
 from .property import Property
 from .relationship import Relationship
-from .stage import Prim, Stage, StageProperty
+from .stage import Stage
+from .stage_metadata import StageMetadata
+from .stage_property import StageProperty
+from .stage_variant_sets import StageVariantSets
 from .typed import Typed
 from .utils import abspath
 
 __all__ = [
     "Layer",
     "Prim",
+    # Internal storage, kept exported for compatibility. Reach it through
+    # Prim.resolved_prim / Prim.authored_prim / Layer.prim_spec_at instead.
     "PrimSpec",
     "PrimType",
     "Attribute",
@@ -41,6 +47,8 @@ __all__ = [
     "Relationship",
     "Stage",
     "StageProperty",
+    "StageMetadata",
+    "StageVariantSets",
     "Data",
     "double",
     "half",
@@ -69,3 +77,9 @@ __all__ = [
     "Kind",
     "Axis"
 ]
+
+# Built last: the registry walks the submodules above, which are only fully
+# bound once this module's imports have resolved.
+from . import schema_registry as _schema_registry
+
+_schema_registry._build()

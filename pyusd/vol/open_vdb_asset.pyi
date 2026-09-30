@@ -40,8 +40,8 @@ class OpenVDBAsset(FieldAsset):
     def fieldDataType(self)->Attribute[FieldDataType]:
         """Token which is used to indicate the data type of an
                  individual field. Authors use this to tell consumers more
-                 about the field without opening the file on disk. The list of 
-                 allowed tokens reflects the available choices for OpenVDB 
+                 about the field without opening the file on disk. The list of
+                 allowed tokens reflects the available choices for OpenVDB
                  volumes."""
 
     @fieldDataType.setter
@@ -51,9 +51,8 @@ class OpenVDBAsset(FieldAsset):
     def fieldClass(self)->Attribute[FieldClass]:
         """Optional token which can be used to indicate the class of
                  an individual grid. This is a mapping to openvdb::GridClass
-                 where the values are GRID_LEVEL_SET, GRID_FOG_VOLUME, 
+                 where the values are GRID_LEVEL_SET, GRID_FOG_VOLUME,
                  GRID_STAGGERED, and GRID_UNKNOWN."""
 
     @fieldClass.setter
     def fieldClass(self, value:FieldClass)->None: ...
-

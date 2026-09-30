@@ -8,7 +8,7 @@ class ColorSpaceAPI(APISchemaBase):
     """UsdColorSpaceAPI is an API schema that introduces a `colorSpace`
     property for authoring scene referred color space opinions. It also provides
     a mechanism to determine the applicable color space within a scope through
-    inheritance. Accordingly, this schema may be applied to any prim to 
+    inheritance. Accordingly, this schema may be applied to any prim to
     introduce a color space at any point in a compositional hierarchy.
 
     Color space resolution involves determining the color space authored on an
@@ -18,24 +18,24 @@ class ColorSpaceAPI(APISchemaBase):
     and any color space authored there. If none is found on the attribute's
     prim, the prim's ancestors are examined up the hierarchy until an authored
     color space is found. If no color space is found, an empty `TfToken` is
-    returned. When no color space is found, the default color space is linear, 
+    returned. When no color space is found, the default color space is linear,
     with Rec709 primaries and D65 white point, corresponding to the GfColorSpace
     token `LinearRec709`.
 
     For a list of built in color space token values, see `GfColorSpaceNames`.
 
     Use a pattern like this when determining an attribute's resolved color space:
-    
+
     ```
     TfToken attrCs = attr.GetColorSpace();
-    if (!attrCs.IsEmpty()) { 
-        return attrCs; 
+    if (!attrCs.IsEmpty()) {
+        return attrCs;
     }
     auto csAPI = UsdColorSpaceAPI(attr.GetPrim());
     return UsdColorSpaceAPI::ComputeColorSpaceName(attr);
     ```
 
-    `GfColorSpace` and its associated utilities can be used to perform color 
+    `GfColorSpace` and its associated utilities can be used to perform color
     transformations; some examples:
 
     ```
@@ -45,10 +45,10 @@ class ColorSpaceAPI(APISchemaBase):
     srcSpace.ConvertRGBSpan(targetSpace, colorSpan)
     ```
 
-    It is recommended that in situations where performance is a concern, an 
+    It is recommended that in situations where performance is a concern, an
     application should perform conversions infrequently and cache results
     wherever possible.
-    
+
     """
 
     schema_kind = SchemaKind.SingleApplyAPI

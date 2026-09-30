@@ -9,11 +9,11 @@ from ..gf import point3f, point3h
 class ParticleFieldPositionAttributeAPI(APISchemaBase):
     """A ParticleField related applied schema that provides a position
     attribute to define the locations of the particles.
-    
+
     Attributes are provided in both `float` and `half` types for some
     easy data footprint affordance, data consumers should prefer
     `float` version if available.
-    
+
     The size of the positions attribute that is being used defines the
     number of particles in the field. If no positions attribute is
     provided then the ParticleField has no particles.

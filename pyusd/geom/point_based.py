@@ -26,7 +26,7 @@ class PointBased(Gprim):
     )
 
     velocities: Attribute[List[vector3f]] = Attribute(List[vector3f], "velocities", doc=
-        """If provided, 'velocities' should be used by renderers to 
+        """If provided, 'velocities' should be used by renderers to
 
         compute positions between samples for the 'points' attribute, rather
         than interpolating between neighboring 'points' samples.  This is the
@@ -36,7 +36,7 @@ class PointBased(Gprim):
         'points' sample.  Velocity is measured in position units per second,
         as per most simulation software. To convert to position units per
         UsdTimeCode, divide by UsdStage::GetTimeCodesPerSecond().
-        
+
         See also \\ref UsdGeom_VelocityInterpolation ."""
     )
 
@@ -50,8 +50,8 @@ class PointBased(Gprim):
     )
 
     normals: Attribute[List[normal3f]] = Attribute(List[normal3f], "normals", doc=
-        """Provide an object-space orientation for individual points, 
-        which, depending on subclass, may define a surface, curve, or free 
+        """Provide an object-space orientation for individual points,
+        which, depending on subclass, may define a surface, curve, or free
         points.  Note that 'normals' should not be authored on any Mesh that
         is subdivided, since the subdivision algorithm will define its own
         normals. 'normals' is not a generic primvar, but the number of elements

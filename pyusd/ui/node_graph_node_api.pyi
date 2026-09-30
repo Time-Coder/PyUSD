@@ -5,7 +5,7 @@ from .ui import Ui
 class NodeGraphNodeAPI(APISchemaBase):
     """
     This api helps storing information about nodes in node graphs.
-    
+
     """
 
 
@@ -16,4 +16,3 @@ class NodeGraphNodeAPI(APISchemaBase):
 
     @property
     def ui(self) -> Ui: ...
-

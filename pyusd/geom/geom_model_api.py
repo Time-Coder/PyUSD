@@ -9,7 +9,7 @@ class GeomModelAPI(APISchemaBase):
     geometry specific concepts such as cached extents for the entire model,
     constraint targets, and geometry-inspired extensions to the payload
     lofting process.
-   
+
     As described in GetExtentsHint() below, it is useful to cache extents
     at the model level.  UsdGeomModelAPI provides schema for computing and
     storing these cached extents, which can be consumed by UsdGeomBBoxCache to
@@ -44,14 +44,14 @@ class GeomModelAPI(APISchemaBase):
     \\em model:applyDrawMode set at a lower level so each particle
     group draws individually.
 
-    Models of kind component are automatically treated as if 
-    \\em model:applyDrawMode were true if \\em model:applyDrawMode is not 
-    authored on the component prim. A component prim will be drawn drawn with a 
-    simplified representation when the prim has kind component, 
-    \\em model:applyDrawMode is not authored (or authored to be true), and the 
-    resolved (i.e. inherited down namespace) value for \\em model:drawMode is 
-    not _default_. If you don't want component prims to use the resolved 
-    non-default drawMode, you must apply the UsdGeomModelAPI schema on the prim 
+    Models of kind component are automatically treated as if
+    \\em model:applyDrawMode were true if \\em model:applyDrawMode is not
+    authored on the component prim. A component prim will be drawn drawn with a
+    simplified representation when the prim has kind component,
+    \\em model:applyDrawMode is not authored (or authored to be true), and the
+    resolved (i.e. inherited down namespace) value for \\em model:drawMode is
+    not _default_. If you don't want component prims to use the resolved
+    non-default drawMode, you must apply the UsdGeomModelAPI schema on the prim
     and explicitly set \\em model:applyDrawMode to false.
 
     \\section UsdGeomModelAPI_cardGeometry Cards Geometry

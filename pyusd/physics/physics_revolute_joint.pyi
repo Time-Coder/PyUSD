@@ -8,4 +8,3 @@ class PhysicsRevoluteJoint(PhysicsJoint):
 
     @property
     def physics(self) -> Physics: ...
-

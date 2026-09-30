@@ -1,11 +1,13 @@
+
 from ..attribute import Attribute
 from ..dtypes import token
 from ..relationship import Relationship
 from ..typed import Typed
+from .visibility_api import VisibilityAPI
 
 class Imageable(Typed):
-    """Base class for all prims that may require rendering or 
-    visualization of some sort. The primary attributes of Imageable 
+    """Base class for all prims that may require rendering or
+    visualization of some sort. The primary attributes of Imageable
     are \\em visibility and \\em purpose, which each provide instructions for
     what geometry should be included for processing by rendering and other
     computations.
@@ -19,11 +21,11 @@ class Imageable(Typed):
 
     @property
     def visibility(self)->Attribute[token]:
-        """Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.  Visibility is 
-        animatable, allowing a sub-tree of geometry to be present for some 
-        segment of a shot, and absent from others; unlike the action of 
-        deactivating geometry prims, invisible geometry is still 
+        """Visibility is meant to be the simplest form of "pruning"
+        visibility that is supported by most DCC apps.  Visibility is
+        animatable, allowing a sub-tree of geometry to be present for some
+        segment of a shot, and absent from others; unlike the action of
+        deactivating geometry prims, invisible geometry is still
         available for inspection, for positioning, for defining volumes, etc."""
 
     @visibility.setter
@@ -31,11 +33,11 @@ class Imageable(Typed):
 
     @property
     def purpose(self)->Attribute[token]:
-        """Purpose is a classification of geometry into categories that 
-        can each be independently included or excluded from traversals of prims 
+        """Purpose is a classification of geometry into categories that
+        can each be independently included or excluded from traversals of prims
         on a stage, such as rendering or bounding-box computation traversals.
 
-        See \\ref UsdGeom_ImageablePurpose for more detail about how 
+        See \\ref UsdGeom_ImageablePurpose for more detail about how
         \\em purpose is computed and used."""
 
     @purpose.setter
@@ -47,17 +49,17 @@ class Imageable(Typed):
         prim whose \\em purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
         useful in several scenarios:
-        
+
         \\li In a pipeline that does pruning (for complexity management)
         by deactivating prims composed from asset references, when we
         deactivate a purpose="render" prim, we will be able to discover
         and additionally deactivate its associated purpose="proxy" prim,
         so that preview renders reflect the pruning accurately.
-        
+
         \\li DCC importers may be able to make more aggressive optimizations
         for interactive processing and display if they can discover the proxy
         for a given render prim.
-        
+
         \\li With a little more work, a Hydra-based application will be able
         to map a picked proxy prim back to its render geometry for selection.
 
@@ -66,3 +68,6 @@ class Imageable(Typed):
 
     @proxyPrim.setter
     def proxyPrim(self, value:Relationship)->None: ...
+
+    @property
+    def visibility_api(self)->VisibilityAPI: ...

@@ -6,6 +6,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Iterable,
     List,
     Optional,
     Set,
@@ -14,8 +15,9 @@ from typing import (
     Union,
 )
 
-from .genType import MathForm, Number, genType
+from .genType import MathForm, genType
 from .helper import (
+    Number,
     generate_getter_swizzles,
     generate_setter_swizzles,
     in_annotations,
@@ -114,7 +116,7 @@ class genVec(genType, ctypes.Structure):
     def vec_type(dtype:type, size:int)->type:
         return genType.gen_type(MathForm.Vec, dtype, (size,))
 
-    def _update_data(self, indices:Optional[List[int]] = None):
+    def _update_data(self, indices:Optional[Iterable[int]] = None):
         genType._update_data(self, indices)
 
         if self._related_mat is not None:
@@ -197,11 +199,13 @@ class genVec(genType, ctypes.Structure):
         return genVec.__all_total_swizzles
 
     def __iter__(self):
-        for field_name, _ in self._fields_:
+        for field in self._fields_:
+            field_name = field[0]
             yield getattr(self, field_name)
 
     def __contains__(self, value:Any):
-        for field_name, _ in self._fields_:
+        for field in self._fields_:
+            field_name = field[0]
             field_value = getattr(self, field_name)
             if field_value == value:
                 return True

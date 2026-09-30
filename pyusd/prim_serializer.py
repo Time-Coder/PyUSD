@@ -4,11 +4,10 @@ from typing import TYPE_CHECKING, Type
 
 from .common import SchemaKind
 from .metadata import Metadata
-from .property import Property
 from .sdf import Specifier
 
 if TYPE_CHECKING:
-    from .prim import PrimSpec
+    from .prim_spec import PrimSpec
 
 
 class PrimSerializer:
@@ -16,10 +15,10 @@ class PrimSerializer:
     @staticmethod
     def to_str(prim: PrimSpec, indents: int)->str:
         tabs = "    " * indents
-        prim_type_name = prim.__class__.__name__
+        prim_type_name = prim._metadata.typeName
         if prim._is_variant:
             result = f'{tabs}"{prim.name}"'
-        elif prim_type_name in {"Prim", "PrimSpec"} or prim.specifier != Specifier.Def:
+        elif not prim_type_name or prim_type_name == "Prim" or prim.specifier != Specifier.Def:
             result = f'{tabs}{prim.specifier} "{prim.name}"'
         else:
             result = f'{tabs}{prim.specifier} {prim_type_name} "{prim.name}"'
@@ -61,16 +60,15 @@ class PrimSerializer:
 
     @staticmethod
     def cls_to_str(cls: Type[PrimSpec])->str:
+        from . import schema_registry
+
         prim_type_name = cls.__name__
         if cls.schema_kind == SchemaKind.ConcreteTyped:
             result = f'class {prim_type_name} "{prim_type_name}"'
         else:
             result = f'class "{prim_type_name}"'
 
-        if "meta" in cls.__dict__:
-            metadata = Metadata(cls, cls.meta)
-        else:
-            metadata = Metadata(cls)
+        metadata = Metadata(cls, cls.meta) if "meta" in cls.__dict__ else Metadata(cls)
 
         update_metadata = {}
         inherits = []
@@ -94,11 +92,14 @@ class PrimSerializer:
 
         result += '\n{\n'
 
-        props_str_list = []
-        for name, prop in cls.__dict__.items():
-            if not isinstance(prop, Property):
-                continue
+        # Declarations live in the schema registry rather than on the class, so
+        # they can be dropped from the class without losing the schema definition.
+        entry = schema_registry.schema_type(prim_type_name)
+        declared = entry.declared_props if entry is not None else {}
 
+        props_str_list = []
+        for name, prop in declared.items():
+            prop = prop.clone()
             prop._name = name
             prop_str = prop.to_str(1, full=True)
             if prop_str:

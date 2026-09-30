@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import copy
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
 
 from .property import Property
 from .relationship_serializer import RelationshipSerializer
 
 if TYPE_CHECKING:
-    from .prim import PrimSpec
+    from .prim_spec import PrimSpec
 
 
 class Relationship(Property):
@@ -25,10 +25,10 @@ class Relationship(Property):
 
         return self._value_state
 
-    def clone(self, clone_children:bool=True)->Relationship:
-        result = Property.clone(self, clone_children)
+    def clone(self, clone_child:bool=True)->Relationship:
+        result = Property.clone(self, clone_child)
         result._targets = copy.copy(self._targets)
-        return result
+        return cast(Relationship, result)
 
     def set(self, prims:Union[List[PrimSpec], PrimSpec, Relationship])->None:
         if isinstance(prims, list):
@@ -47,10 +47,11 @@ class Relationship(Property):
     def targets(self)->List[PrimSpec]:
         return self._targets
 
-    def rel(self, prim:PrimSpec)->None:
+    def rel(self, prim:PrimSpec)->Relationship:
         self._targets.append(prim)
         self._value_state = Property.ValueState.Authored
         self._touch()
+        return self
 
     def add_target(self, prim:PrimSpec)->None:
         self._targets.append(prim)

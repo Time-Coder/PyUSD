@@ -11,7 +11,7 @@ class TrimCurve(Attribute):
         """Each element specifies how many curves are present in each
         "loop" of the trimCurve, and the length of the array determines how
         many loops the trimCurve contains.  The sum of all elements is the
-        total nuber of curves in the trim, to which we will refer as 
+        total nuber of curves in the trim, to which we will refer as
         \\em nCurves in describing the other trim attributes."""
 
     @counts.setter
@@ -44,7 +44,7 @@ class TrimCurve(Attribute):
 
     @property
     def ranges(self)->Attribute[List[double2]]:
-        """Flat list of minimum and maximum parametric values 
+        """Flat list of minimum and maximum parametric values
         (as defined by \\em knots) for each of the \\em nCurves curves."""
 
     @ranges.setter

@@ -7,7 +7,7 @@ from ..dtypes import namespace, token
 class SceneGraphPrimAPI(APISchemaBase):
     """
     Utility schema for display properties of a prim
-    
+
     """
 
     schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
@@ -28,7 +28,7 @@ class SceneGraphPrimAPI(APISchemaBase):
     ui.displayGroup = Attribute(token,
         uniform=True,
         doc="""When publishing a nodegraph or a material, it can be useful to
-        provide an optional display group, for organizational purposes and 
+        provide an optional display group, for organizational purposes and
         readability. This is because often the usd shading hierarchy is rather
         flat while we want to display it in organized groups.
 

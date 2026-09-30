@@ -69,4 +69,3 @@ class ParticleField3DGaussianSplat(ParticleField):
 
     @sortingModeHint.setter
     def sortingModeHint(self, value:SortingModeHint)->None: ...
-

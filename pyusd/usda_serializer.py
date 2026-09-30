@@ -1,5 +1,6 @@
 from __future__ import annotations
-from typing import Any, Optional, Union, TYPE_CHECKING
+
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from .utils import analyze_list_type, infer_type
 
@@ -12,10 +13,10 @@ class UsdaSerializer:
     @staticmethod
     def value_str(value:Any, indents:int=0, degenerate_list:bool=False, rel_layer:Optional[Union[str, Layer]]="", need_quote:bool=True, is_relocates:bool=False)->str:
         from .data import Data
-        from .gf import genType, MathForm
-        from .layer import Layer
-        from .prim import PrimSpec
         from .dtypes import asset
+        from .gf import MathForm, genType
+        from .layer import Layer
+        from .prim_spec import PrimSpec
 
         tabs = "    " * indents
         next_tabs = "    " * (indents + 1)
@@ -50,11 +51,11 @@ class UsdaSerializer:
                 else:
                     if isinstance(key, PrimSpec):
                         key = f"<{key.path}>"
-                        
+
                     result += f"{next_tabs}{key}: {subvalue_str}\n"
             result += f"{tabs}}}"
             return result
-        elif isinstance(value, list) or isinstance(value, tuple):
+        elif isinstance(value, (list, tuple)):
             if isinstance(value, list):
                 left_bracket = "["
                 right_bracket = "]"
@@ -114,14 +115,14 @@ class UsdaSerializer:
     @staticmethod
     def type_str(type_:type, array_dim:int=0)->str:
         from .dtypes import token
-        
+
         dtype, dim = analyze_list_type(type_)
         array_dim += dim
 
         result = ""
-        if dtype == str:
+        if dtype is str:
             result = "string"
-        elif dtype == dict:
+        elif dtype is dict:
             result = "dictionary"
         elif issubclass(dtype, token):
             result = "token"

@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-import importlib
-import pkgutil
-from typing import TYPE_CHECKING, Any, Dict, Type
+from typing import TYPE_CHECKING, Any, Dict, Type, cast
 
 from .attribute_parser import AttributeParser
 from .metadata_parser import MetadataParser
-from .prim import PrimSpec
+from .prim_spec import PrimSpec
 from .property import Property
 from .relationship_parse import RelationshipParser
 from .sdf import Specifier
@@ -39,8 +37,13 @@ class PrimParser:
             elif child.type == "block":
                 block = child
 
-        prim_cls = PrimParser.prim_class(type_name)
-        prim = prim_cls(name=name, specifier=specifier)
+        # Every parsed prim is plain storage. The typeName is recorded as data so
+        # that types with no Python class behind them survive a round trip, and so
+        # the schema class is never instantiated just to learn its declarations.
+        prim = PrimSpec(name=name, specifier=specifier)
+        if type_name and type_name not in ("Prim", "PrimSpec"):
+            prim._metadata._builtin_data["typeName"] = type_name
+
         PrimParser.apply_loaded_metadata(prim, metadata)
 
         if block is not None:
@@ -49,10 +52,10 @@ class PrimParser:
         return prim
 
     @staticmethod
-    def load_variant_set(parent_prim:PrimSpec, node:Node):
+    def load_variant_set(parent_prim:PrimSpec, node:Node)->VariantSet:
         name = ""
         for child in node.named_children:
-            if child.type == "string" and not name:
+            if child.type == "string":
                 name = UsdaParser.load_string(child)
                 break
 
@@ -63,6 +66,8 @@ class PrimParser:
         for child in node.named_children:
             if child.type == "variant":
                 PrimParser.load_variant(variant_set, child)
+
+        return variant_set
 
     @staticmethod
     def load_variant(variant_set:VariantSet, node:Node)->None:
@@ -80,8 +85,6 @@ class PrimParser:
         variant = variant_set[variant_name]
         if block is not None:
             PrimParser.load_block(variant, block)
-
-        return variant
 
     @staticmethod
     def load_block(prim:PrimSpec, node:Node)->None:
@@ -164,17 +167,6 @@ class PrimParser:
         if not type_name:
             return PrimSpec
 
-        if not hasattr(cls, "_LOAD_PRIM_TYPES"):
-            cls._LOAD_PRIM_TYPES = {"Prim": PrimSpec, "PrimSpec": PrimSpec}
-            package = importlib.import_module("pyusd")
-            for module_info in pkgutil.walk_packages(package.__path__, package.__name__ + "."):
-                try:
-                    module = importlib.import_module(module_info.name)
-                except Exception:
-                    continue
-                for name in getattr(module, "__all__", []):
-                    value = getattr(module, name, None)
-                    if isinstance(value, type) and issubclass(value, PrimSpec):
-                        cls._LOAD_PRIM_TYPES[value.__name__] = value
+        from . import schema_registry
 
-        return cls._LOAD_PRIM_TYPES.get(type_name, PrimSpec)
+        return cast(Type[PrimSpec], schema_registry.prim_class(type_name) or PrimSpec)

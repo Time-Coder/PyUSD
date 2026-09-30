@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Any, Dict, List, Optional
 
 from tree_sitter import Node
 
@@ -9,6 +9,10 @@ from .usda_parser import UsdaParser
 
 
 class AttributeParser:
+
+    # Populated on first use by usd_type_registry(); declared here so the
+    # attribute exists for type checkers instead of appearing only via hasattr.
+    _LOAD_USD_TYPES: Optional[Dict[str, type]] = None
 
     def parse(node:Node)->Attribute:
         type_name = "token"
@@ -48,16 +52,16 @@ class AttributeParser:
         base_name = type_name.replace("[]", "")
         base_type = tuple if base_name == "tuple" else AttributeParser.usd_type_registry().get(base_name, str)
 
-        result = base_type
+        result: Any = base_type
         for _ in range(array_dim):
             result = List[result]
         return result
 
     @staticmethod
     def usd_type_registry()->Dict[str, type]:
-        if not hasattr(AttributeParser, "_LOAD_USD_TYPES"):
+        if AttributeParser._LOAD_USD_TYPES is None:
             from . import dtypes, gf
-            registry = {
+            registry: Dict[str, type] = {
                 "bool": bool,
                 "int": int,
                 "float": float,

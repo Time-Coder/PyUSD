@@ -19,4 +19,3 @@ class PhysicsMeshCollisionAPI(APISchemaBase):
 
     @property
     def physics(self) -> Physics: ...
-

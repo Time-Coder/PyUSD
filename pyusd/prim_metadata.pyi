@@ -1,5 +1,6 @@
-from typing import Any, Dict, List
+from typing import Dict, List
 
+from .dtypes import dictionary
 from .metadata import Metadata
 from .sdf import Specifier
 
@@ -8,7 +9,7 @@ class PrimMetadata(Metadata):
     specifier: Specifier
     typeName: str
     apiSchemas: List[str]
-    assetInfo: Dict[str, Any]
+    assetInfo: dictionary
     inherits: List[str]
     refrences: List[str]
     payloads: List[str]

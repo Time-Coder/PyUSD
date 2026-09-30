@@ -1,6 +1,7 @@
+import builtins
 import ctypes
 import math
-from typing import Any, Callable, Union
+from typing import Any, Callable, Union, cast
 
 from .genMat import genMat
 from .genQuat import genQuat
@@ -10,7 +11,7 @@ from .genVec3 import genVec3
 from .helper import is_number
 
 
-def _single_op(x:genType, op:Callable[[Any,Any], Any], op_name:str)->genType:
+def _single_op(x:genType, op:Callable[[Any], Any], op_name:str)->genType:
     if is_number(x):
         return op(x)
     elif isinstance(x, genType):
@@ -22,7 +23,7 @@ def _single_op(x:genType, op:Callable[[Any,Any], Any], op_name:str)->genType:
         raise TypeError(f"{op_name} not supported for type {x.__class__.__name__}")
 
 def abs(x:genType)->genType:
-    return _single_op(x, __builtins__.abs, "abs")
+    return _single_op(x, builtins.abs, "abs")
 
 def sign(x:genType)->genType:
     return _single_op(x, lambda x: math.copysign(1, x), "sign")
@@ -75,10 +76,10 @@ def _bin_op(x:genType, y:genType, op:Callable[[Any,Any], Any], op_name:str)->gen
         raise TypeError(f"not defined {op_name} between '{x.__class__.__name__}' and '{y.__class__.__name__}'")
 
 def min(x:genType, y:genType)->genType:
-    return _bin_op(x, y, __builtins__.min, "min")
+    return _bin_op(x, y, builtins.min, "min")
 
 def max(x:genType, y:genType)->genType:
-    return _bin_op(x, y, __builtins__.max, "max")
+    return _bin_op(x, y, builtins.max, "max")
 
 def clamp(x:genType, min_value:genType, max_value:genType)->genType:
     return min(max(x, min_value), max_value)
@@ -101,7 +102,7 @@ def smoothstep(edge0: genType, edge1: genType, x: genType)->genType:
     if (not (is_number(edge0) and is_number(edge1))) and not edge0._is_homo(edge1):
         raise ValueError('edge0 and edge1 must be same type')
 
-    return _bin_op(edge1, x, lambda edge1, x: _smoothstep(edge0, edge1, x), "smoothstep")
+    return _bin_op(edge1, x, lambda edge1, x: _smoothstep(cast(float, edge0), cast(float, edge1), cast(float, x)), "smoothstep")
 
 def sqrt(x: genType)->genType:
     return _single_op(x, math.sqrt, "sqrt")
@@ -168,7 +169,8 @@ def atanh(x: genType)->genType:
 
 def length(x: genType)->float:
     if is_number(x):
-        return abs(x)
+        # builtins.abs, not the module-level genType one.
+        return builtins.abs(cast(float, x))
 
     sum: float = 0
     for i in range(len(x)):
@@ -200,13 +202,13 @@ def cross(x: genVec3, y: genVec3)->genVec3:
     result_type:type = genVec.vec_type(result_dtype, 3)
     return result_type(x.y * y.z - x.z * y.y, x.z * y.x - x.x * y.z, x.x * y.y - x.y * y.x)
 
-def reflect(I:genVec, N:genVec)->genVec:
+def reflect(I:genVec, N:genVec)->genType:  # noqa: E741 - GLSL spells the incident vector `I`
     return I - 2 * dot(I, N) * N
 
-def refract(I:genVec, N:genVec, eta:float)->genVec:
-    return I - (eta * dot(I, N) + sqrt(1 - eta * eta * (1 - dot(I, N) * dot(I, N)))) * N
+def refract(I:genVec, N:genVec, eta:float)->genType:  # noqa: E741 - GLSL spells the incident vector `I`
+    return I - (eta * dot(I, N) + math.sqrt(1 - eta * eta * (1 - dot(I, N) * dot(I, N)))) * N
 
-def faceforward(N:genVec, I:genVec, Nref:genVec)->genVec:
+def faceforward(N:genVec, I:genVec, Nref:genVec)->genType:  # noqa: E741 - GLSL spells the incident vector `I`
     return (N if dot(Nref, I) < 0 else -N)
 
 def determinant(m:genMat)->float:
@@ -214,15 +216,15 @@ def determinant(m:genMat)->float:
         raise TypeError(f'not defined determinant for {m.__class__.__name__}')
 
     if m.rows == 2:
-        return m[0, 0] * m[1, 1] - m[0, 1] * m[1, 0]
+        return m.at(0, 0) * m.at(1, 1) - m.at(0, 1) * m.at(1, 0)
 
     if m.rows == 3:
-        return (m[0, 0] * m[1, 1] * m[2, 2] +
-                m[0, 1] * m[1, 2] * m[2, 0] +
-                m[0, 2] * m[1, 0] * m[2, 1] -
-                m[0, 2] * m[1, 1] * m[2, 0] -
-                m[0, 0] * m[1, 2] * m[2, 1] -
-                m[0, 1] * m[1, 0] * m[2, 2])
+        return (m.at(0, 0) * m.at(1, 1) * m.at(2, 2) +
+                m.at(0, 1) * m.at(1, 2) * m.at(2, 0) +
+                m.at(0, 2) * m.at(1, 0) * m.at(2, 1) -
+                m.at(0, 2) * m.at(1, 1) * m.at(2, 0) -
+                m.at(0, 0) * m.at(1, 2) * m.at(2, 1) -
+                m.at(0, 1) * m.at(1, 0) * m.at(2, 2))
 
     if m.rows == 4:
         det = 0.0
@@ -232,7 +234,7 @@ def determinant(m:genMat)->float:
                 if i == row:
                     continue
                 for j in range(1, 4):
-                    submatrix_data.append(m[i, j])
+                    submatrix_data.append(m.at(i, j))
 
             import ctypes
             submatrix_type = genMat.mat_type(ctypes.c_double, (3, 3))
@@ -241,10 +243,12 @@ def determinant(m:genMat)->float:
                 for j in range(3):
                     submatrix[i, j] = submatrix_data[i * 3 + j]
 
-            cofactor = ((-1) ** row) * m[row, 0] * determinant(submatrix)
+            cofactor = ((-1) ** row) * m.at(row, 0) * determinant(submatrix)
             det += cofactor
 
         return det
+
+    raise TypeError(f'not defined determinant for a {m.rows}x{m.cols} matrix')
 
 def transpose(m:genMat)->genMat:
     if not isinstance(m, genMat):
@@ -254,7 +258,7 @@ def transpose(m:genMat)->genMat:
     result:genMat = result_type()
     for i in range(result.rows):
         for j in range(result.cols):
-            result[i, j] = m[j, i]
+            result.put(i, j, m.at(j, i))
 
     return result
 
@@ -264,7 +268,7 @@ def trace(m:genMat)->float:
 
     trace:float = 0.0
     for i in range(m.rows):
-        trace += m[i, i]
+        trace += m.at(i, i)
 
     return trace
 
@@ -276,7 +280,7 @@ def conjugate(m:genQuat)->genQuat:
 
 def inverse(m:Union[genMat, genQuat])->Union[genMat, genQuat]:
     if isinstance(m, genQuat):
-        return conjugate(m) / length(m)
+        return cast(genQuat, conjugate(m) / length(m))
 
     if not isinstance(m, genMat) or m.rows != m.cols:
         raise TypeError(f'not defined inverse for {m.__class__.__name__}')
@@ -291,24 +295,24 @@ def inverse(m:Union[genMat, genQuat])->Union[genMat, genQuat]:
     result = result_type()
 
     if m.rows == 2:
-        result[0, 0] = m[1, 1] / det
-        result[1, 1] = m[0, 0] / det
-        result[0, 1] = -m[0, 1] / det
-        result[1, 0] = -m[1, 0] / det
+        result.put(0, 0, m.at(1, 1) / det)
+        result.put(1, 1, m.at(0, 0) / det)
+        result.put(0, 1, -m.at(0, 1) / det)
+        result.put(1, 0, -m.at(1, 0) / det)
         return result
 
     if m.rows == 3:
-        result[0, 0] = (m[1, 1] * m[2, 2] - m[1, 2] * m[2, 1]) / det
-        result[1, 0] = -(m[1, 0] * m[2, 2] - m[1, 2] * m[2, 0]) / det
-        result[2, 0] = (m[1, 0] * m[2, 1] - m[1, 1] * m[2, 0]) / det
+        result.put(0, 0, (m.at(1, 1) * m.at(2, 2) - m.at(1, 2) * m.at(2, 1)) / det)
+        result.put(1, 0, -(m.at(1, 0) * m.at(2, 2) - m.at(1, 2) * m.at(2, 0)) / det)
+        result.put(2, 0, (m.at(1, 0) * m.at(2, 1) - m.at(1, 1) * m.at(2, 0)) / det)
 
-        result[0, 1] = -(m[0, 1] * m[2, 2] - m[0, 2] * m[2, 1]) / det
-        result[1, 1] = (m[0, 0] * m[2, 2] - m[0, 2] * m[2, 0]) / det
-        result[2, 1] = -(m[0, 0] * m[2, 1] - m[0, 1] * m[2, 0]) / det
+        result.put(0, 1, -(m.at(0, 1) * m.at(2, 2) - m.at(0, 2) * m.at(2, 1)) / det)
+        result.put(1, 1, (m.at(0, 0) * m.at(2, 2) - m.at(0, 2) * m.at(2, 0)) / det)
+        result.put(2, 1, -(m.at(0, 0) * m.at(2, 1) - m.at(0, 1) * m.at(2, 0)) / det)
 
-        result[0, 2] = (m[0, 1] * m[1, 2] - m[0, 2] * m[1, 1]) / det
-        result[1, 2] = -(m[0, 0] * m[1, 2] - m[0, 2] * m[1, 0]) / det
-        result[2, 2] = (m[0, 0] * m[1, 1] - m[0, 1] * m[1, 0]) / det
+        result.put(0, 2, (m.at(0, 1) * m.at(1, 2) - m.at(0, 2) * m.at(1, 1)) / det)
+        result.put(1, 2, -(m.at(0, 0) * m.at(1, 2) - m.at(0, 2) * m.at(1, 0)) / det)
+        result.put(2, 2, (m.at(0, 0) * m.at(1, 1) - m.at(0, 1) * m.at(1, 0)) / det)
 
         return result
 
@@ -322,7 +326,7 @@ def inverse(m:Union[genMat, genQuat])->Union[genMat, genQuat]:
                     for col in range(4):
                         if col == j:
                             continue
-                        submatrix_data.append(m[row, col])
+                        submatrix_data.append(m.at(row, col))
 
                 submatrix_type = genMat.mat_type(ctypes.c_double, (3, 3))
                 submatrix = submatrix_type()
@@ -335,6 +339,8 @@ def inverse(m:Union[genMat, genQuat])->Union[genMat, genQuat]:
 
         return result
 
+    raise TypeError(f'not defined inverse for a {m.rows}x{m.cols} matrix')
+
 def matrixCompMult(x:genMat, y:genMat)->genMat:
     if not isinstance(x, genMat) or not isinstance(y, genMat) or x.shape != y.shape:
         raise TypeError(f"not defined matrixCompMult between '{x.__class__.__name__}' and '{y.__class__.__name__}'")
@@ -344,7 +350,7 @@ def matrixCompMult(x:genMat, y:genMat)->genMat:
 
     for i in range(x.rows):
         for j in range(y.cols):
-            result[i, j] = x[i, j] * y[i, j]
+            result.put(i, j, x.at(i, j) * y.at(i, j))
 
     return result
 
@@ -353,12 +359,12 @@ def outerProduct(x:genVec, y:genVec)->genMat:
         raise TypeError(f"not defined outerProduct between '{x.__class__.__name__}' and '{y.__class__.__name__}'")
 
     result_dtype:type = genType._bin_op_dtype('*', x.dtype, y.dtype)
-    result_type:type = genMat.gen_type(result_dtype, (len(y), len(x)))
+    result_type:type = genMat.mat_type(result_dtype, (len(y), len(x)))
     result:genMat = result_type()
 
     for i in range(len(x)):
         for j in range(len(y)):
-            result[i, j] = x[i] * y[j]
+            result.put(i, j, cast(float, x[i]) * cast(float, y[j]))
 
     return result
 
@@ -383,32 +389,27 @@ def notEqual(x:genType, y:genType)->genType:
 def any(x:genType)->bool:
     if not isinstance(x, genType):
         return bool(x)
+    # `any`/`all` below shadow the builtins, so the comprehension needs builtins.any
+    return builtins.any(x[i] for i in range(len(x)))
 
-    for i in range(len(x)):
-        if x[i]:
-            return True
-
-    return False
 
 def all(x:genType)->bool:
     if not isinstance(x, genType):
         return bool(x)
 
-    for i in range(len(x)):
-        if not x[i]:
-            return False
-
-    return True
+    return builtins.all(x[i] for i in range(len(x)))
 
 def not_(x:genType):
     if not isinstance(x, genType):
         return (not x)
 
-    result:genType = genType.gen_type(x.math_form, ctypes.c_bool, x.shape)
+    # gen_type hands back the class, so instantiate before assigning elements.
+    btype = genType.gen_type(x.math_form, ctypes.c_bool, x.shape)
+    result:genType = btype()
     for i in range(len(x)):
         result[i] = not x[i]
 
     return result
 
 def sizeof(x:genType)->int:
-    return ctypes.sizeof(x)
+    return ctypes.sizeof(cast(Any, x))

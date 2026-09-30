@@ -56,4 +56,3 @@ class RenderSettings(RenderSettingsBase):
 
     @products.setter
     def products(self, value:Relationship)->None: ...
-

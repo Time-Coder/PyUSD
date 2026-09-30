@@ -13,6 +13,7 @@ class ParticleFieldKernelConstantSurfletAPI(APISchemaBase):
     Per-splat opacity is multiplicative with the step-function falloff; rotation
     and scale will transform the disk kernel into a planar ellipse,
     and position moves the splat center the origin.
+
     """
 
     schema_kind: SchemaKind = SchemaKind.SingleApplyAPI

@@ -260,8 +260,8 @@ class Inputs(Attribute):
 
         Values < 0 are ignored.
 
-        Note that the absolute value in the formula above means that sphere and 
-        cylinder lights will emit "behind" the light as well as in front. If it 
+        Note that the absolute value in the formula above means that sphere and
+        cylinder lights will emit "behind" the light as well as in front. If it
         is desired that the light emits forward only, this can be achieved by setting
         the `inputs:shaping:coneAngle` to 90 degrees or less.
         """
@@ -289,8 +289,8 @@ class Inputs(Attribute):
         Note that this implies that a focusTint of pure white will disable
         focus.
 
-        Note that the absolute value in the formula above means that sphere and 
-        cylinder lights will emit "behind" the light as well as in front. If it 
+        Note that the absolute value in the formula above means that sphere and
+        cylinder lights will emit "behind" the light as well as in front. If it
         is desired that the light emits forward only, this can be achieved by setting
         the `inputs:shaping:coneAngle` to 90 degrees or less.
         """
@@ -331,7 +331,7 @@ class Inputs(Attribute):
     def softness(self)->Attribute[float]:
         """Controls the cutoff softness for cone angle.
 
-        At the default of coneSoftness = 0, the luminance is unaltered if 
+        At the default of coneSoftness = 0, the luminance is unaltered if
         emissionOffAxisAngle <= coneAngle, and 0 if
         emissionOffAxisAngle > coneAngle, so in this situation the coneAngle
         functions as a hard binary "off" toggle for all angles > coneAngle.
@@ -506,7 +506,7 @@ class Inputs(Attribute):
     @property
     def distance(self)->Attribute[float]:
         """The maximum distance shadows are cast. The distance is
-        measured as the distance between the point on the surface and the 
+        measured as the distance between the point on the surface and the
         occluder.
         The default value (-1) indicates no limit.
         """
@@ -516,13 +516,13 @@ class Inputs(Attribute):
 
     @property
     def falloff(self)->Attribute[float]:
-        """The size of the shadow falloff zone within the shadow max 
-        distance, which can be used to hide the hard cut-off for shadows seen 
-        stretching past the max distance. The falloff zone is the area that 
-        fades from full shadowing at the beginning of the falloff zone to no 
-        shadowing at the max distance from the occluder. The falloff zone 
-        distance cannot exceed the shadow max distance. A falloff value equal 
-        to or less than zero (with -1 as the default) indicates no falloff. 
+        """The size of the shadow falloff zone within the shadow max
+        distance, which can be used to hide the hard cut-off for shadows seen
+        stretching past the max distance. The falloff zone is the area that
+        fades from full shadowing at the beginning of the falloff zone to no
+        shadowing at the max distance from the occluder. The falloff zone
+        distance cannot exceed the shadow max distance. A falloff value equal
+        to or less than zero (with -1 as the default) indicates no falloff.
         """
 
     @falloff.setter

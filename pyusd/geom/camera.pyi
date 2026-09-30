@@ -41,8 +41,8 @@ class Exposure(Attribute):
     def time(self)->Attribute[float]:
         """Time in seconds that the sensor is exposed to light when calculating exposure.
         Longer exposure times create a brighter image, shorter times darker.
-        Note that shutter:open and shutter:close model essentially the 
-        same property of a physical camera, but are for specifying the 
+        Note that shutter:open and shutter:close model essentially the
+        same property of a physical camera, but are for specifying the
         size of the motion blur streak which is for practical purposes
         useful to keep separate."""
 
@@ -54,7 +54,7 @@ class Exposure(Attribute):
         """f-stop of the aperture when calculating exposure. Smaller numbers
         create a brighter image, larger numbers darker.
         Note that the `fStop` attribute also models the diameter of the camera
-        aperture, but for specifying depth of field.  For practical 
+        aperture, but for specifying depth of field.  For practical
         purposes it is useful to keep the exposure and the depth of field
         controls separate.
         """
@@ -64,7 +64,7 @@ class Exposure(Attribute):
 
     @property
     def responsivity(self)->Attribute[float]:
-        """Scalar multiplier representing overall responsivity of the 
+        """Scalar multiplier representing overall responsivity of the
         sensor system to light when calculating exposure. Intended to be
         used as a per camera/lens system measured scaling value."""
 
@@ -74,12 +74,12 @@ class Exposure(Attribute):
 
 class Camera(Xformable):
     """Transformable camera.
-    
+
     Describes optical properties of a camera via a common set of attributes
     that provide control over the camera's frustum as well as its depth of
     field. For stereo, the left and right camera are individual prims tagged
     through the \\ref UsdGeomCamera::GetStereoRoleAttr() "stereoRole attribute".
-    
+
     There is a corresponding class GfCamera, which can hold the state of a
     camera (at a particular time). \\ref UsdGeomCamera::GetCamera() and
     \\ref UsdGeomCamera::SetFromCamera() convert between a USD camera prim and
@@ -92,10 +92,10 @@ class Camera(Xformable):
     \\endcode
     \\note
     <b>Cameras in USD are always "Y up", regardless of the stage's orientation
-    (i.e. UsdGeomGetStageUpAxis()).</b> 'camXform' positions the camera in the 
-    world, and the inverse transforms the world such that the camera is at the 
-    origin, looking down the -Z axis, with +Y as the up axis, and +X pointing to 
-    the right. This describes a __right handed coordinate system__. 
+    (i.e. UsdGeomGetStageUpAxis()).</b> 'camXform' positions the camera in the
+    world, and the inverse transforms the world such that the camera is at the
+    origin, looking down the -Z axis, with +Y as the up axis, and +X pointing to
+    the right. This describes a __right handed coordinate system__.
 
     \\section UsdGeom_CameraUnits Units of Measure for Camera Properties
 
@@ -123,37 +123,37 @@ class Camera(Xformable):
     f-stop, and exposure compensation, mirroring the controls on a real camera.
     These parameters are provided by \\ref UsdGeomCamera::GetExposureTimeAttr(),
     \\ref UsdGeomCamera::GetExposureIsoAttr(),
-    \\ref UsdGeomCamera::GetExposureFStopAttr(), 
-    and \\ref UsdGeomCamera::GetExposureAttr(), respectively. 
+    \\ref UsdGeomCamera::GetExposureFStopAttr(),
+    and \\ref UsdGeomCamera::GetExposureAttr(), respectively.
     \\ref UsdGeomCamera::GetExposureResponsivityAttr() provides an additional
     scaling factor to model the overall responsivity of the system,
     including response of the sensor and loss by the lens.
 
-    The calculated scaling factor can be obtained from 
+    The calculated scaling factor can be obtained from
     \\ref UsdGeomCamera::ComputeLinearExposureScale(). It is computed as:
     \\code
-        linearExposureScale = exposureResponsivity * 
-            (exposureTime * (exposureIso/100) * pow(2, exposure)) 
+        linearExposureScale = exposureResponsivity *
+            (exposureTime * (exposureIso/100) * pow(2, exposure))
             / (exposureFStop * exposureFStop)
     \\endcode
 
     This scaling factor is combined from two parts: The first, known as the
     __imaging ratio__ (in _steradian-second_), converts from incident luminance
     at the front of the lens system, in _nit_ (_cd/m^2_), to photometric
-    exposure at the sensor in _lux-second_. The second, `exposureResponsivity` 
+    exposure at the sensor in _lux-second_. The second, `exposureResponsivity`
     (in _inverse lux-second_), converts from photometric exposure at the sensor,
     in _lux-second_, to a unitless output signal.
 
     For a thorough treatment of this topic, see
     https://github.com/wetadigital/physlight/blob/main/docs/physLight-v1.3-1bdb6ec3-20230805.pdf,
-    Section 2.2. Note that we are essentially implementing Equation 2.7, but are 
+    Section 2.2. Note that we are essentially implementing Equation 2.7, but are
     choosing C such that it exactly cancels with the factor of pi in the
     numerator, replacing it with a responsivity factor that defaults to 1.
 
-    Renderers should simply multiply the brightness of the image by the exposure 
+    Renderers should simply multiply the brightness of the image by the exposure
     scale. The default values for the exposure-related attributes combine to
     give a scale of 1.0.
-    
+
     \\sa \\ref UsdGeom_LinAlgBasics
      """
 
@@ -167,8 +167,8 @@ class Camera(Xformable):
 
     @property
     def horizontalAperture(self)->Attribute[float]:
-        """Horizontal aperture in tenths of a scene unit; see 
-        \\ref UsdGeom_CameraUnits . Default is the equivalent of 
+        """Horizontal aperture in tenths of a scene unit; see
+        \\ref UsdGeom_CameraUnits . Default is the equivalent of
         the standard 35mm spherical projector aperture."""
 
     @horizontalAperture.setter
@@ -176,8 +176,8 @@ class Camera(Xformable):
 
     @property
     def verticalAperture(self)->Attribute[float]:
-        """Vertical aperture in tenths of a scene unit; see 
-        \\ref UsdGeom_CameraUnits . Default is the equivalent of 
+        """Vertical aperture in tenths of a scene unit; see
+        \\ref UsdGeom_CameraUnits . Default is the equivalent of
         the standard 35mm spherical projector aperture."""
 
     @verticalAperture.setter
@@ -201,7 +201,7 @@ class Camera(Xformable):
 
     @property
     def focalLength(self)->Attribute[float]:
-        """Perspective focal length in tenths of a scene unit; see 
+        """Perspective focal length in tenths of a scene unit; see
         \\ref UsdGeom_CameraUnits ."""
 
     @focalLength.setter
@@ -209,7 +209,7 @@ class Camera(Xformable):
 
     @property
     def clippingRange(self)->Attribute[float2]:
-        """Near and far clipping distances in scene units; see 
+        """Near and far clipping distances in scene units; see
         \\ref UsdGeom_CameraUnits ."""
 
     @clippingRange.setter
@@ -234,7 +234,7 @@ class Camera(Xformable):
 
     @property
     def focusDistance(self)->Attribute[float]:
-        """Distance from the camera to the focus plane in scene units; see 
+        """Distance from the camera to the focus plane in scene units; see
         \\ref UsdGeom_CameraUnits ."""
 
     @focusDistance.setter

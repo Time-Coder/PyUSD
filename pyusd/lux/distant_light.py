@@ -46,7 +46,7 @@ class DistantLight(NonboundableLightBase):
     inputs.intensity = Attribute(float,
         doc="""Scales the brightness of the light linearly.
 
-        Intensity is overridden on DistantLight from LightAPI so that we can 
+        Intensity is overridden on DistantLight from LightAPI so that we can
         supply a high default intensity to approximate the Sun.
 
         """,

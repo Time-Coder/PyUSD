@@ -6,7 +6,7 @@ from ..relationship import Relationship
 
 class RenderSettingsBase(APISchemaBase):
     """Abstract base class that defines render settings that
-    can be specified on either a RenderSettings prim or a RenderProduct 
+    can be specified on either a RenderSettings prim or a RenderProduct
     prim.
     """
 
@@ -136,4 +136,3 @@ class RenderSettingsBase(APISchemaBase):
 
     @camera.setter
     def camera(self, value:Relationship)->None: ...
-

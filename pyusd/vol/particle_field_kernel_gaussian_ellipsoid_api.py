@@ -13,6 +13,7 @@ class ParticleFieldKernelGaussianEllipsoidAPI(APISchemaBase):
     Per-splat opacity is multiplicative with the gaussian falloff; rotation
     and scale will transform the gaussian sphere kernel into an ellipsoid;
     and position moves the per-splat peak falloff from the origin.
+
     """
 
     schema_kind: SchemaKind = SchemaKind.SingleApplyAPI

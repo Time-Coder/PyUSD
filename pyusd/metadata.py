@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import copy
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from .dtypes import dictionary
 from .metadata_serializer import MetadataSerializer
@@ -14,14 +14,16 @@ if TYPE_CHECKING:
 class Metadata:
 
     _parent: Any
-    _builtin_data: Dict[str, Any]
-    _custom_data: Dict[str, Any]
+    _builtin_data: dictionary
+    _custom_data: dictionary
     _builtin_is_set: Dict[str, bool]
     _custom_is_set: Dict[str, bool]
 
-    def __init__(self, parent:Any=None, kwargs:Dict[str, Any]={})->None:
+    def __init__(self, parent:Any=None, kwargs:Optional[Dict[str, Any]]=None)->None:
+        if kwargs is None:
+            kwargs = {}
         self._parent = parent
-        self._builtin_data: Dict[str, Any] = {}
+        self._builtin_data: dictionary = dictionary()
         self._builtin_is_set: Dict[str, bool] = {}
         self._custom_is_set: Dict[str, bool] = {}
 
@@ -31,10 +33,16 @@ class Metadata:
                     value = dictionary(value)
 
                 self._custom_data = value
-                for sub_key in self._custom_data.keys():
+                for sub_key in self._custom_data:
                     self._custom_is_set[sub_key] = False
 
                 continue
+
+            # Nested metadata dicts (assetInfo and friends) are reached with
+            # attribute syntax by the schema APIs, which only the dictionary
+            # subclass supports.
+            if isinstance(value, dict) and not isinstance(value, dictionary):
+                value = dictionary(value)
 
             self._builtin_data[key] = value
             self._builtin_is_set[key] = False
@@ -51,11 +59,16 @@ class Metadata:
         return result
 
     def update(self, kwargs:Dict[str, Any])->None:
-        custom_data = None
-        if "customData" in kwargs:
-            custom_data = kwargs.pop("customData")
+        # Read customData without popping it: PrimSpec._fetch_from_class hands this
+        # method a schema class's meta dict directly, and popping there stripped
+        # customData off the class, so every later application of that same schema
+        # raised KeyError.
+        custom_data = kwargs.get("customData")
 
         for key, value in kwargs.items():
+            if key == "customData":
+                continue
+
             dictionary.update_one(self._builtin_data, key, value)
             if key not in self._builtin_is_set:
                 self._builtin_is_set[key] = False

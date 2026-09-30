@@ -1,624 +1,496 @@
+"""Prim: a view onto a prim in a stage.
+
+A Prim is always bound to ``(stage, path)``. It reads composed results and authors
+into the stage's edit layer, so the same class serves both a Layer (a single-layer
+stage over that layer) and a Stage (the full composition). Schema subclasses such
+as ``Xform`` and ``Mesh`` are dispatched by ``Prim.__new__`` from the composed
+typeName, which is what makes ``isinstance`` and IDE completion work.
+
+The internal, materialised form of one layer's opinion is ``PrimSpec``; reach it
+through :attr:`Prim.resolved_prim`, :attr:`Prim.authored_prim` or
+``Layer.prim_spec_at``.
+"""
+
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Type, TypeVar, Union, cast
 
-from .api_schema_base import APISchemaBase
-from .api_wrapper import APIWrapper
-from .attribute import Attribute
-from .common import SchemaKind
-from .dtypes import namespace
-from .prim_metadata import PrimMetadata
-from .prim_serializer import PrimSerializer
-from .property import Property
-from .relationship import Relationship
+from .composition import normalize_prim_path, path_items, prim_at
+from .prim_spec import PrimSpec
 from .sdf import Specifier
-from .utils import abspath, in_annotations, infer_type
-from .variant_sets import VariantSets
+from .stage_metadata import StageMetadata
+from .stage_property import StageProperty
+from .stage_variant_sets import StageVariantSets
+from .utils import join_relative_path
 
 if TYPE_CHECKING:
+    from .clips_api import ClipsAPI
+    from .collection_api import CollectionAPI
+    from .color_space_api import ColorSpaceAPI
+    from .color_space_definition_api import ColorSpaceDefinitionAPI
+    from .geom.geom_model_api import GeomModelAPI
+    from .geom.motion_api import MotionAPI
+    from .geom.primvars_api import PrimvarsAPI
+    from .geom.xform_common_api import XformCommonAPI
     from .layer import Layer
+    from .lux.light_api import LightAPI
+    from .lux.light_list_api import LightListAPI
+    from .lux.list_api import ListAPI
+    from .lux.mesh_light_api import MeshLightAPI
+    from .lux.shadow_api import ShadowAPI
+    from .lux.shaping_api import ShapingAPI
+    from .lux.volume_light_api import VolumeLightAPI
+    from .media.asset_previews_api import AssetPreviewsAPI
+
+    # --- BEGIN generated api imports ---
+    from .model_api import ModelAPI
+    from .physics.physics_articulation_root_api import PhysicsArticulationRootAPI
+    from .physics.physics_collision_api import PhysicsCollisionAPI
+    from .physics.physics_drive_api import PhysicsDriveAPI
+    from .physics.physics_filtered_pairs_api import PhysicsFilteredPairsAPI
+    from .physics.physics_limit_api import PhysicsLimitAPI
+    from .physics.physics_mass_api import PhysicsMassAPI
+    from .physics.physics_material_api import PhysicsMaterialAPI
+    from .physics.physics_mesh_collision_api import PhysicsMeshCollisionAPI
+    from .physics.physics_rigid_body_api import PhysicsRigidBodyAPI
+    from .ri.ri_material_api import RiMaterialAPI
+    from .ri.ri_spline_api import RiSplineAPI
+    from .ri.statements_api import StatementsAPI
+    from .semantics.semantics_labels_api import SemanticsLabelsAPI
+    from .shade.connectable_api import ConnectableAPI
+    from .shade.coord_sys_api import CoordSysAPI
+    from .shade.material_binding_api import MaterialBindingAPI
+    from .shade.node_def_api import NodeDefAPI
+    from .skel.skel_binding_api import SkelBindingAPI
+    from .stage import Stage
+    from .ui.accessibility_api import AccessibilityAPI
+    from .ui.node_graph_node_api import NodeGraphNodeAPI
+    from .ui.scene_graph_prim_api import SceneGraphPrimAPI
+    from .vol.particle_field_kernel_base_api import ParticleFieldKernelBaseAPI
+    from .vol.particle_field_position_base_api import ParticleFieldPositionBaseAPI
+    from .vol.particle_field_radiance_base_api import ParticleFieldRadianceBaseAPI
+    # --- END generated api imports ---
 
 
-PrimType = TypeVar('PrimType', bound='PrimSpec')
 
-class PrimSpec:
+class Prim:
+    _stage: Stage
+    _path: str
 
-    _name: str
-    _layer: Optional[Layer]
-    _metadata: PrimMetadata
-    _children: Dict[str, PrimSpec]
-    _parent: Optional[PrimSpec]
-    _props: Dict[str, Property]
-    _inherits: List[PrimSpec]
-    _references: List[PrimSpec]
-    _payloads: List[PrimSpec]
-    _specializes: List[PrimSpec]
-    _variant_sets: VariantSets
-    _apis: Dict[Tuple[str, str], APISchemaBase]
-    _api_wrappers: Dict[str, APIWrapper]
-    _is_variant: bool = False
+    def __new__(cls, stage: Stage, path: str) -> Prim:
+        """Dispatch to the schema class that models this prim's typeName.
 
-    schema_kind: SchemaKind = SchemaKind.ConcreteTyped
-    meta: Dict[str, Any] = {}
+        A plain ``Prim(stage, path)`` looks the composed typeName up in the schema
+        registry and becomes a ``Mesh``, ``Xform`` and so on. Passing a concrete
+        class (``def_``) skips the lookup. Either way ``__init__`` keeps the single
+        ``(stage, path)`` shape, so there is no bound-vs-unbound mode to track.
+        """
+        if cls is Prim:
+            from .schema_registry import prim_class
 
-    _all_api_schemas: Dict[str, Type[APISchemaBase]] = {}
+            resolved = prim_class(stage._engine.resolve_type_name(path))
+            if resolved is not None:
+                cls = resolved
 
-    def __init__(self, name:str="", specifier:Specifier=Specifier.Def)->None:
-        if self.schema_kind in [SchemaKind.Invalid, SchemaKind.AbstractBase, SchemaKind.AbstractTyped]:
-            raise TypeError(f"cannot instantiate abstract class {self.__class__.__name__}")
+        # cls was narrowed to the schema class modelling this prim's typeName,
+        # so the allocation is a Prim even though object.__new__ is typed loosely.
+        return cast(Prim, object.__new__(cls))
 
-        if name == "":
-            name = self.__class__.__name__
-
-        if not name.isidentifier():
-            raise ValueError(f'"{name}" is not a valid name')
-
-        self._layer:Optional[Layer] = None
-        self._name:str = name
-        self._parent:Optional[PrimSpec] = None
-        self._children:Dict[str, PrimSpec] = {}
-        self._props:Dict[str, Property] = {}
-        self._inherits: List[PrimSpec] = []
-        self._references: List[PrimSpec] = []
-        self._payloads: List[PrimSpec] = []
-        self._specializes: List[PrimSpec] = []
-        self._variant_sets: VariantSets = VariantSets(self)
-        self._apis: Dict[Tuple[str, str], APISchemaBase] = {}
-        self._api_wrappers: Dict[str, APIWrapper] = {}
-        self._is_variant:bool = False
-
-        inherits = []
-        for base in self.__class__.__bases__:
-            if not issubclass(base, PrimSpec) or base is PrimSpec:
-                continue
-
-            inherits.append(f"</{base.__name__}>")
-
-        self._metadata:PrimMetadata = PrimMetadata(self, {
-            "specifier": specifier,
-            "typeName": self.__class__.__name__,
-            "apiSchemas": [],
-            "assetInfo": {
-                "identifier": None,
-                "name": None,
-                "payloadAssetDependencies": None,
-                "version": None
-            },
-            "inherits": inherits,
-            "references": [],
-            "payloads": [],
-            "specializes": [],
-            "variantSets": [],
-            "variants": {},
-            "doc": self.__class__.__doc__
-        })
-
-        for klass in reversed(self.__class__.__mro__):
-            if klass is PrimSpec or not issubclass(klass, PrimSpec):
-                continue
-
-            self._fetch_from_class(klass)
-
-    def _touch(self) -> None:
-        prim = self
-        while prim._layer is None and prim._parent is not None:
-            prim = prim._parent
-        if prim._layer is not None:
-            prim._layer._touch()
+    def __init__(self, stage: Stage, path: str) -> None:
+        object.__setattr__(self, "_stage", stage)
+        object.__setattr__(self, "_path", normalize_prim_path(path))
 
     @property
-    def specifier(self)->Specifier:
-        return self._metadata.specifier
-
-    @specifier.setter
-    def specifier(self, specifier:Specifier)->None:
-        self._metadata.specifier = specifier
+    def stage(self) -> Stage:
+        return self._stage
 
     @property
-    def variant_sets(self)->VariantSets:
-        return self._variant_sets
-
-    def _fetch_from_class(self, cls:Union[Type[PrimSpec], Type[APISchemaBase]], instance_name:str="")->None:
-        prefix = ""
-        start = self
-        if instance_name:
-            prefix = cls.meta["customData"]["propertyNamespacePrefix"]
-            if prefix not in self._props:
-                prefix_prop = self.create_prop(Property(prefix, is_leaf=False))
-            else:
-                prefix_prop = self._props[prefix]
-
-            start = prefix_prop.create_prop(Property(instance_name, is_leaf=False))
-
-        for name, value in cls.__dict__.items():
-            if name == "meta":
-                self._metadata.update(value)
-                continue
-
-            if not isinstance(value, Property):
-                continue
-
-            value._name = name
-            if name not in start._props:
-                prop = value.clone()
-                prop._parent = start
-                start._props[name] = prop
-            else:
-                prop = start._props[name]
-                prop.update_children(value)
-
-    def create_prop(self, prop:Property)->Property:
-        self._props[prop.name] = prop
-        prop._parent = self
-        self._touch()
-        return prop
-
-    T = TypeVar('T')
-    def create_attr(self, value_type:type, name:str, value:Optional[T]=None, doc:str="", metadata:Optional[Dict[str, Any]]=None, is_leaf:bool=True, uniform:bool=False, custom:bool=False, fix_type:bool=True)->Attribute[T]:
-        ori_name = name
-        names = name.split(":")
-        name = names[0]
-
-        current = self
-        for i, name in enumerate(names):
-            if name not in current._props:
-                if i + 1 == len(names) - 1:
-                    current = current.create_prop(Attribute(value_type, name, value, doc, metadata, is_leaf, uniform, custom, fix_type))
-                else:
-                    current = current.create_prop(Attribute(namespace, name, is_leaf=False))
-            else:
-                current = current._props[name]
-                if i + 1 == len(names) - 1 and current._value_state > Property.ValueState.NotAuthored:
-                    raise RuntimeError(f"Attribute {ori_name} already exists")
-                else:
-                    current._value_state = Property.ValueState.NotAuthored
-
-        return current
-
-    def create_rel(self, name:str, doc:str="", metadata:Optional[Dict[str, Any]]=None, custom:bool=False, is_leaf:bool=True)->Relationship:
-        ori_name = name
-        names = name.split(":")
-        name = names[0]
-
-        current = self
-        for i, name in enumerate(names):
-            if name not in current._props:
-                if i == len(names) - 1:
-                    current = current.create_prop(Relationship(name, doc, metadata, custom, is_leaf))
-                else:
-                    current = current.create_prop(Attribute(namespace, name, is_leaf=False))
-            else:
-                current = current._props[name]
-                if i == len(names) - 1 and current._value_state > Property.ValueState.NotAuthored:
-                    raise RuntimeError(f"Relationship {ori_name} already exists")
-                else:
-                    current._value_state = Property.ValueState.NotAuthored
-
-        return current
-
-    def has_prop(self, name:str)->bool:
-        names = name.split(":")
-        name = names[0]
-
-        current = self
-        for name in names[1:]:
-            if name not in current._props:
-                return False
-            current = current._props[name]
-
-        return True
-
-    def prop(self, name:str)->Property:
-        names = name.split(":")
-        name = names[0]
-
-        current = self
-        for name in names[1:]:
-            if name not in current._props:
-                raise KeyError(name)
-
-            current = current._props[name]
-
-        return current
-
-    def _getitem(self, path_items:List[str])->PrimSpec:
-        prim = self
-        for path_item in path_items:
-            prim = prim._children[path_item]
-
-        return prim
-
-    def __getitem__(self, path:str)->PrimSpec:
-        if path.startswith("/"):
-            raise ValueError("path must be relative")
-
-        path_items = path.split("/")
-        return self._getitem(path_items)
-
-    def _setitem(self, path_items:List[str], prim:PrimSpec)->None:
-        name = path_items[-1]
-        if not name.isidentifier():
-            raise ValueError(f'"{name}" is not a valid name')
-
-        path_items = path_items[:-1]
-        parent_prim = self
-        specifier = (Specifier.Def if prim.specifier != Specifier.Over else Specifier.Over)
-        for path_item in path_items:
-            if path_item not in parent_prim._children:
-                new_prim = PrimSpec(path_item, specifier=specifier)
-                new_prim._set_layer(self._layer)
-                new_prim._parent = parent_prim
-                parent_prim._children[path_item] = new_prim
-                parent_prim = new_prim
-            else:
-                parent_prim = parent_prim._children[path_item]
-
-        prim.detach_from_parent()
-        prim.detach_from_layer()
-
-        prim._parent = parent_prim
-        prim._name = name
-        prim._set_layer(self._layer)
-        parent_prim._children[name] = prim
-        self._touch()
-
-    def __setitem__(self, path:str, prim:PrimSpec)->None:
-        if path.startswith("/"):
-            raise ValueError("path must be relative")
-
-        path_items = path.split("/")
-        self._setitem(path_items, prim)
-
-    def _delitem(self, path_items:List[str])->None:
-        name = path_items[-1]
-        path_items = path_items[:-1]
-        parent_prim = self
-        for path_item in path_items:
-            parent_prim = parent_prim._children[path_item]
-
-        prim:PrimSpec = parent_prim._children[name]
-        prim._parent = None
-        prim._set_layer(None)
-        del parent_prim._children[name]
-        self._touch()
-
-    def __delitem__(self, path:str)->None:
-        if path.startswith("/"):
-            raise ValueError("path must be relative")
-
-        path_items = path.split("/")
-        self._delitem(path_items)
+    def path(self) -> str:
+        return self._path
 
     @property
-    def prop_names(self)->List[str]:
-        return list(self._props.keys())
+    def name(self) -> str:
+        items = path_items(self._path)
+        return items[-1] if items else ""
 
     @property
-    def props(self)->List[Property]:
-        return list(self._props.values())
-
-    def child(self, name:str)->PrimSpec:
-        return self._children[name]
+    def variant_sets(self) -> StageVariantSets:
+        return StageVariantSets(self)
 
     @property
-    def children(self)->List[PrimSpec]:
-        return list(self._children.values())
+    def metadata(self) -> StageMetadata:
+        return StageMetadata(self._stage, self._path)
 
     @property
-    def child_names(self)->List[str]:
-        return list(self._children.keys())
+    def resolved_prim(self) -> Optional[PrimSpec]:
+        """The strongest contributing spec, i.e. where the composed value came from."""
+        strongest = self._stage._engine.prim_index(self._path).strongest_spec
+        return strongest.prim if strongest is not None else None
 
-    def add_child(self, prim:PrimSpec)->None:
-        if prim._parent is self:
-            return
+    @property
+    def authored_prim(self) -> Optional[PrimSpec]:
+        """The spec for this prim in the edit layer, or None if not authored there.
 
-        prim.detach_from_parent()
-        prim.detach_from_layer()
+        The low-level counterpart to :attr:`resolved_prim`: the escape hatch for
+        operations that shape stored data itself. Authoring goes through the view.
+        """
+        return prim_at(self._stage.edit_layer, self._path)
 
-        self._children[prim.name] = prim
-        prim._parent = self
-        prim._set_layer(self._layer)
-        self._touch()
+    @property
+    def specifier(self) -> Optional[Specifier]:
+        prim = self.resolved_prim
+        return prim.specifier if prim is not None else None
 
-    def def_(self, prim_type:Type[PrimType], path:str)->PrimType:
-        prim = prim_type(specifier=Specifier.Def)
-        self[path] = prim
-        return prim
+    @property
+    def type_name(self) -> Optional[str]:
+        return self._stage._engine.resolve_metadata(self._path, "typeName")
 
-    def class_(self, path:str)->PrimSpec:
-        prim = PrimSpec(specifier=Specifier.Class)
-        self[path] = prim
-        return prim
+    @property
+    def child_names(self) -> List[str]:
+        return self._stage.child_names(self._path)
 
-    def over_(self, path:str)->PrimSpec:
-        prim = PrimSpec(specifier=Specifier.Over)
-        self[path] = prim
-        return prim
+    @property
+    def children(self) -> List[Prim]:
+        return [self.child(name) for name in self.child_names]
 
-    def inherit(self, prim:Union[PrimSpec, Layer], prepend:bool=True)->None:
-        if prim in self._inherits:
+    @property
+    def prop_names(self) -> List[str]:
+        names = self._stage._engine.property_names(self._path)
+        return [name for name in names if ":" not in name]
+
+    @property
+    def props(self) -> List[StageProperty]:
+        return [StageProperty(self._stage, self._path, name) for name in self.prop_names]
+
+    def has_prop(self, name: str) -> bool:
+        return self._stage._engine.resolve_property(self._path, name) is not None
+
+    def prop(self, name: str) -> StageProperty:
+        if not self.has_prop(name):
+            raise KeyError(name)
+
+        return StageProperty(self._stage, self._path, name)
+
+    def child(self, name: str) -> Prim:
+        return self[join_relative_path("", name)]
+
+    def _edit_spec(self) -> PrimSpec:
+        return self._stage._ensure_edit_prim(self._path)
+
+    def _add_arc(self, attr_name: str, target: Any, prepend: bool) -> None:
+        spec = self._edit_spec()
+        arcs = getattr(spec, attr_name)
+        if target in arcs:
             return
 
         if prepend:
-            self._inherits.insert(0, prim)
+            arcs.insert(0, target)
         else:
-            self._inherits.append(prim)
-        self._touch()
+            arcs.append(target)
 
-    def remove_inherit(self, prim:Union[PrimSpec, Layer])->None:
-        if prim not in self._inherits:
-            return
+        self._stage.invalidate()
 
-        self._inherits.remove(prim)
-        self._touch()
+    def _remove_arc(self, attr_name: str, target: Any) -> None:
+        spec = self._edit_spec()
+        arcs = getattr(spec, attr_name)
+        if target in arcs:
+            arcs.remove(target)
 
-    def reference(self, prim:Union[PrimSpec, Layer], prepend:bool=True)->None:
-        if prim in self._references:
-            return
+        self._stage.invalidate()
 
-        if prepend:
-            self._references.insert(0, prim)
-        else:
-            self._references.append(prim)
-        self._touch()
+    def inherit(self, target: Union[PrimSpec, Layer], prepend: bool = True) -> None:
+        self._add_arc("_inherits", target, prepend)
 
-    def remove_reference(self, prim:Union[PrimSpec, Layer])->None:
-        if prim not in self._references:
-            return
+    def remove_inherit(self, target: Union[PrimSpec, Layer]) -> None:
+        self._remove_arc("_inherits", target)
 
-        self._references.remove(prim)
-        self._touch()
+    def reference(self, target: Union[PrimSpec, Layer], prepend: bool = True) -> None:
+        self._add_arc("_references", target, prepend)
 
-    def payload(self, prim:Union[PrimSpec, Layer], prepend:bool=True)->None:
-        if prim in self._payloads:
-            return
+    def remove_reference(self, target: Union[PrimSpec, Layer]) -> None:
+        self._remove_arc("_references", target)
 
-        if prepend:
-            self._payloads.insert(0, prim)
-        else:
-            self._payloads.append(prim)
-        self._touch()
+    def payload(self, target: Union[PrimSpec, Layer], prepend: bool = True) -> None:
+        self._add_arc("_payloads", target, prepend)
 
-    def remove_payload(self, prim:Union[PrimSpec, Layer])->None:
-        if prim not in self._payloads:
-            return
+    def remove_payload(self, target: Union[PrimSpec, Layer]) -> None:
+        self._remove_arc("_payloads", target)
 
-        self._payloads.remove(prim)
-        self._touch()
+    def specialize(self, target: Union[PrimSpec, Layer], prepend: bool = True) -> None:
+        self._add_arc("_specializes", target, prepend)
 
-    def specialize(self, prim:Union[PrimSpec, Layer], prepend:bool=True)->None:
-        if prim in self._specializes:
-            return
+    def remove_specialize(self, target: Union[PrimSpec, Layer])->None:
+        self._remove_arc("_specializes", target)
 
-        if prepend:
-            self._specializes.insert(0, prim)
-        else:
-            self._specializes.append(prim)
-        self._touch()
+    def def_(self, prim_type: Type[PrimType], path: str) -> PrimType:
+        return self._stage.def_(prim_type, join_relative_path(self._path, path))
 
-    def remove_specialize(self, prim:Union[PrimSpec, Layer])->None:
-        if prim not in self._specializes:
-            return
+    def class_(self, path: str) -> Prim:
+        return self._stage.class_(join_relative_path(self._path, path))
 
-        self._specializes.remove(prim)
-        self._touch()
+    def over_(self, path: str) -> Prim:
+        return self._stage.over_(join_relative_path(self._path, path))
 
-    def remove_child(self, prim:Union[str, PrimSpec])->PrimSpec:
-        if isinstance(prim, str):
-            if prim not in self._children:
-                raise KeyError(prim)
+    def __getitem__(self, path: str) -> Prim:
+        return self._stage[join_relative_path(self._path, path)]
 
-            prim = self._children[prim]
-        else:
-            if prim._parent is not self:
-                raise ValueError(f"{prim} is not a child of current prim")
+    def __setitem__(self, path: str, prim: PrimSpec) -> None:
+        self._stage[join_relative_path(self._path, path)] = prim
 
-        prim._parent = None
-        prim._set_layer(None)
-        del self._children[prim.name]
-        return prim
+    def __delitem__(self, path: str) -> None:
+        del self._stage[join_relative_path(self._path, path)]
 
-    def detach_from_parent(self)->None:
-        if self._parent is None:
-            return
+    def __getattr__(self, name: str) -> Any:
+        if name.startswith("_"):
+            # Prim is the base of every schema class, so in_annotations would pick
+            # up their property declarations and mistake authored names for
+            # internal fields. Internal state is underscore-prefixed by definition.
+            raise AttributeError(name)
 
-        self._parent.remove_child(self)
-
-    def detach_from_layer(self)->None:
-        if self._layer is None or self._parent is not None:
-            return
-
-        self._layer.remove_root_prim(self)
-
-    @property
-    def metadata(self)->PrimMetadata:
-        return self._metadata
-
-    @property
-    def name(self)->str:
-        return self._name
-
-    @name.setter
-    def name(self, name:str)->None:
-        if self._name == name:
-            return
-
-        if not name.isidentifier():
-            raise ValueError(f'"{name}" is not a valid name')
-
-        old_parent = self._parent
-        old_layer = self._layer
-        if old_parent is None and old_layer is None:
-            self._name = name
-            return
-
-        if old_parent is not None:
-            if name in old_parent._children:
-                raise ValueError(f'Prim with name "{name}" already exists in parent\'s children')
-        elif old_layer is not None:
-            if name in old_layer._root_prims:
-                raise ValueError(f'Prim with name "{name}" already exists in layer\'s root prims')
-
-        self.detach_from_parent()
-        self.detach_from_layer()
-        self._name = name
-
-        if old_parent is not None:
-            old_parent.add_child(self)
-        elif old_layer is not None:
-            old_layer.add_root_prim(self)
-
-    @property
-    def parent(self)->Optional[PrimSpec]:
-        return self._parent
-
-    @property
-    def layer(self)->Optional[Layer]:
-        return self._layer
-
-    def _set_layer(self, layer:Optional[Layer])->None:
-        self._layer = layer
-        for child in self._children.values():
-            child._set_layer(layer)
-
-    @property
-    def path(self)->str:
-        path:str = self._name
-        prim:PrimSpec = self
-        while True:
-            if prim._parent is not None:
-                if not prim._parent._is_variant:
-                    path = prim._parent.name + "/" + path
-                prim = prim._parent
-            else:
-                if self.layer is not None:
-                    path = "/" + path
-
-                return path
-
-    def id(self, rel_layer:Optional[Union[str, Layer]]=None)->str:
-        prefix:str = ""
-        if self.layer is not None:
-            prefix = self.layer.id(rel_layer)
-
-        return f"{prefix}<{self.path}>"
-
-    def __hash__(self)->int:
-        return id(self)
-
-    def __eq__(self, other:Any)->bool:
-        if isinstance(other, PrimSpec):
-            return (self.id() == other.id())
-        elif isinstance(other, str):
-            return (self.id() == abspath(other))
-        else:
-            return False
-
-    def __neq__(self, other:Any)->bool:
-        if isinstance(other, PrimSpec):
-            return (self.id() != other.id())
-        elif isinstance(other, str):
-            return (self.id() != abspath(other))
-        else:
-            return True
-
-    @property
-    def depth(self)->int:
-        depth:int = 0
-        prim:PrimSpec = self
-        while True:
-            if prim._parent is not None:
-                if not prim._parent._is_variant:
-                    depth += 1
-                prim = prim._parent
-            else:
-                return depth
-
-    @property
-    def is_variant(self)->bool:
-        return self._is_variant
-
-    def __str__(self)->str:
-        return self.__class__.__name__ + "(<" + self.path + ">)"
-
-    def __getattr__(self, name:str)->Union[Property, APISchemaBase, APIWrapper]:
-        if name in self._props:
-            return self._props[name]
-
+        # An API schema is not a property. PrimSpec.__getattr__ is what consults the
+        # API registry, checks apiSchemaCanOnlyApplyTo, and hands back the schema
+        # object (or an APIWrapper for multiple-apply), so route _api names there
+        # instead of fabricating a StageProperty that resolves to nothing.
         if name.endswith("_api"):
-            if (name, "") in self._apis:
-                return self._apis[name, ""]
+            return getattr(self._edit_spec(), name)
 
-            api_type = APISchemaBase.schema(name)
-            if "customData" in api_type.meta and "apiSchemaCanOnlyApplyTo" in api_type.meta["customData"]:
-                allowed_types = api_type.meta["customData"]["apiSchemaCanOnlyApplyTo"]
-                if not any(cls_name in allowed_types for cls_name in self.__mro__):
-                    raise ValueError(f"{api_type.__name__} cannot applied to {self.__class__.__name__}")
-
-            if api_type.schema_kind != SchemaKind.MultipleApplyAPI:
-                self._apis[name, ""] = api_type(self)
-                return self._apis[name, ""]
-            else:
-                if name not in self._api_wrappers:
-                    self._api_wrappers[name] = APIWrapper(name, api_type, self)
-                return self._api_wrappers[name]
-        
-        return self.create_prop(Property(name, custom=True, is_leaf=False))
+        return StageProperty(self._stage, self._path, name)
 
     def __setattr__(self, name: str, value: Any) -> None:
-        if hasattr(self.__class__, name) or in_annotations(name, self.__class__):
-            super().__setattr__(name, value)
+        if name.startswith("_"):
+            object.__setattr__(self, name, value)
             return
 
-        from .attribute import Attribute
-        from .relationship import Relationship
+        self._stage._set_property(self._path, name, value)
 
-        is_rel:bool = (isinstance(value, PrimSpec) or (isinstance(value, list) and len(value) > 0 and all(isinstance(item, PrimSpec) for item in value)) or isinstance(value, Relationship))
-        if name in self._props:
-            prop = self._props[name]
-            if isinstance(prop, Attribute) and is_rel:
-                if not prop._custom:
-                    if isinstance(value, PrimSpec):
-                        error_message = "cannot assign Prim to Attribute"
-                    elif isinstance(value, list):
-                        error_message = "cannot assign List[Prim] to Attribute"
-                    elif isinstance(value, Relationship):
-                        error_message = "cannot assign Relationship to Attribute"
+    def __str__(self) -> str:
+        return f"Prim(<{self._path}>)"
 
-                    raise TypeError(error_message)
+    def __repr__(self) -> str:
+        return str(self)
 
-                del self._props[name]
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, Prim):
+            return self._stage is other._stage and self._path == other._path
 
-            if isinstance(prop, Relationship) and not is_rel:
-                if not prop._custom:
-                    raise TypeError(f"cannot assign {value.__class__} object to Relationship")
+        if isinstance(other, str):
+            return self._path == normalize_prim_path(other)
 
-                del self._props[name]
+        return False
 
-        if name not in self._props and isinstance(value, Property):
-            if value._parent is None:
-                value._name = name
-                self.create_prop(value)
-            else:
-                cloned_value = value.clone()
-                cloned_value._name = name
-                self.create_prop(cloned_value)
+    def __ne__(self, other: Any) -> bool:
+        return not self.__eq__(other)
 
-            return
+    def __hash__(self) -> int:
+        return hash((id(self._stage), self._path))
 
-        if name not in self._props:
-            if is_rel:
-                self.create_prop(Relationship(name, custom=True, is_leaf=False))
-            else:
-                self.create_prop(Attribute(infer_type(value), name, uniform=False, custom=True, is_leaf=False, fix_type=False))
+    # The accessors below are the one generated region in this hand-written module.
+    # They used to live in a pyusd/prim.pyi, but a module that ships both a .py and a
+    # .pyi gives `ty` two unrelated `Prim` types, so every module annotating a Prim
+    # parameter reported invalid-argument-type. PrimSpec.__getattr__ stays the single
+    # runtime path; these are typed forwarders onto it, and __getattr__ still covers
+    # any API schema that appears without a regeneration.
+    # --- BEGIN generated api accessors ---
+    @property
+    def model_api(self)->ModelAPI:
+        api:Any = self._edit_spec().model_api
+        result:ModelAPI = api
+        return result
+    @property
+    def color_space_api(self)->ColorSpaceAPI:
+        api:Any = self._edit_spec().color_space_api
+        result:ColorSpaceAPI = api
+        return result
+    def color_space_definition_api(self, instance_name:str)->ColorSpaceDefinitionAPI:
+        api:Any = self._edit_spec().color_space_definition_api
+        result:ColorSpaceDefinitionAPI = api(instance_name)
+        return result
+    def collection_api(self, instance_name:str)->CollectionAPI:
+        api:Any = self._edit_spec().collection_api
+        result:CollectionAPI = api(instance_name)
+        return result
+    @property
+    def clips_api(self)->ClipsAPI:
+        api:Any = self._edit_spec().clips_api
+        result:ClipsAPI = api
+        return result
+    @property
+    def primvars_api(self)->PrimvarsAPI:
+        api:Any = self._edit_spec().primvars_api
+        result:PrimvarsAPI = api
+        return result
+    @property
+    def geom_model_api(self)->GeomModelAPI:
+        api:Any = self._edit_spec().geom_model_api
+        result:GeomModelAPI = api
+        return result
+    @property
+    def motion_api(self)->MotionAPI:
+        api:Any = self._edit_spec().motion_api
+        result:MotionAPI = api
+        return result
+    @property
+    def xform_common_api(self)->XformCommonAPI:
+        api:Any = self._edit_spec().xform_common_api
+        result:XformCommonAPI = api
+        return result
+    @property
+    def light_api(self)->LightAPI:
+        api:Any = self._edit_spec().light_api
+        result:LightAPI = api
+        return result
+    @property
+    def mesh_light_api(self)->MeshLightAPI:
+        api:Any = self._edit_spec().mesh_light_api
+        result:MeshLightAPI = api
+        return result
+    @property
+    def volume_light_api(self)->VolumeLightAPI:
+        api:Any = self._edit_spec().volume_light_api
+        result:VolumeLightAPI = api
+        return result
+    @property
+    def light_list_api(self)->LightListAPI:
+        api:Any = self._edit_spec().light_list_api
+        result:LightListAPI = api
+        return result
+    @property
+    def list_api(self)->ListAPI:
+        api:Any = self._edit_spec().list_api
+        result:ListAPI = api
+        return result
+    @property
+    def shaping_api(self)->ShapingAPI:
+        api:Any = self._edit_spec().shaping_api
+        result:ShapingAPI = api
+        return result
+    @property
+    def shadow_api(self)->ShadowAPI:
+        api:Any = self._edit_spec().shadow_api
+        result:ShadowAPI = api
+        return result
+    @property
+    def asset_previews_api(self)->AssetPreviewsAPI:
+        api:Any = self._edit_spec().asset_previews_api
+        result:AssetPreviewsAPI = api
+        return result
+    @property
+    def node_def_api(self)->NodeDefAPI:
+        api:Any = self._edit_spec().node_def_api
+        result:NodeDefAPI = api
+        return result
+    @property
+    def connectable_api(self)->ConnectableAPI:
+        api:Any = self._edit_spec().connectable_api
+        result:ConnectableAPI = api
+        return result
+    @property
+    def material_binding_api(self)->MaterialBindingAPI:
+        api:Any = self._edit_spec().material_binding_api
+        result:MaterialBindingAPI = api
+        return result
+    def coord_sys_api(self, instance_name:str)->CoordSysAPI:
+        api:Any = self._edit_spec().coord_sys_api
+        result:CoordSysAPI = api(instance_name)
+        return result
+    @property
+    def physics_rigid_body_api(self)->PhysicsRigidBodyAPI:
+        api:Any = self._edit_spec().physics_rigid_body_api
+        result:PhysicsRigidBodyAPI = api
+        return result
+    @property
+    def physics_mass_api(self)->PhysicsMassAPI:
+        api:Any = self._edit_spec().physics_mass_api
+        result:PhysicsMassAPI = api
+        return result
+    @property
+    def physics_collision_api(self)->PhysicsCollisionAPI:
+        api:Any = self._edit_spec().physics_collision_api
+        result:PhysicsCollisionAPI = api
+        return result
+    @property
+    def physics_mesh_collision_api(self)->PhysicsMeshCollisionAPI:
+        api:Any = self._edit_spec().physics_mesh_collision_api
+        result:PhysicsMeshCollisionAPI = api
+        return result
+    @property
+    def physics_material_api(self)->PhysicsMaterialAPI:
+        api:Any = self._edit_spec().physics_material_api
+        result:PhysicsMaterialAPI = api
+        return result
+    @property
+    def physics_filtered_pairs_api(self)->PhysicsFilteredPairsAPI:
+        api:Any = self._edit_spec().physics_filtered_pairs_api
+        result:PhysicsFilteredPairsAPI = api
+        return result
+    def physics_limit_api(self, instance_name:str)->PhysicsLimitAPI:
+        api:Any = self._edit_spec().physics_limit_api
+        result:PhysicsLimitAPI = api(instance_name)
+        return result
+    def physics_drive_api(self, instance_name:str)->PhysicsDriveAPI:
+        api:Any = self._edit_spec().physics_drive_api
+        result:PhysicsDriveAPI = api(instance_name)
+        return result
+    @property
+    def physics_articulation_root_api(self)->PhysicsArticulationRootAPI:
+        api:Any = self._edit_spec().physics_articulation_root_api
+        result:PhysicsArticulationRootAPI = api
+        return result
+    @property
+    def statements_api(self)->StatementsAPI:
+        api:Any = self._edit_spec().statements_api
+        result:StatementsAPI = api
+        return result
+    @property
+    def ri_material_api(self)->RiMaterialAPI:
+        api:Any = self._edit_spec().ri_material_api
+        result:RiMaterialAPI = api
+        return result
+    @property
+    def ri_spline_api(self)->RiSplineAPI:
+        api:Any = self._edit_spec().ri_spline_api
+        result:RiSplineAPI = api
+        return result
+    def semantics_labels_api(self, instance_name:str)->SemanticsLabelsAPI:
+        api:Any = self._edit_spec().semantics_labels_api
+        result:SemanticsLabelsAPI = api(instance_name)
+        return result
+    @property
+    def skel_binding_api(self)->SkelBindingAPI:
+        api:Any = self._edit_spec().skel_binding_api
+        result:SkelBindingAPI = api
+        return result
+    @property
+    def node_graph_node_api(self)->NodeGraphNodeAPI:
+        api:Any = self._edit_spec().node_graph_node_api
+        result:NodeGraphNodeAPI = api
+        return result
+    @property
+    def scene_graph_prim_api(self)->SceneGraphPrimAPI:
+        api:Any = self._edit_spec().scene_graph_prim_api
+        result:SceneGraphPrimAPI = api
+        return result
+    def accessibility_api(self, instance_name:str)->AccessibilityAPI:
+        api:Any = self._edit_spec().accessibility_api
+        result:AccessibilityAPI = api(instance_name)
+        return result
+    @property
+    def particle_field_position_base_api(self)->ParticleFieldPositionBaseAPI:
+        api:Any = self._edit_spec().particle_field_position_base_api
+        result:ParticleFieldPositionBaseAPI = api
+        return result
+    @property
+    def particle_field_kernel_base_api(self)->ParticleFieldKernelBaseAPI:
+        api:Any = self._edit_spec().particle_field_kernel_base_api
+        result:ParticleFieldKernelBaseAPI = api
+        return result
+    @property
+    def particle_field_radiance_base_api(self)->ParticleFieldRadianceBaseAPI:
+        api:Any = self._edit_spec().particle_field_radiance_base_api
+        result:ParticleFieldRadianceBaseAPI = api
+        return result
+    # --- END generated api accessors ---
 
-        self._props[name].set(value)
-        self._touch()
-
-    def to_str(self, indents: int = 0)->str:
-        return PrimSerializer.to_str(self, indents)
-
-
-    @classmethod
-    def cls_to_str(cls)->str:
-        return PrimSerializer.cls_to_str(cls)
+# Declared after the class so the bound can name Prim without a forward ref; a string
+# bound leaves the type variable unsolvable across Stage.def_.
+PrimType = TypeVar("PrimType", bound=Prim)

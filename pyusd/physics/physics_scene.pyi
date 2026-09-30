@@ -6,4 +6,3 @@ class PhysicsScene(Typed):
 
     @property
     def physics(self) -> Physics: ...
-

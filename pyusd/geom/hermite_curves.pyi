@@ -15,9 +15,9 @@ class HermiteCurves(Curves):
     representation (though not from Bezier back to Hermite in general).
 
     \\section UsdGeomHermiteCurves_Interpolation Point Interpolation
-    
+
     The initial cubic curve segment is defined by the first two points and
-    first two tangents. Additional segments are defined by additional 
+    first two tangents. Additional segments are defined by additional
     point / tangent pairs.  The number of segments for each non-batched hermite
     curve would be len(curve.points) - 1.  The total number of segments
     for the batched UsdGeomHermiteCurves representation is
@@ -27,7 +27,7 @@ class HermiteCurves(Curves):
 
     Primvar interpolation is not well specified for this type as it is not
     intended as a rendering representation. We suggest that per point
-    primvars would be linearly interpolated across each segment and should 
+    primvars would be linearly interpolated across each segment and should
     be tagged as 'varying'.
 
     It is not immediately clear how to specify cubic or 'vertex' interpolation
@@ -40,7 +40,7 @@ class HermiteCurves(Curves):
 
     @property
     def tangents(self)->Attribute[List[vector3f]]:
-        """Defines the outgoing trajectory tangent for each point. 
+        """Defines the outgoing trajectory tangent for each point.
         Tangents should be the same size as the points attribute."""
 
     @tangents.setter

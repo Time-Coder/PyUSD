@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import copy
-from typing import Any, Dict, Optional, TypeVar
+from typing import Any, Dict, Optional, TypeVar, cast
 
 from .attribute_serializer import AttributeSerializer
 from .data import Data
@@ -16,7 +16,7 @@ class Attribute(Property, Data[T]):
     _uniform: bool
     _fix_type: bool
 
-    def __init__(self, value_type:type, name:str="", value:Optional[T]=None, doc:str="", metadata:Optional[Dict[str, Any]]=None, is_leaf:bool=True, uniform:bool=False, custom:bool=False, fix_type:bool=True)->None:
+    def __init__(self, value_type:type, name:str="", value:Any=None, doc:str="", metadata:Optional[Dict[str, Any]]=None, is_leaf:bool=True, uniform:bool=False, custom:bool=False, fix_type:bool=True)->None:
         if metadata is None:
             metadata = {}
 
@@ -32,8 +32,8 @@ class Attribute(Property, Data[T]):
         self._uniform:bool = uniform
         self._fix_type:bool = fix_type
 
-    def clone(self, clone_children:bool=True)->Attribute[T]:
-        result = Property.clone(self, clone_children)
+    def clone(self, clone_child:bool=True)->Attribute[T]:
+        result = Property.clone(self, clone_child)
         result._type = self._type
         result._dtype = self._dtype
         result._array_dim = self._array_dim
@@ -41,18 +41,18 @@ class Attribute(Property, Data[T]):
         result._time_samples = copy.deepcopy(self._time_samples)
         result._uniform = self._uniform
         result._fix_type = self._fix_type
-        return result
+        return cast(Attribute[T], result)
 
     @property
     def timeSamples(self)->Dict[float, T]:
         return self._time_samples
 
     @property
-    def value(self)->T:
+    def value(self)->Optional[T]:
         return self._value
 
     @value.setter
-    def value(self, value:T)->None:
+    def value(self, value:Optional[T])->None:
         if value is self:
             return
 

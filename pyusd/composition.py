@@ -6,11 +6,22 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
-from .attribute import Attribute
 from .layer import Layer, LayerImpl
-from .prim import PrimSpec
+from .prim_spec import PrimSpec
 from .property import Property
-from .relationship import Relationship
+from .sdf import Specifier
+from .utils import (
+    ancestors,
+    join_path,
+    normalize_prim_path,
+    normalize_property_name,
+    path_from_reference_text,
+    path_is_under,
+    path_items,
+    path_suffix,
+    prim_at,
+    prim_descendant,
+)
 
 
 class ArcType(Enum):
@@ -97,7 +108,7 @@ class LayerCache:
 
         abs_path = self.resolve_path(layer.file_name, anchor_file)
         has_authored_content = bool(layer._root_prims or layer._sub_layers)
-        if layer.default_prim is not None:
+        if layer._default_prim_name:
             has_authored_content = True
 
         if not has_authored_content and os.path.exists(abs_path):
@@ -161,6 +172,22 @@ class CompositionEngine:
 
         return bool(self.prim_index(path, root_layer).specs)
 
+    def is_populated(self, path: str, root_layer: Optional[Layer] = None) -> bool:
+        """A path joins the namespace only when some contributing spec is a def.
+
+        over and class specs supply opinions but never create a prim, so they
+        are reachable by explicit path yet absent from child enumeration.
+        """
+        path = normalize_prim_path(path)
+        if path == "/":
+            return True
+
+        for spec in self.prim_index(path, root_layer).specs:
+            if spec.prim.specifier == Specifier.Def:
+                return True
+
+        return False
+
     def child_names(self, path: str, root_layer: Optional[Layer] = None) -> List[str]:
         root_layer = root_layer or self.root_layer
         path = normalize_prim_path(path)
@@ -173,18 +200,22 @@ class CompositionEngine:
                     prim_path = "/" + name
                     if self._is_relocated_source_path(root_layer, prim_path):
                         continue
-                    self._append_name(names, seen, name)
+                    self._append_populated_name(names, seen, prim_path, root_layer)
 
                 for _, dest in self._iter_relocates(layer):
                     dest_path = normalize_prim_path(dest)
                     root_name = path_items(dest_path)[0] if path_items(dest_path) else ""
                     if root_name:
-                        self._append_name(names, seen, root_name)
+                        self._append_populated_name(
+                            names, seen, "/" + root_name, root_layer
+                        )
             return names
 
         for spec in reversed(self.prim_index(path, root_layer).specs):
             for name in spec.prim._children:
-                self._append_name(names, seen, name)
+                self._append_populated_name(
+                    names, seen, join_path(path, name), root_layer
+                )
 
             for variant_set in spec.prim._variant_sets.values():
                 selected = variant_set.selected_variant
@@ -192,9 +223,40 @@ class CompositionEngine:
                     continue
 
                 for name in selected._children:
-                    self._append_name(names, seen, name)
+                    self._append_populated_name(
+                        names, seen, join_path(path, name), root_layer
+                    )
 
         return names
+
+    def _append_populated_name(
+        self,
+        names: List[str],
+        seen: Set[str],
+        prim_path: str,
+        root_layer: Optional[Layer],
+    ) -> None:
+        name = path_items(prim_path)[-1]
+        if name in seen:
+            return
+
+        if not self.is_populated(prim_path, root_layer):
+            return
+
+        self._append_name(names, seen, name)
+
+    def resolve_type_name(self, path: str, root_layer: Optional[Layer] = None) -> str:
+        """Composed typeName of the prim at ``path``, strongest opinion first."""
+        path = normalize_prim_path(path)
+        if path == "/":
+            return ""
+
+        for spec in self.prim_index(path, root_layer).specs:
+            value = spec.prim._metadata._builtin_data.get("typeName")
+            if value:
+                return str(value)
+
+        return ""
 
     def resolve_property(self, path: str, prop_name: str, root_layer: Optional[Layer] = None) -> Optional[Property]:
         path = normalize_prim_path(path)
@@ -202,7 +264,7 @@ class CompositionEngine:
         fallback: Optional[Property] = None
 
         for spec in self.prim_index(path, root_layer).specs:
-            prop = prop_at(spec.prim, prop_name)
+            prop = self._prop_at(spec.prim, prop_name)
             if prop is None:
                 continue
 
@@ -215,14 +277,23 @@ class CompositionEngine:
             if fallback is None:
                 fallback = prop
 
-        return fallback
+        if fallback is not None:
+            return fallback
+
+        # Schema fallback: the composed type declares this property even when no
+        # layer authored it, which is what gives a new attribute its value type.
+        from . import schema_registry
+
+        return schema_registry.declared_prop(
+            self.resolve_type_name(path, root_layer), prop_name
+        )
 
     def property_specs(self, path: str, prop_name: str, root_layer: Optional[Layer] = None) -> List[Property]:
         result: List[Property] = []
         path = normalize_prim_path(path)
         prop_name = normalize_property_name(prop_name)
         for spec in self.prim_index(path, root_layer).specs:
-            prop = prop_at(spec.prim, prop_name)
+            prop = self._prop_at(spec.prim, prop_name)
             if prop is not None:
                 result.append(prop)
 
@@ -232,8 +303,15 @@ class CompositionEngine:
         result: List[str] = []
         seen: Set[str] = set()
         for spec in self.prim_index(path, root_layer).specs:
-            for name in flatten_property_names(spec.prim._props.values()):
+            for name in self._flatten_property_names(spec.prim._props.values()):
                 self._append_name(result, seen, name)
+
+        from . import schema_registry
+
+        for name in schema_registry.declared_leaf_names(
+            self.resolve_type_name(path, root_layer)
+        ):
+            self._append_name(result, seen, name)
 
         return result
 
@@ -500,7 +578,7 @@ class CompositionEngine:
                     return value
 
         if values:
-            return compose_dictionaries(values)
+            return self._compose_dictionaries(values)
 
         return fallback
 
@@ -532,7 +610,7 @@ class CompositionEngine:
                     return value
 
         if values:
-            return compose_dictionaries(values)
+            return self._compose_dictionaries(values)
 
         return fallback
 
@@ -585,165 +663,53 @@ class CompositionEngine:
         seen.add(name)
         names.append(name)
 
-
-def normalize_prim_path(path: str) -> str:
-    if path is None:
-        raise ValueError("path cannot be None")
-
-    path = str(path).strip()
-    if not path or path == "/":
-        return "/"
-
-    path = path_from_reference_text(path)
-    if not path.startswith("/"):
-        path = "/" + path
-
-    while "//" in path:
-        path = path.replace("//", "/")
-
-    if len(path) > 1:
-        path = path.rstrip("/")
-
-    return path
-
-
-def path_from_reference_text(text: str) -> str:
-    text = str(text).strip()
-    if text.startswith("<") and text.endswith(">"):
-        text = text[1:-1]
-
-    return text
-
-
-def normalize_property_name(name: str) -> str:
-    return str(name).strip().replace(".", ":")
-
-
-def path_items(path: str) -> List[str]:
-    path = normalize_prim_path(path)
-    if path == "/":
-        return []
-
-    return path.strip("/").split("/")
-
-
-def ancestors(path: str) -> List[str]:
-    parts = path_items(path)
-    result: List[str] = []
-    for index in range(len(parts)):
-        result.append("/" + "/".join(parts[: index + 1]))
-
-    return result
-
-
-def path_is_under(path: str, prefix: str) -> bool:
-    path = normalize_prim_path(path)
-    prefix = normalize_prim_path(prefix)
-    return path == prefix or path.startswith(prefix + "/")
-
-
-def path_suffix(prefix: str, path: str) -> str:
-    prefix = normalize_prim_path(prefix)
-    path = normalize_prim_path(path)
-    if prefix == path:
-        return ""
-
-    if path.startswith(prefix + "/"):
-        return path[len(prefix) + 1 :]
-
-    return ""
-
-
-def join_path(base: str, suffix: str) -> str:
-    base = normalize_prim_path(base)
-    suffix = str(suffix).strip("/")
-    if not suffix:
-        return base
-
-    if base == "/":
-        return normalize_prim_path("/" + suffix)
-
-    return normalize_prim_path(base + "/" + suffix)
-
-
-def prim_at(layer: Layer, path: str) -> Optional[PrimSpec]:
-    parts = path_items(path)
-    if not parts:
-        return None
-
-    prim = layer._root_prims.get(parts[0])
-    if prim is None:
-        return None
-
-    return prim_descendant(prim, "/".join(parts[1:]))
-
-
-def prim_descendant(prim: PrimSpec, suffix: str) -> Optional[PrimSpec]:
-    suffix = str(suffix).strip("/")
-    if not suffix:
-        return prim
-
-    current = prim
-    for item in suffix.split("/"):
-        if item not in current._children:
+    @staticmethod
+    def _prop_at(prim: PrimSpec, prop_name: str) -> Optional[Property]:
+        names = normalize_property_name(prop_name).split(":")
+        if not names or not names[0]:
             return None
 
-        current = current._children[item]
+        current: Any = prim
+        for name in names:
+            props = getattr(current, "_props", {})
+            if name not in props:
+                return None
 
-    return current
+            current = props[name]
 
+        return current
 
-def prop_at(prim: PrimSpec, prop_name: str) -> Optional[Property]:
-    names = normalize_property_name(prop_name).split(":")
-    if not names or not names[0]:
-        return None
+    @staticmethod
+    def _flatten_property_names(
+        props: Iterable[Property], prefix: str = ""
+    ) -> Iterable[str]:
+        for prop in props:
+            name = prop.name if not prefix else f"{prefix}:{prop.name}"
+            if not prop.is_leaf and prop._props:
+                # Namespace properties organise children; they are not properties
+                # themselves and must not show up in property enumeration.
+                yield from CompositionEngine._flatten_property_names(
+                    prop._props.values(), name
+                )
+                continue
 
-    current: Any = prim
-    for name in names:
-        props = getattr(current, "_props", {})
-        if name not in props:
-            return None
+            yield name
+            yield from CompositionEngine._flatten_property_names(
+                prop._props.values(), name
+            )
 
-        current = props[name]
+    @staticmethod
+    def _deep_update(target: Dict[Any, Any], value: Dict[Any, Any]) -> None:
+        for key, sub_value in value.items():
+            if isinstance(sub_value, dict) and isinstance(target.get(key), dict):
+                CompositionEngine._deep_update(target[key], sub_value)
+            else:
+                target[key] = sub_value
 
-    return current
+    @classmethod
+    def _compose_dictionaries(cls, values: List[Dict[Any, Any]]) -> Dict[Any, Any]:
+        result: Dict[Any, Any] = {}
+        for value in reversed(values):
+            cls._deep_update(result, value)
 
-
-def flatten_property_names(props: Iterable[Property], prefix: str = "") -> Iterable[str]:
-    for prop in props:
-        name = prop.name if not prefix else prefix + ":" + prop.name
-        yield name
-        yield from flatten_property_names(prop._props.values(), name)
-
-
-def property_value(prop: Optional[Property]) -> Any:
-    if prop is None:
-        return None
-
-    if isinstance(prop, Attribute):
-        if prop.value_state == Property.ValueState.Cleared:
-            return None
-        return prop.value
-
-    if isinstance(prop, Relationship):
-        if prop.value_state == Property.ValueState.Cleared:
-            return []
-        return prop.targets
-
-    return prop
-
-
-def compose_dictionaries(values: List[Dict[Any, Any]]) -> Dict[Any, Any]:
-    result: Dict[Any, Any] = {}
-    for value in reversed(values):
-        deep_update(result, value)
-
-    return result
-
-
-def deep_update(target: Dict[Any, Any], value: Dict[Any, Any]) -> None:
-    for key, sub_value in value.items():
-        if isinstance(sub_value, dict) and isinstance(target.get(key), dict):
-            deep_update(target[key], sub_value)
-        else:
-            target[key] = sub_value
+        return result

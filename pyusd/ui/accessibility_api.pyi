@@ -10,33 +10,33 @@ class AccessibilityAPI(APISchemaBase):
     or screen readers.
     Accessibility information is provided as a standard triplet of label,
     description and priority.
-    
+
     OpenUSD does not provide an accessibility runtime itself, but endeavours
     to provide the information needed for compatible runtimes to extract and
     present this information.
-    
+
     This is a multiple apply schema, and so may have multiple namespaced
     accessibility triplets, where an instance name may reflect a given purpose
     for that triplet. For example, you may desire to express different
     information for different aspects of the prim, such as size or color.
-    
+
     There are several best practices for using this schema:
-    
+
     \\li Most accessibility runtimes support a single accessibility description.
-    Therefore we recommend using a namespace labeled "default" for any critical 
+    Therefore we recommend using a namespace labeled "default" for any critical
     information.
-    
+
     \\li A default value should be authored if using time sampled accessibility
     information. This helps accessibility runtimes that do not currently
     support time sampled information.
-    
+
     \\li Provide accessibility information of your scene on the default prim
     of the layer, and any top level prims. This allows accessibility systems to
     provide concise scene descriptions to a user, but also allows supporting
     accessibility systems that either do not support hierarchy information or
     when a user has turned off that level of granularity. Accessibility
     information may still be provided on other prims in the hierarchy.
-    
+
     \\note The use of the default prim and top level prims for scene
     accessibility descriptions is a recommended convention. Outside of that,
     accessibility information is not implicitly inherited through a prim
@@ -89,4 +89,3 @@ class AccessibilityAPI(APISchemaBase):
 
     @priority.setter
     def priority(self, value:Priority)->None: ...
-

@@ -8,8 +8,7 @@ class DiskLight(BoundableLightBase):
     """
 
     @property
-    def light(self) -> Light: ...
-
-    @property
     def inputs(self) -> Inputs: ...
 
+    @property
+    def light(self) -> Light: ...

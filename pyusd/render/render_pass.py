@@ -13,51 +13,51 @@ class RenderPass(Typed):
     invocations ("passes") of the rendering process are used to
     generate products using potentially distinct configurations of the
     stage and renderer.
-    
+
     UsdRenderPass houses properties for generating dependencies and
     the necessary commands to run to generate renders, as well as
     visibility and pruning controls for the scene.
-    
+
     Whereas UsdRenderSettings describes information about the rendering
     process itself (such as path-tracing parameters), UsdRenderPass
     describes information to configure the scene contents and to
     invoke the renderer as part of a render job that produces a
     time-varying sequence of images.
-    
+
     There are two consumers of RenderPass prims - a runtime executable that
     generates images from usdRender prims, and pipeline specific code that
     translates between usdRender prims and the pipeline's resource scheduling
     software.  We'll refer to the latter as 'job submission code'.
-    
+
     The name of the prim is used as the pass's name.
-    
+
     \\anchor usdRender_renderVisibility
-    The set of objects visible in the render is specified via the 
-    renderVisibility collection (UsdCollectionAPI), which can be accessed via 
-    GetRenderVisibilityCollectionAPI(). This collection has includeRoot set to 
-    true so that all objects participate in the render by default. To render 
-    only a specific set of objects, there are two options. One is to modify the 
-    collection paths to explicitly exclude objects that don't participate in 
-    the render, assuming it is known; the other option is to set includeRoot to 
-    false and explicitly include the desired objects. These are complementary 
+    The set of objects visible in the render is specified via the
+    renderVisibility collection (UsdCollectionAPI), which can be accessed via
+    GetRenderVisibilityCollectionAPI(). This collection has includeRoot set to
+    true so that all objects participate in the render by default. To render
+    only a specific set of objects, there are two options. One is to modify the
+    collection paths to explicitly exclude objects that don't participate in
+    the render, assuming it is known; the other option is to set includeRoot to
+    false and explicitly include the desired objects. These are complementary
     approaches that may each be preferable depending on the scenario.
-    
+
     In addition, UsdCollectionAPI offers a membershipExpression attribute
     providing a pattern-based description of the collection.  To use
     membershipExpression, includeRoot should be overridden to false.
-    
+
     Note that prims for which UsdGeomImageable::ComputeEffectiveVisibility()
     returns "invisible" cannot be overridden back to a visible state
     via renderVisibility.  Conceptually, render passes may be used to
     partition scene contents across multiple images rendered from the
     scene; they are not intended to restore parts of the scene that
     had been marked invisible.
-    
+
     In addition, renderVisibility only applies to renderable contents
     of the scene itself, such as geometry and lights; it does not apply
     to objects associated with the render settings, such as image
     post-processing filters, even when UsdGeomVisibilityAPI may apply.
-    
+
     \\anchor usd_cameraVisibility
     The cameraVisibility collection defines which scene objects should
     be directly visible in camera.  Objects that are not in this
@@ -65,13 +65,13 @@ class RenderPass(Typed):
     as shadowing, reflections, and refraction.  By default everything in
     the scene should be visible to camera, so this collection sets
     includeRoot to 1.
-    
+
     \\anchor usd_matte
     The matte collection defines scene objects that should act as
     matte objects.  Matte objects render with zero alpha.  By
     default, everything in the scene should render normally, so
     this collection sets includeRoot to 0.
-    
+
     \\anchor usdRender_pruning
     The prune collection specifies a collection of objects to be removed
     ("pruned") from the scene prior to rendering.  Whereas visibility
@@ -85,7 +85,7 @@ class RenderPass(Typed):
     may not support visibility of certain kinds of scene objects or in
     certain conditions; in these cases, pruning offers a guaranteed way
     to remove such objects from the scene.
-    
+
     """
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
@@ -119,12 +119,12 @@ class RenderPass(Typed):
 
     passType = Attribute(token,
         uniform=True,
-        doc="""A string used to categorize differently structured 
+        doc="""A string used to categorize differently structured
         or executed types of passes within a customized pipeline.
 
-        For example, when multiple DCC's (e.g. Houdini, Katana, Nuke) 
-        each compute and contribute different Products to a final result, 
-        it may be clearest and most flexible to create a separate 
+        For example, when multiple DCC's (e.g. Houdini, Katana, Nuke)
+        each compute and contribute different Products to a final result,
+        it may be clearest and most flexible to create a separate
         RenderPass for each.
 
         """
@@ -138,7 +138,7 @@ class RenderPass(Typed):
         that will generate products.
 
         The command can contain variables that will be substituted
-        appropriately during submission, as seen in the example below 
+        appropriately during submission, as seen in the example below
         with {fileName}.
 
         For example:
@@ -153,7 +153,7 @@ class RenderPass(Typed):
 
     fileName = Attribute(asset,
         uniform=True,
-        doc="""The asset that contains the rendering prims or other 
+        doc="""The asset that contains the rendering prims or other
         information needed to render this pass.
 
         """
@@ -161,14 +161,14 @@ class RenderPass(Typed):
 
     renderSource = Relationship(
         doc="""The source prim to render from.  If _fileName_ is not present,
-        the source is assumed to be a RenderSettings prim present in the current 
+        the source is assumed to be a RenderSettings prim present in the current
         Usd stage. If fileName is present, the source should be found in the
-        file there. This relationship might target a string attribute on this 
-        or another prim that identifies the appropriate object in the external 
+        file there. This relationship might target a string attribute on this
+        or another prim that identifies the appropriate object in the external
         container.
 
         For example, for a Usd-backed pass, this would point to a RenderSettings
-        prim.  Houdini passes would point to a Rop.  Nuke passes would point to 
+        prim.  Houdini passes would point to a Rop.  Nuke passes would point to
         a write node.
 
         """
@@ -185,8 +185,8 @@ class RenderPass(Typed):
         Namely, when per-frame tasks are generated from these pass prims,
         usdRender will assume a one-to-one relationship between tasks
         that share their frame number.  Consider a pass named 'composite'
-        whose _inputPasses_ targets a Pass prim named 'beauty`.  
-        By default, each frame for 'composite' will depend on the 
+        whose _inputPasses_ targets a Pass prim named 'beauty`.
+        By default, each frame for 'composite' will depend on the
         same frame from 'beauty':
         beauty.1 -> composite.1
         beauty.2 -> composite.2

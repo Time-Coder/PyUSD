@@ -6,7 +6,7 @@ class FieldAsset(APISchemaBase):
     """
     \\deprecated This schema will be removed in a future release.
     References to this schema should be updated to refer to VolumeFieldAsset.
-    
+
     """
 
     schema_kind: SchemaKind = SchemaKind.NonAppliedAPI

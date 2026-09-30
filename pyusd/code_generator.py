@@ -1,21 +1,28 @@
+import ast
 import os
 import re
 from types import ModuleType
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
-from tree_sitter import Node
 from beartype import beartype
+from tree_sitter import Node
+
+# Sentinel for "every line was blank" while measuring docstring indentation.
+_NO_INDENT = 1 << 30
 
 
 class CodeGenerator:
 
     gf_types = {
+        "bool2", "bool3", "bool4",
         "int2", "int3", "int4",
         "half2", "half3", "half4",
         "float2", "float3", "float4",
         "double2", "double3", "double4",
+        "matrix2b", "matrix3b", "matrix4b",
         "matrix2f", "matrix3f", "matrix4f",
         "matrix2d", "matrix3d", "matrix4d",
+        "quatb",
         "quatf", "quatd", "quath",
         "color3h", "color3f", "color3d",
         "color4h", "color4f", "color4d",
@@ -27,10 +34,14 @@ class CodeGenerator:
         "frame4d"
     }
     dtypes_types = {'double', 'half', 'int64', 'string', 'token', 'pathExpression', 'timecode', 'uchar', 'uint', 'uint64', 'namespace', 'asset', 'dictionary', 'opaque', 'group'}
+    # Enums that live in common.py rather than dtypes.py. A property may use one
+    # directly (for example UsdPhysics.Axis) without an allowedTokens list, so
+    # these have to be imported off the needed-types set like any other type.
+    common_types = {'Axis', 'Kind', 'SchemaKind'}
 
     def __init__(self, schema_path: str):
         """初始化代码生成器
-        
+
         Args:
             schema_path: schema.usda 文件的路径
         """
@@ -50,7 +61,7 @@ class CodeGenerator:
 
     def parse(self) -> None:
         """解析 schema.usda 文件，提取类信息
-        
+
         如果已经解析过，则跳过解析过程。
         """
         if self._parsed:
@@ -72,9 +83,24 @@ class CodeGenerator:
 
         self._parsed = True
 
+    @staticmethod
+    def _write_generated(file_path: str, content: str) -> None:
+        """Write a generated file in the shape the linter expects.
+
+        Schema docstrings carry the indentation of the source schema, so the raw
+        text arrives with stray tabs and trailing blanks that ruff then reports as
+        E101 and W291/W293 across every generated file. Normalising once here keeps
+        regeneration from reintroducing them.
+        """
+        lines = content.replace('\t', '    ').expandtabs(4).splitlines()
+        normalized = "\n".join(line.rstrip() for line in lines).rstrip() + "\n"
+
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(normalized)
+
     def generate_pyclasses(self) -> None:
         """生成所有 Python 类文件（.py）
-        
+
         如果尚未解析，会自动调用 parse() 方法。
         只为每个类生成对应的 .py 文件。
         """
@@ -89,7 +115,7 @@ class CodeGenerator:
 
     def generate_pyi(self) -> None:
         """生成所有类型存根文件（.pyi）
-        
+
         包括主类的 .pyi 文件和命名空间类的 .pyi 文件。
         必须在 generate_pyclasses 之后调用。
         """
@@ -100,16 +126,25 @@ class CodeGenerator:
         # 第一步：收集所有命名空间的成员
         namespace_members = self._collect_all_namespace_members()
 
+        # A namespace prefix and a schema class can normalise to the same file
+        # name (``lightList`` and ``LightList`` both become light_list.pyi). The
+        # class stub is the one that is actually importable, so the namespace
+        # members are merged into it instead of being written over it.
+        class_stub_names = {self._camel_to_snake(name) + '.pyi' for name in self.class_names}
+
         # 第二步：为每个命名空间生成 .pyi 文件
         for ns_prefix, members in namespace_members.items():
             ns_class_name = self._snake_to_pascal(ns_prefix)
             ns_file_name = self._camel_to_snake(ns_prefix) + '.pyi'
             ns_file_path = os.path.join(self.schema_dir, ns_file_name)
 
+            if ns_file_name in class_stub_names:
+                print(f"Skipped namespace {ns_prefix}: collides with {ns_file_name}")
+                continue
+
             # 生成命名空间类的 .pyi 文件
             ns_content = self._generate_namespace_pyi(ns_prefix, ns_class_name, members)
-            with open(ns_file_path, 'w', encoding='utf-8') as f:
-                f.write(ns_content)
+            self._write_generated(ns_file_path, ns_content)
             print(f"Generated namespace: {ns_file_path}")
             self._generated_ns_files.add(ns_prefix)
 
@@ -120,53 +155,392 @@ class CodeGenerator:
             _, imported_token_classes = self._generate_token_classes(class_info['attributes'])
             self._regenerate_pyi_file(class_name, class_info, base_class, imported_token_classes)
 
-    def add_api_interfaces(self) -> None:
-        """Add parsed API schema accessors to the package root prim.pyi file.
-
-        Single-apply and non-applied API schemas are exposed as properties,
-        while multiple-apply API schemas are exposed as methods accepting an
-        instance name. Existing accessors are left untouched.
-        """
-        if not self._parsed:
-            self.parse()
-
-        prim_pyi_path = self._find_root_prim_pyi()
-        if prim_pyi_path is None:
-            raise FileNotFoundError("Unable to find prim.pyi from schema directory")
-
-        updates: Dict[str, List[Tuple[str, str, str, str]]] = {}
-        for method_name, class_name, _, schema_kind in self._collect_api_interface_infos(prim_pyi_path):
-            class_info = self.classes_info[class_name]
-            api_targets = self._get_api_schema_apply_targets(class_info)
-            target_paths = (
-                [self._find_schema_pyi_for_class(target, prim_pyi_path) for target in api_targets]
-                if api_targets else [prim_pyi_path]
-            )
-
-            for target_path in target_paths:
-                if target_path is None:
-                    continue
-
-                import_stmt = self._make_api_import_statement(target_path, class_name)
-                updates.setdefault(target_path, []).append((method_name, class_name, import_stmt, schema_kind))
-
-        for target_path, api_infos in updates.items():
-            self._add_api_interfaces_to_pyi(target_path, api_infos)
 
     def generate_all(self) -> None:
         """生成所有文件（.py、.pyi 和 __init__.py）
-        
+
         这是完整的生成流程，依次调用 generate_pyclasses、generate_pyi 和 generate_init_file。
         """
         self.generate_pyclasses()
         self.generate_pyi()
         self.generate_init_file()
         self.generate_puml()
-        self.add_api_interfaces()
+        self.generate_api_accessors()
 
-    def generate_puml(self, output_file: str = None) -> None:
+    def generate_api_accessors(self) -> None:
+        """Write the API schema accessors into the hand-written pyusd/prim.py.
+
+        These declarations used to be generated into pyusd/prim.pyi. A module that
+        ships both a ``.py`` and a ``.pyi`` hands ``ty`` two unrelated ``Prim`` types,
+        so every module annotating a ``Prim`` parameter then reported
+        ``invalid-argument-type``; ``prim.pyi`` was the only stub left doing that.
+        The declarations therefore move into ``prim.py``, which is the one module in
+        the package that is hand-written and still receives generated members. That is
+        why the region is fenced by markers and a missing marker raises instead of
+        silently generating nothing.
+
+        Each accessor is a typed forwarder onto ``PrimSpec.__getattr__``, which stays
+        the single runtime path: the schema registry decides the return type, and
+        ``Prim.__getattr__`` remains the fallback for a schema that appears without a
+        regeneration. The bodies annotate a local rather than calling ``cast``, so the
+        API classes are only needed at type-check time and the generated imports can
+        stay inside ``TYPE_CHECKING``.
+
+        One instance handles one schema directory, and ``generate_code.py`` builds a
+        fresh instance per directory, so the regions merge rather than overwrite: the
+        last directory parsed would otherwise be the only one represented.
+        """
+        if not self._parsed:
+            self.parse()
+
+        prim_module = self._find_root_prim_module()
+        if prim_module is None:
+            raise FileNotFoundError("Unable to find prim.py from schema directory")
+
+        with open(prim_module, encoding='utf-8') as f:
+            content = f.read()
+
+        accessors, imports = self._collect_api_accessors(prim_module)
+        if not accessors and not imports:
+            return
+
+        content = self._merge_fenced_region(
+            content, 'generated api imports', imports,
+            lambda key: key in content)
+        content = self._merge_fenced_region(
+            content, 'generated api accessors', accessors,
+            lambda key: re.search(rf"def {re.escape(key)}\(", content) is not None)
+
+        self._write_generated(prim_module, content)
+        self._generate_target_api_accessors(prim_module)
+
+    def _merge_fenced_region(
+        self, content: str, name: str, items: List[Tuple[str, str]],
+        present: Callable[[str], bool],
+    ) -> str:
+        """Add items to a marker-fenced region, skipping the ones already present.
+
+        ``present`` decides whether an item is already declared. It cannot be a
+        substring test on the file: an accessor named ``light_api`` is a substring of
+        its own import line, ``from .lux.light_api import LightAPI``, so every
+        accessor would look present the moment its import landed.
+
+        Presence is judged against the whole file rather than the region, because
+        ``ruff`` re-sorts import blocks and will carry the opening marker along with
+        the imports it considers to belong before it, which would otherwise make a
+        second generator run re-add those imports.
+
+        The markers live in a hand-written file, so losing one has to be loud: a
+        silent no-op would leave the accessors undeclared with no indication why.
+        """
+        begin = f"    # --- BEGIN {name} ---"
+        end = f"    # --- END {name} ---"
+        lines = content.splitlines()
+        try:
+            first = lines.index(begin)
+            last = lines.index(end)
+        except ValueError:
+            raise FileNotFoundError(
+                f"Missing '{begin.strip()}' / '{end.strip()}' marker pair; refusing "
+                f"to generate silently."
+            ) from None
+        if last < first:
+            raise ValueError(f"Marker '{end.strip()}' precedes '{begin.strip()}'")
+
+        existing = [line for line in lines[first + 1:last] if line.strip()]
+        pending = [text for key, text in items if not present(key)]
+        if not pending:
+            return content
+
+        # Ordering is left to ruff, which is the only thing that can sort the block
+        # correctly: the hand-written imports sharing this block are not ours to move.
+        return "\n".join(lines[:first + 1] + existing + pending + lines[last:])
+
+    def _find_root_prim_module(self) -> Optional[str]:
+        """Locate the package-root prim.py by walking up from the schema directory.
+
+        The walk starts at the schema directory itself rather than its parent: the
+        core schema lives in the package root, next to prim.py, so the core API
+        schemas would otherwise never find it.
+        """
+        current_dir = os.path.abspath(self.schema_dir)
+        while current_dir and current_dir != os.path.dirname(current_dir):
+            candidate = os.path.join(current_dir, 'prim.py')
+            if os.path.isfile(candidate):
+                return candidate
+            current_dir = os.path.dirname(current_dir)
+        return None
+
+    def _is_api_schema_info(self, class_name: str, class_info: Dict[str, Any]) -> bool:
+        if class_name == 'APISchemaBase':
+            return False
+        inherits = {
+            parent.lstrip('</').rstrip('>')
+            for parent in class_info.get('inherits', [])
+        }
+        if 'APISchemaBase' in inherits:
+            return True
+        api_schema_type = class_info.get('custom_data', {}).get('apiSchemaType', '')
+        if api_schema_type in {
+            'nonApplied',
+            'nonAppliedAPI',
+            'singleApply',
+            'singleApplyAPI',
+            'multipleApply',
+            'multipleApplyAPI',
+        }:
+            return True
+        return (
+            class_info.get('kind') == 'class'
+            and not class_info.get('has_explicit_name')
+            and class_name.endswith('API')
+        )
+
+    def _generate_target_api_accessors(self, prim_module: str) -> None:
+        """Declare the API accessors that are scoped to one prim type.
+
+        ``apiSchemaCanOnlyApplyTo`` keeps these off ``Prim``: a ``Mesh`` has no
+        ``material_x_config_api``. They go into the target class's generated stub
+        instead, which is what the accessor has always done; dropping the routing
+        would leave a full regeneration silently deleting them from the stub.
+        """
+        updates: Dict[str, List[Tuple[str, str, str]]] = {}
+        for class_name in self.class_names:
+            class_info = self.classes_info[class_name]
+            if not self._is_api_schema_info(class_name, class_info):
+                continue
+            method_name = self._camel_to_snake(class_name)
+            for target in self._get_api_schema_apply_targets(class_info):
+                target_pyi = self._find_schema_stub_for_class(target, prim_module)
+                if target_pyi is None:
+                    raise FileNotFoundError(
+                        f"No generated stub found for {target}, the only prim type "
+                        f"{class_name} applies to."
+                    )
+                updates.setdefault(target_pyi, []).append(
+                    (method_name, class_name,
+                     self._api_import_statement(target_pyi, class_name)))
+
+        for target_pyi, accessors in updates.items():
+            self._add_accessors_to_stub(target_pyi, accessors)
+
+    def _api_import_statement(self, target_pyi: str, class_name: str) -> str:
+        """Import an API schema class relative to the stub that will declare it.
+
+        The target stub is not necessarily in this generator's schema directory: a
+        MaterialXConfigAPI accessor is declared on the shade Material stub, while the
+        schema is parsed from mtlx. A ``pyusd.``-absolute import only resolves when the
+        module happens to sit at the package root, which is false for every namespaced
+        schema, so the path is derived from the two file locations instead.
+        """
+        module_name = self._camel_to_snake(class_name)
+        schema_dir = os.path.abspath(self.schema_dir)
+        relative = os.path.relpath(schema_dir, os.path.dirname(os.path.abspath(target_pyi)))
+        prefix = '.' if relative == '.' else '.' + relative.replace(os.sep, '.')
+        return f"from {prefix}{module_name} import {class_name}"
+
+    def _find_schema_stub_for_class(
+        self, class_name: str, prim_module: str
+    ) -> Optional[str]:
+        """Find the generated stub that declares a schema class, if there is one."""
+        search_names = self._schema_class_name_candidates(class_name)
+        search_dirs = [
+            os.path.abspath(self.schema_dir),
+            os.path.dirname(os.path.abspath(prim_module)),
+        ]
+        for search_dir in search_dirs:
+            for candidate_name in search_names:
+                candidate = os.path.join(
+                    search_dir, self._camel_to_snake(candidate_name) + '.pyi')
+                if os.path.isfile(candidate):
+                    return candidate
+
+        root_dir = os.path.dirname(os.path.abspath(prim_module))
+        for current_dir, dir_names, file_names in os.walk(root_dir):
+            dir_names[:] = [name for name in dir_names if name != '__pycache__']
+            for candidate_name in search_names:
+                file_name = self._camel_to_snake(candidate_name) + '.pyi'
+                if file_name in file_names:
+                    return os.path.join(current_dir, file_name)
+        return None
+
+    def _schema_class_name_candidates(self, class_name: str) -> List[str]:
+        candidates = [class_name]
+        for known_class_name in self.class_names:
+            if class_name.endswith(known_class_name) and known_class_name not in candidates:
+                candidates.append(known_class_name)
+        if class_name.startswith('Usd') and len(class_name) > 3:
+            stripped = class_name[3:]
+            for known_class_name in self.class_names:
+                if stripped.endswith(known_class_name) and known_class_name not in candidates:
+                    candidates.append(known_class_name)
+        return candidates
+
+    def _add_accessors_to_stub(
+        self, stub_path: str, accessors: List[Tuple[str, str, str]]
+    ) -> None:
+        """Append the accessors to a fully generated stub, skipping known ones.
+
+        The stub is generated from top to bottom and its class body reaches end of
+        file, which is what makes appending land inside the class. Appending rather
+        than rewriting also keeps a re-run from reordering what is already there.
+        """
+        with open(stub_path, encoding='utf-8') as f:
+            content = f.read()
+
+        missing: List[str] = []
+        for method_name, class_name, import_stmt in accessors:
+            content = self._ensure_import(content, import_stmt, class_name)
+            if re.search(rf"def {re.escape(method_name)}\(", content):
+                continue
+            missing.append(self._format_stub_api_accessor(method_name, class_name))
+
+        if missing:
+            content = content.rstrip() + "\n\n" + "\n\n".join(missing) + "\n"
+
+        self._write_generated(stub_path, content)
+
+    def _ensure_import(
+        self, content: str, import_stmt: str, class_name: str
+    ) -> str:
+        """Make sure the stub imports the class from the path the accessor needs.
+
+        Matching is done on the parsed statement rather than on its text: the
+        generated stubs wrap long imports in parentheses across several lines, so a
+        textual test misses an import that is already there and appends a duplicate.
+        Comparing the unparsed form also catches a same-named import from the wrong
+        path, which is how a ``pyusd.``-absolute statement pointing at a namespaced
+        module survived here in the first place.
+        """
+        wanted = ast.unparse(ast.parse(import_stmt).body[0])
+        try:
+            tree = ast.parse(content)
+        except SyntaxError:
+            return self._insert_imports(content, [import_stmt])
+
+        for node in tree.body:
+            if not isinstance(node, ast.ImportFrom):
+                continue
+            if not any(alias.name == class_name for alias in node.names):
+                continue
+            if ast.unparse(node) == wanted:
+                return content
+            lines = content.splitlines()
+            return "\n".join(lines[:node.lineno - 1] + [import_stmt]
+                             + lines[node.end_lineno:]) + (
+                                 '\n' if content.endswith('\n') else '')
+
+        return self._insert_imports(content, [import_stmt])
+
+    def _format_stub_api_accessor(self, method_name: str, class_name: str) -> str:
+        return "\n".join([
+            "    @property",
+            f"    def {method_name}(self)->{class_name}: ...",
+        ])
+
+
+    def _insert_imports(self, content: str, import_statements: List[str]) -> str:
+        """Insert statements after the stub's import block, not after its first line.
+
+        The generated stubs wrap long imports in parentheses across several lines, so
+        looking for the last line that starts with ``from `` lands on the opening line
+        and injects the new statement into the middle of the parenthesised list.
+        """
+        unique_imports: List[str] = []
+        for import_stmt in import_statements:
+            if import_stmt not in unique_imports and import_stmt not in content:
+                unique_imports.append(import_stmt)
+        if not unique_imports:
+            return content
+
+        lines = content.splitlines()
+        end = 0
+        in_import = False
+        for index, line in enumerate(lines):
+            stripped = line.strip()
+            if line.startswith(('from ', 'import ')):
+                in_import = True
+                end = index + 1
+            elif in_import and (not stripped
+                                or line.startswith((' ', '\t'))
+                                or stripped.startswith((')', ']', ','))):
+                end = index + 1
+            else:
+                break
+
+        lines[end:end] = unique_imports
+        line_ending = '\n' if content.endswith('\n') else ''
+        return '\n'.join(lines) + line_ending
+
+    def _collect_api_accessors(
+        self, prim_module: str
+    ) -> Tuple[List[Tuple[str, str]], List[Tuple[str, str]]]:
+        """Build the accessor blocks and the imports they need.
+
+        Only accessors open on ``Prim`` are collected here. The ones scoped by
+        ``apiSchemaCanOnlyApplyTo`` are handled by ``_generate_target_api_accessors``.
+        """
+        accessors: List[Tuple[str, str]] = []
+        imports: List[Tuple[str, str]] = []
+        seen = set()
+        prim_dir = os.path.dirname(os.path.abspath(prim_module))
+        rel_dir = os.path.relpath(os.path.abspath(self.schema_dir), prim_dir)
+        prefix = [] if rel_dir == '.' else rel_dir.split(os.sep)
+
+        for class_name in self.class_names:
+            class_info = self.classes_info[class_name]
+            if not self._is_api_schema_info(class_name, class_info):
+                continue
+            if self._get_api_schema_apply_targets(class_info):
+                continue
+
+            method_name = self._camel_to_snake(class_name)
+            if method_name in seen:
+                continue
+            seen.add(method_name)
+
+            statement = f"from {'.'.join([''] + prefix + [method_name])} import {class_name}"
+            imports.append((statement, f"    {statement}"))
+            accessors.append((method_name, self._format_api_accessor(
+                method_name, class_name, self._determine_schema_kind(class_info))))
+
+        return accessors, imports
+
+    def _get_api_schema_apply_targets(self, class_info: Dict[str, Any]) -> List[str]:
+        custom_data = class_info.get('custom_data', {})
+        targets = custom_data.get('apiSchemaCanOnlyApplyTo')
+        if isinstance(targets, str):
+            return [targets]
+        if isinstance(targets, list):
+            return [target for target in targets if isinstance(target, str)]
+        return []
+
+    def _format_api_accessor(
+        self, method_name: str, class_name: str, schema_kind: str
+    ) -> str:
+        # The hop through `Any` is needed because `ty` reads PrimSpec.__getattr__'s
+        # declared return type through getattr, so the result is a union rather than
+        # assignable to the schema class directly. Annotating locals rather than
+        # calling cast keeps the API classes out of the runtime namespace: cast
+        # evaluates its first argument, and PEP 563 does not evaluate annotations.
+        if schema_kind == 'SchemaKind.MultipleApplyAPI':
+            return "\n".join([
+                f"    def {method_name}(self, instance_name:str)->{class_name}:",
+                f'        api:Any = getattr(self._edit_spec(), "{method_name}")',
+                f"        result:{class_name} = api(instance_name)",
+                "        return result",
+            ])
+        return "\n".join([
+            "    @property",
+            f"    def {method_name}(self)->{class_name}:",
+            f'        api:Any = getattr(self._edit_spec(), "{method_name}")',
+            f"        result:{class_name} = api",
+            "        return result",
+        ])
+
+    def generate_puml(self, output_file: Optional[str] = None) -> None:
         """生成 PlantUML 格式的类图
-        
+
         Args:
             output_file: 输出文件路径，默认为 schema_dir 下的 classes.puml
         """
@@ -226,8 +600,7 @@ class CodeGenerator:
         lines.append("@enduml")
 
         # 写入文件
-        with open(output_file, 'w', encoding='utf-8') as f:
-            f.write("\n".join(lines) + "\n")
+        self._write_generated(output_file, "\n".join(lines) + "\n")
 
         print(f"Generated PlantUML: {output_file}")
 
@@ -301,204 +674,9 @@ class CodeGenerator:
                 result_list.append(cls.cls_to_str())
 
         result = "\n".join(result_list)
-        target_file_path = os.path.join(os.path.dirname(module.__file__), "schema_generated.usda")
-        with open(target_file_path, "w") as f:
-            f.write(result)
+        target_file_path = os.path.join(os.path.dirname(module.__file__ or ""), "schema_generated.usda")
+        CodeGenerator._write_generated(target_file_path, result)
 
-    def _find_root_prim_pyi(self) -> Optional[str]:
-        current_dir = os.path.abspath(self.schema_dir)
-
-        while True:
-            candidate = os.path.join(current_dir, 'prim.pyi')
-            if os.path.isfile(candidate):
-                return candidate
-
-            parent_dir = os.path.dirname(current_dir)
-            if parent_dir == current_dir:
-                return None
-            current_dir = parent_dir
-
-    def _collect_api_interface_infos(self, prim_pyi_path: str) -> List[Tuple[str, str, str, str]]:
-        result = []
-        seen_methods = set()
-        prim_dir = os.path.dirname(os.path.abspath(prim_pyi_path))
-        schema_dir = os.path.abspath(self.schema_dir)
-        rel_module_dir = os.path.relpath(schema_dir, prim_dir)
-        module_prefix_parts = [] if rel_module_dir == '.' else rel_module_dir.split(os.sep)
-
-        for class_name in self.class_names:
-            class_info = self.classes_info[class_name]
-            if not self._is_api_schema_info(class_name, class_info):
-                continue
-
-            method_name = self._camel_to_snake(class_name)
-            if method_name in seen_methods:
-                continue
-
-            module_name = self._camel_to_snake(class_name)
-            module_path = '.'.join([''] + module_prefix_parts + [module_name])
-            import_stmt = f"from {module_path} import {class_name}"
-            schema_kind = self._determine_schema_kind(class_info)
-            result.append((method_name, class_name, import_stmt, schema_kind))
-            seen_methods.add(method_name)
-
-        return result
-
-    def _get_api_schema_apply_targets(self, class_info: Dict[str, Any]) -> List[str]:
-        custom_data = class_info.get('custom_data', {})
-        targets = custom_data.get('apiSchemaCanOnlyApplyTo')
-
-        if isinstance(targets, str):
-            return [targets]
-        if isinstance(targets, list):
-            return [target for target in targets if isinstance(target, str)]
-        return []
-
-    def _find_schema_pyi_for_class(self, class_name: str, prim_pyi_path: str) -> Optional[str]:
-        if class_name in {'Prim', 'PrimSpec'}:
-            return prim_pyi_path
-
-        search_names = self._schema_class_name_candidates(class_name)
-        search_dirs = [
-            os.path.abspath(self.schema_dir),
-            os.path.dirname(os.path.abspath(prim_pyi_path)),
-        ]
-
-        for search_dir in search_dirs:
-            for candidate_name in search_names:
-                candidate = os.path.join(search_dir, self._camel_to_snake(candidate_name) + '.pyi')
-                if os.path.isfile(candidate):
-                    return candidate
-
-        root_dir = os.path.dirname(os.path.abspath(prim_pyi_path))
-        for current_dir, dir_names, file_names in os.walk(root_dir):
-            dir_names[:] = [name for name in dir_names if name != '__pycache__']
-            for candidate_name in search_names:
-                file_name = self._camel_to_snake(candidate_name) + '.pyi'
-                if file_name in file_names:
-                    return os.path.join(current_dir, file_name)
-
-        return None
-
-    def _schema_class_name_candidates(self, class_name: str) -> List[str]:
-        candidates = [class_name]
-
-        for known_class_name in self.class_names:
-            if class_name.endswith(known_class_name) and known_class_name not in candidates:
-                candidates.append(known_class_name)
-
-        if class_name.startswith('Usd') and len(class_name) > 3:
-            stripped = class_name[3:]
-            for known_class_name in self.class_names:
-                if stripped.endswith(known_class_name) and known_class_name not in candidates:
-                    candidates.append(known_class_name)
-
-        return candidates
-
-    def _make_api_import_statement(self, target_pyi_path: str, class_name: str) -> str:
-        target_dir = os.path.dirname(os.path.abspath(target_pyi_path))
-        schema_dir = os.path.abspath(self.schema_dir)
-        rel_module_dir = os.path.relpath(schema_dir, target_dir)
-        module_name = self._camel_to_snake(class_name)
-
-        if rel_module_dir == '.':
-            module_path = f".{module_name}"
-        else:
-            parts = rel_module_dir.split(os.sep)
-            up_count = sum(1 for part in parts if part == '..')
-            down_parts = [part for part in parts if part not in ('..', '.')]
-            dot_prefix = '.' * (up_count + 1)
-            module_tail = '.'.join(down_parts + [module_name])
-            module_path = dot_prefix + module_tail
-
-        return f"from {module_path} import {class_name}"
-
-    def _add_api_interfaces_to_pyi(self, pyi_path: str, api_infos: List[Tuple[str, str, str, str]]) -> None:
-        with open(pyi_path, encoding='utf-8') as f:
-            content = f.read()
-
-        missing_imports = []
-        missing_interfaces = []
-
-        for method_name, class_name, import_stmt, schema_kind in api_infos:
-            if self._has_prim_api_interface(content, method_name):
-                continue
-            if not self._has_imported_class(content, import_stmt):
-                missing_imports.append(import_stmt)
-            missing_interfaces.append(self._format_prim_api_interface(method_name, class_name, schema_kind))
-
-        if not missing_imports and not missing_interfaces:
-            return
-
-        if missing_imports:
-            content = self._insert_imports(content, missing_imports)
-        if missing_interfaces:
-            content = content.rstrip() + "\n\n" + "\n\n".join(missing_interfaces) + "\n"
-
-        with open(pyi_path, 'w', encoding='utf-8') as f:
-            f.write(content)
-
-    def _is_api_schema_info(self, class_name: str, class_info: Dict[str, Any]) -> bool:
-        if class_name == 'APISchemaBase':
-            return False
-
-        inherits = {
-            parent.lstrip('</').rstrip('>')
-            for parent in class_info.get('inherits', [])
-        }
-        if 'APISchemaBase' in inherits:
-            return True
-
-        api_schema_type = class_info.get('custom_data', {}).get('apiSchemaType', '')
-        if api_schema_type in {
-            'nonApplied',
-            'nonAppliedAPI',
-            'singleApply',
-            'singleApplyAPI',
-            'multipleApply',
-            'multipleApplyAPI',
-        }:
-            return True
-
-        return (
-            class_info.get('kind') == 'class'
-            and not class_info.get('has_explicit_name')
-            and class_name.endswith('API')
-        )
-
-    def _has_imported_class(self, content: str, import_stmt: str) -> bool:
-        class_name = import_stmt.rsplit(' import ', 1)[1]
-        pattern = rf"^from\s+\S+\s+import\s+.*\b{re.escape(class_name)}\b"
-        return re.search(pattern, content, flags=re.MULTILINE) is not None
-
-    def _has_prim_api_interface(self, content: str, method_name: str) -> bool:
-        pattern = rf"^\s+def\s+{re.escape(method_name)}\s*\("
-        return re.search(pattern, content, flags=re.MULTILINE) is not None
-
-    def _format_prim_api_interface(self, method_name: str, class_name: str, schema_kind: str) -> str:
-        if schema_kind == 'SchemaKind.MultipleApplyAPI':
-            return f"    def {method_name}(self, instance_name:str)->{class_name}: ..."
-
-        return "\n".join([
-            "    @property",
-            f"    def {method_name}(self)->{class_name}: ...",
-        ])
-
-    def _insert_imports(self, content: str, import_statements: List[str]) -> str:
-        unique_imports = []
-        for import_stmt in import_statements:
-            if import_stmt not in unique_imports:
-                unique_imports.append(import_stmt)
-
-        lines = content.splitlines()
-        insert_at = 0
-        for index, line in enumerate(lines):
-            if line.startswith('from ') or line.startswith('import '):
-                insert_at = index + 1
-
-        lines[insert_at:insert_at] = unique_imports
-        line_ending = '\n' if content.endswith('\n') else ''
-        return '\n'.join(lines) + line_ending
 
     def _collect_all_namespace_members(self) -> Dict[str, List[Dict[str, Any]]]:
         """收集所有类的命名空间成员"""
@@ -538,14 +716,23 @@ class CodeGenerator:
         pyi_class_def = self._generate_pyi_class_definition(class_name, base_class, class_info, self._generated_ns_files)
 
         # 组合内容
-        content = pyi_imports + "\n\n\n" + pyi_class_def + "\n"
+        content = pyi_imports + "\n\n" + pyi_class_def + "\n"
 
         # 写入 .pyi 文件
         file_name = self._camel_to_snake(class_name) + '.pyi'
         file_path = os.path.join(self.schema_dir, file_name)
 
-        with open(file_path, 'w', encoding='utf-8') as f:
-            f.write(content)
+        self._write_generated(file_path, content)
+
+    @staticmethod
+    def _node_text(node: Node) -> str:
+        """Decoded source text of a tree-sitter node.
+
+        ``Node.text`` is typed as ``Optional[bytes]`` and is None only for
+        zero-width or error nodes, which the schema walk never asks for.
+        """
+        text = node.text
+        return "" if text is None else text.decode('utf-8')
 
     def _parse_prim_definition(self, node: Node) -> Dict[str, Any]:
         """解析 prim_definition 节点，提取类信息"""
@@ -564,9 +751,9 @@ class CodeGenerator:
 
         for child in node.named_children:
             if child.type == 'prim_type':
-                info['kind'] = child.text.decode('utf-8').strip()
+                info['kind'] = self._node_text(child).strip()
             elif child.type == 'string':
-                name = child.text.decode('utf-8').strip('"')
+                name = self._node_text(child).strip('"')
                 info['name'] = name
                 prev_sibling = child.prev_named_sibling
                 if prev_sibling and prev_sibling.type == 'identifier':
@@ -590,11 +777,11 @@ class CodeGenerator:
                 value_list = None
                 for assign_child in child.named_children:
                     if assign_child.type == 'orderer':
-                        orderer = assign_child.text.decode('utf-8')
+                        orderer = self._node_text(assign_child)
                     elif assign_child.type == 'identifier':
-                        key = assign_child.text.decode('utf-8')
+                        key = self._node_text(assign_child)
                     elif assign_child.type == 'string':
-                        text = assign_child.text.decode('utf-8')
+                        text = self._node_text(assign_child)
                         # 处理三引号字符串
                         if text.startswith("'''") and text.endswith("'''") or text.startswith('"""') and text.endswith('"""'):
                             value = text[3:-3]
@@ -603,7 +790,7 @@ class CodeGenerator:
                     elif assign_child.type == 'dictionary':
                         value_dict = self._parse_usd_dictionary(assign_child)
                     elif assign_child.type == 'arc_path':
-                        value_path = assign_child.text.decode('utf-8')
+                        value_path = self._node_text(assign_child)
                     elif assign_child.type == 'list':
                         value_list = self._parse_usd_list(assign_child)
 
@@ -648,9 +835,9 @@ class CodeGenerator:
 
         for child in node.named_children:
             if child.type == 'identifier':
-                key = child.text.decode('utf-8')
+                key = self._node_text(child)
             elif child.type == 'string':
-                value = child.text.decode('utf-8').strip('"')
+                value = self._node_text(child).strip('"')
             elif child.type == 'array':
                 value = self._parse_usd_array(child)
             elif child.type == 'dictionary':
@@ -678,7 +865,7 @@ class CodeGenerator:
         key = ''
         for child in node.named_children:
             if child.type == 'identifier':
-                key = child.text.decode('utf-8')
+                key = self._node_text(child)
             elif child.type == 'dictionary' and key == 'customData':
                 info['custom_data'] = self._parse_usd_dictionary(child)
                 # 同时保存到 metadata
@@ -701,10 +888,10 @@ class CodeGenerator:
 
         for child in node.named_children:
             if child.type == 'attribute_type':
-                attr_info['type'] = child.text.decode('utf-8')
+                attr_info['type'] = self._node_text(child)
             elif child.type == 'identifier' or child.type == 'qualified_identifier':
                 # qualified_identifier 包含 namespace:name 格式
-                full_name = child.text.decode('utf-8')
+                full_name = self._node_text(child)
                 attr_info['full_name'] = full_name
                 # 如果有冒号，提取最后一部分作为 Python 属性名
                 if ':' in full_name:
@@ -724,13 +911,13 @@ class CodeGenerator:
         """解析默认值"""
         for child in node.named_children:
             if child.type == 'string':
-                return child.text.decode('utf-8').strip('"')
+                return self._node_text(child).strip('"')
             elif child.type == 'bool':
-                return child.text.decode('utf-8') == 'true'
+                return self._node_text(child) == 'true'
             elif child.type == 'int':
-                return int(child.text.decode('utf-8'))
+                return int(self._node_text(child))
             elif child.type == 'float':
-                text = child.text.decode('utf-8')
+                text = self._node_text(child)
                 if text == 'inf':
                     return float('inf')
                 elif text == '-inf':
@@ -747,16 +934,15 @@ class CodeGenerator:
         for child in node.named_children:
             if child.type == 'metadata_assignment':
                 key = ''
-                value_dict = {}
                 for assign_child in child.named_children:
                     if assign_child.type == 'identifier':
-                        key = assign_child.text.decode('utf-8')
+                        key = self._node_text(assign_child)
                     elif assign_child.type == 'string' and key == 'doc':
-                        attr_info['doc'] = assign_child.text.decode('utf-8').strip('"')
+                        attr_info['doc'] = self._node_text(assign_child).strip('"')
                     elif (assign_child.type == 'array' or assign_child.type == 'list') and key == 'allowedTokens':
                         for item in assign_child.named_children:
                             if item.type == 'string':
-                                attr_info['allowed_tokens'].append(item.text.decode('utf-8').strip('"'))
+                                attr_info['allowed_tokens'].append(self._node_text(item).strip('"'))
                     elif assign_child.type == 'dictionary' and key == 'customData':
                         custom_data = self._parse_usd_dictionary(assign_child)
                         if 'apiName' in custom_data:
@@ -766,13 +952,13 @@ class CodeGenerator:
                     elif key not in ['doc', 'allowedTokens']:
                         value = None
                         if assign_child.type == 'string':
-                            value = assign_child.text.decode('utf-8').strip('"')
+                            value = self._node_text(assign_child).strip('"')
                         elif assign_child.type == 'bool':
-                            value = assign_child.text.decode('utf-8') == 'true'
+                            value = self._node_text(assign_child) == 'true'
                         elif assign_child.type == 'int':
-                            value = int(assign_child.text.decode('utf-8'))
+                            value = int(self._node_text(assign_child))
                         elif assign_child.type == 'float':
-                            value = float(assign_child.text.decode('utf-8'))
+                            value = float(self._node_text(assign_child))
                         elif assign_child.type == 'array':
                             value = self._parse_usd_array(assign_child)
                         elif assign_child.type == 'dictionary':
@@ -793,7 +979,7 @@ class CodeGenerator:
 
         for child in node.named_children:
             if child.type == 'identifier' or child.type == 'qualified_identifier':
-                full_name = child.text.decode('utf-8')
+                full_name = self._node_text(child)
                 rel_info['full_name'] = full_name
                 # 如果有冒号，提取最后一部分作为 Python 关系名
                 if ':' in full_name:
@@ -812,9 +998,9 @@ class CodeGenerator:
                 key = ''
                 for assign_child in child.named_children:
                     if assign_child.type == 'identifier':
-                        key = assign_child.text.decode('utf-8')
+                        key = self._node_text(assign_child)
                     elif assign_child.type == 'string' and key == 'doc':
-                        rel_info['doc'] = assign_child.text.decode('utf-8').strip('"')
+                        rel_info['doc'] = self._node_text(assign_child).strip('"')
                     elif assign_child.type == 'dictionary' and key == 'customData':
                         custom_data = self._parse_usd_dictionary(assign_child)
                         if 'apiName' in custom_data:
@@ -824,13 +1010,13 @@ class CodeGenerator:
                     elif key != 'doc':
                         value = None
                         if assign_child.type == 'string':
-                            value = assign_child.text.decode('utf-8').strip('"')
+                            value = self._node_text(assign_child).strip('"')
                         elif assign_child.type == 'bool':
-                            value = assign_child.text.decode('utf-8') == 'true'
+                            value = self._node_text(assign_child) == 'true'
                         elif assign_child.type == 'int':
-                            value = int(assign_child.text.decode('utf-8'))
+                            value = int(self._node_text(assign_child))
                         elif assign_child.type == 'float':
-                            value = float(assign_child.text.decode('utf-8'))
+                            value = float(self._node_text(assign_child))
                         elif assign_child.type == 'array':
                             value = self._parse_usd_array(assign_child)
                         elif assign_child.type == 'dictionary':
@@ -844,13 +1030,13 @@ class CodeGenerator:
         result = []
         for child in node.named_children:
             if child.type == 'string':
-                result.append(child.text.decode('utf-8').strip('"'))
+                result.append(self._node_text(child).strip('"'))
             elif child.type == 'bool':
-                result.append(child.text.decode('utf-8') == 'true')
+                result.append(self._node_text(child) == 'true')
             elif child.type == 'int':
-                result.append(int(child.text.decode('utf-8')))
+                result.append(int(self._node_text(child)))
             elif child.type == 'float':
-                text = child.text.decode('utf-8')
+                text = self._node_text(child)
                 if text == 'inf':
                     result.append(float('inf'))
                 elif text == '-inf':
@@ -873,20 +1059,20 @@ class CodeGenerator:
                 value = None
                 for item_child in child.named_children:
                     if item_child.type == 'identifier':
-                        key = item_child.text.decode('utf-8')
+                        key = self._node_text(item_child)
                     elif item_child.type == 'string':
-                        text = item_child.text.decode('utf-8')
+                        text = self._node_text(item_child)
                         # 处理三引号字符串
                         if text.startswith("'''") and text.endswith("'''") or text.startswith('"""') and text.endswith('"""'):
                             value = text[3:-3]
                         else:
                             value = text.strip('"')
                     elif item_child.type == 'bool':
-                        value = item_child.text.decode('utf-8') == 'true'
+                        value = self._node_text(item_child) == 'true'
                     elif item_child.type == 'int':
-                        value = int(item_child.text.decode('utf-8'))
+                        value = int(self._node_text(item_child))
                     elif item_child.type == 'float':
-                        text = item_child.text.decode('utf-8')
+                        text = self._node_text(item_child)
                         if text == 'inf':
                             value = float('inf')
                         elif text == '-inf':
@@ -901,16 +1087,16 @@ class CodeGenerator:
                 if key:
                     result[key] = value
             elif child.type == 'attribute_type':
-                attr_type = child.text.decode('utf-8')
+                self._node_text(child)
                 key = ''
                 value = None
 
                 next_sibling = child.next_named_sibling
                 while next_sibling:
                     if next_sibling.type == 'identifier' and not key:
-                        key = next_sibling.text.decode('utf-8')
+                        key = self._node_text(next_sibling)
                     elif next_sibling.type == 'string' and key and value is None:
-                        text = next_sibling.text.decode('utf-8')
+                        text = self._node_text(next_sibling)
                         # 处理三引号字符串
                         if text.startswith("'''") and text.endswith("'''") or text.startswith('"""') and text.endswith('"""'):
                             value = text[3:-3]
@@ -918,13 +1104,13 @@ class CodeGenerator:
                             value = text.strip('"')
                         break
                     elif next_sibling.type == 'bool' and key and value is None:
-                        value = next_sibling.text.decode('utf-8') == 'true'
+                        value = self._node_text(next_sibling) == 'true'
                         break
                     elif next_sibling.type == 'int' and key and value is None:
-                        value = int(next_sibling.text.decode('utf-8'))
+                        value = int(self._node_text(next_sibling))
                         break
                     elif next_sibling.type == 'float' and key and value is None:
-                        text = next_sibling.text.decode('utf-8')
+                        text = self._node_text(next_sibling)
                         if text == 'inf':
                             value = float('inf')
                         elif text == '-inf':
@@ -953,7 +1139,7 @@ class CodeGenerator:
         """确定基类"""
         kind = class_info['kind']
         has_explicit_name = class_info['has_explicit_name']
-        api_schemas = class_info.get('api_schemas', [])
+        class_info.get('api_schemas', [])
 
         # API schemas
         if kind == 'class' and not has_explicit_name:
@@ -1039,8 +1225,7 @@ class CodeGenerator:
         file_name = self._camel_to_snake(class_name) + '.py'
         file_path = os.path.join(self.schema_dir, file_name)
 
-        with open(file_path, 'w', encoding='utf-8') as f:
-            f.write(content)
+        self._write_generated(file_path, content)
 
         print(f"Generated: {file_path}")
 
@@ -1053,14 +1238,13 @@ class CodeGenerator:
         pyi_class_def = self._generate_pyi_class_definition(class_name, base_class, class_info, set())
 
         # 组合内容
-        content = pyi_imports + "\n\n\n" + pyi_class_def + "\n"
+        content = pyi_imports + "\n\n" + pyi_class_def + "\n"
 
         # 写入 .pyi 文件
         file_name = self._camel_to_snake(class_name) + '.pyi'
         file_path = os.path.join(self.schema_dir, file_name)
 
-        with open(file_path, 'w', encoding='utf-8') as f:
-            f.write(content)
+        self._write_generated(file_path, content)
 
     def _generate_namespace_pyi(self, ns_prefix: str, ns_class_name: str, members: List[Dict[str, Any]]) -> str:
         """生成命名空间类的 .pyi 文件内容"""
@@ -1079,14 +1263,27 @@ class CodeGenerator:
 
         gf_imports = sorted(needed_types & self.gf_types)
         dtypes_imports = sorted(needed_types & self.dtypes_types)
+        common_imports = sorted(needed_types & self.common_types)
 
         if gf_imports:
             imports.append(f"from ..gf import {', '.join(gf_imports)}")
         if dtypes_imports:
             imports.append(f"from ..dtypes import {', '.join(dtypes_imports)}")
+        if common_imports:
+            imports.append(f"from ..common import {', '.join(common_imports)}")
 
         if any(member.get('type', '').endswith('[]') for member in members if 'type' in member):
             imports.append("from typing import List")
+
+        # 生成 allowedTokens 对应的枚举类
+        token_classes, imported_token_classes = self._generate_token_classes(members)
+
+        # Enums that already live in common.py (Axis, Kind) are referenced by the
+        # member signatures below rather than emitted here, so they have to be
+        # imported. The member type is plain `token` in the schema, which is why
+        # collecting needed types from the types alone never finds them.
+        if imported_token_classes:
+            imports.append(f"from ..common import {', '.join(sorted(set(imported_token_classes)))}")
 
         # 类声明
         lines.append("\n".join(imports))
@@ -1094,8 +1291,6 @@ class CodeGenerator:
         lines.append("")
         lines.append(f"class {ns_class_name}(Attribute):")
 
-        # 生成 allowedTokens 对应的枚举类
-        token_classes, _ = self._generate_token_classes(members)
         if token_classes:
             lines.append("")
             lines.extend(token_classes)
@@ -1126,7 +1321,7 @@ class CodeGenerator:
 
         return prefixes
 
-    def _generate_pyi_imports(self, base_class: str, class_info: Dict[str, Any], imported_token_classes: List[str], generated_ns_files: Set[str] = None) -> str:
+    def _generate_pyi_imports(self, base_class: str, class_info: Dict[str, Any], imported_token_classes: List[str], generated_ns_files: Optional[Set[str]] = None) -> str:
         """生成 .pyi 文件的导入语句"""
         imports = []
 
@@ -1183,11 +1378,14 @@ class CodeGenerator:
 
             gf_imports = sorted(needed_types & self.gf_types)
             dtypes_imports = sorted(needed_types & self.dtypes_types)
+            common_imports = sorted(needed_types & self.common_types)
 
             if gf_imports:
                 imports.append(f"from ..gf import {', '.join(gf_imports)}")
             if dtypes_imports:
                 imports.append(f"from ..dtypes import {', '.join(dtypes_imports)}")
+            if common_imports:
+                imports.append(f"from ..common import {', '.join(common_imports)}")
 
         # 添加从 common 导入的枚举类
         if imported_token_classes:
@@ -1333,6 +1531,14 @@ class CodeGenerator:
             else:
                 regular_attrs.append(attr)
 
+        # A schema may declare both ``ns:member`` and a plain member called ``ns``
+        # (LightListAPI has lightList:cacheBehavior plus a lightList relationship).
+        # The namespace attribute already claims that name, so the plain member is
+        # dropped instead of being assigned over it with an incompatible type.
+        # The relationship grouping below reuses this, so it is filled in after
+        # namespaced_rels is known.
+        taken_names = set(namespaced_attrs.keys())
+
         # 生成命名空间属性
         for ns_prefix, attrs in namespaced_attrs.items():
             lines.append("")
@@ -1343,6 +1549,9 @@ class CodeGenerator:
 
         # 生成普通属性
         for attr in regular_attrs:
+            if attr['name'] in taken_names:
+                continue
+
             lines.append("")
             lines.append(self._generate_attribute_definition(attr))
 
@@ -1360,6 +1569,9 @@ class CodeGenerator:
             else:
                 regular_rels.append(rel)
 
+        # 合并命名空间的属性和关系
+        taken_names |= set(namespaced_rels.keys())
+
         # 生成命名空间关系
         for ns_prefix, rels in namespaced_rels.items():
             # 检查是否已经生成了该命名空间的属性声明
@@ -1373,12 +1585,15 @@ class CodeGenerator:
 
         # 生成普通关系
         for rel in regular_rels:
+            if rel['name'] in taken_names:
+                continue
+
             lines.append("")
             lines.append(self._generate_relationship_definition(rel))
 
         return "\n".join(lines)
 
-    def _generate_pyi_class_definition(self, class_name: str, base_class: str, class_info: Dict[str, Any], generated_ns_files: Set[str] = None) -> str:
+    def _generate_pyi_class_definition(self, class_name: str, base_class: str, class_info: Dict[str, Any], generated_ns_files: Optional[Set[str]] = None) -> str:
         """生成 .pyi 文件的类定义（只有签名）"""
         lines = []
 
@@ -1445,11 +1660,27 @@ class CodeGenerator:
                     lines.extend(self._generate_pyi_relationship_signature(ns_prefix, rel))
 
         # 生成普通属性的签名
+        # A schema may declare both ``ns:member`` and a plain member called ``ns``
+        # (LightListAPI has lightList:cacheBehavior plus a lightList relationship).
+        # The namespace property already occupies that name, so the plain member
+        # is dropped rather than emitted twice with different return types.
+        taken_names = {
+            ns_prefix
+            for ns_prefix in all_namespaced
+            if generated_ns_files and ns_prefix in generated_ns_files
+        }
+
         for attr in regular_attrs:
+            if attr['name'] in taken_names:
+                continue
+
             lines.extend(self._generate_pyi_attribute_signature('', attr))
 
         # 生成普通关系的签名
         for rel in regular_rels:
+            if rel['name'] in taken_names:
+                continue
+
             lines.extend(self._generate_pyi_relationship_signature('', rel))
 
         # 如果类定义没有任何内容，添加 pass
@@ -1457,6 +1688,7 @@ class CodeGenerator:
             lines.append("    pass")
 
         return "\n".join(lines)
+
 
     def _generate_pyi_attribute_signature(self, ns_prefix: str, attr: Dict[str, Any], is_sub_attr: bool = False) -> List[str]:
         """生成属性的 @property 和 setter 签名"""
@@ -1787,8 +2019,7 @@ class CodeGenerator:
         lines.append("]")
 
         init_path = os.path.join(self.schema_dir, '__init__.py')
-        with open(init_path, 'w', encoding='utf-8') as f:
-            f.write("\n".join(lines) + "\n")
+        self._write_generated(init_path, "\n".join(lines) + "\n")
 
         print(f"Generated: {init_path}")
 
@@ -1844,7 +2075,7 @@ class CodeGenerator:
             # 多行 doc，使用三引号，并规范化缩进
             lines = doc.split('\n')
             # 找到最小的非空行缩进
-            min_indent = float('inf')
+            min_indent = _NO_INDENT
             for line in lines[1:]:  # 跳过第一行
                 stripped = line.lstrip()
                 if stripped:  # 非空行
@@ -1852,7 +2083,7 @@ class CodeGenerator:
                     min_indent = min(min_indent, indent)
 
             # 如果找到最小缩进，去除它
-            if min_indent != float('inf') and min_indent > 0:
+            if min_indent != _NO_INDENT and min_indent > 0:
                 normalized_lines = [lines[0]]  # 第一行保持不变
                 for line in lines[1:]:
                     if line.strip():  # 非空行
@@ -1888,7 +2119,7 @@ class CodeGenerator:
             # 多行 doc，使用三引号，并规范化缩进
             lines = doc.split('\n')
             # 找到最小的非空行缩进
-            min_indent = float('inf')
+            min_indent = _NO_INDENT
             for line in lines[1:]:  # 跳过第一行
                 stripped = line.lstrip()
                 if stripped:  # 非空行
@@ -1896,7 +2127,7 @@ class CodeGenerator:
                     min_indent = min(min_indent, indent)
 
             # 如果找到最小缩进，去除它
-            if min_indent != float('inf') and min_indent > 0:
+            if min_indent != _NO_INDENT and min_indent > 0:
                 normalized_lines = [lines[0]]  # 第一行保持不变
                 for line in lines[1:]:
                     if line.strip():  # 非空行
@@ -1962,14 +2193,12 @@ class CodeGenerator:
 
     def _camel_to_snake(self, name: str) -> str:
         """将 CamelCase 转换为 snake_case"""
-        import re
         s1 = re.sub(r'([A-Z]+)([A-Z][a-z])', r'\1_\2', name)
         s2 = re.sub(r'([a-z\d])([A-Z])', r'\1_\2', s1)
         return s2.lower()
 
     def _snake_to_pascal(self, name: str) -> str:
         """将 snake_case 或 camelCase 转换为 PascalCase"""
-        import re
         name = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', name)
         return ''.join(word.capitalize() for word in name.split('_'))
 
@@ -1986,7 +2215,6 @@ class CodeGenerator:
         if result[0].isdigit():
             result = '_' + result
 
-        import re
         result = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', result)
 
         parts = result.split('_')

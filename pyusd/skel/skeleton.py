@@ -8,11 +8,11 @@ from ..gf import matrix4d
 
 
 class Skeleton(Boundable):
-    """Describes a skeleton. 
-    
+    """Describes a skeleton.
+
     See the extended \\ref UsdSkel_Skeleton "Skeleton Schema" documentation for
     more information.
-    
+
     """
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
@@ -41,7 +41,7 @@ class Skeleton(Boundable):
     jointNames = Attribute(List[token],
         uniform=True,
         doc="""If authored, provides a unique name per joint. This may be
-        optionally set to provide better names when translating to DCC apps 
+        optionally set to provide better names when translating to DCC apps
         that require unique joint names.
         """
     )

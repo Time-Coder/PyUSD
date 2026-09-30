@@ -9,10 +9,10 @@ from ..typed import Typed
 class BlendShape(Typed):
     """Describes a target blend shape, possibly containing inbetween
     shapes.
-    
+
     See the extended \\ref UsdSkel_BlendShape "Blend Shape Schema
     documentation for information.
-    
+
     """
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped

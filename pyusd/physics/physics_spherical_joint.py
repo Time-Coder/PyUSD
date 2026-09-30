@@ -5,9 +5,9 @@ from .physics_joint import PhysicsJoint
 
 
 class PhysicsSphericalJoint(PhysicsJoint):
-    """Predefined spherical joint type (Removes linear degrees of 
+    """Predefined spherical joint type (Removes linear degrees of
     freedom, cone limit may restrict the motion in a given range.) It allows
-    two limit values, which when equal create a circular, else an elliptic 
+    two limit values, which when equal create a circular, else an elliptic
     cone limit around the limit axis.
     """
 
@@ -31,8 +31,8 @@ class PhysicsSphericalJoint(PhysicsJoint):
         }
     )
     physics.coneAngle0Limit = Attribute(float,
-        doc="""Cone limit from the primary joint axis in the local0 frame 
-        toward the next axis. (Next axis of X is Y, and of Z is X.) A 
+        doc="""Cone limit from the primary joint axis in the local0 frame
+        toward the next axis. (Next axis of X is Y, and of Z is X.) A
         negative value means not limited. Units: degrees.
         """,
         metadata={
@@ -43,8 +43,8 @@ class PhysicsSphericalJoint(PhysicsJoint):
         }
     )
     physics.coneAngle1Limit = Attribute(float,
-        doc="""Cone limit from the primary joint axis in the local0 frame 
-        toward the second to next axis. A negative value means not limited. 
+        doc="""Cone limit from the primary joint axis in the local0 frame
+        toward the second to next axis. A negative value means not limited.
         Units: degrees.
         """,
         metadata={

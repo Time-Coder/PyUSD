@@ -6,8 +6,8 @@ from ..relationship import Relationship
 
 
 class PhysicsCollisionAPI(APISchemaBase):
-    """Applies collision attributes to a UsdGeomXformable prim. If a 
-    simulation is running, this geometry will collide with other geometries that 
+    """Applies collision attributes to a UsdGeomXformable prim. If a
+    simulation is running, this geometry will collide with other geometries that
     have PhysicsCollisionAPI applied. If any prim in the parent hierarchy has
     the RigidBodyAPI applied, the collider is considered a part of the closest
     ancestor body. If there is no body in the parent hierarchy, this collider
@@ -33,7 +33,7 @@ class PhysicsCollisionAPI(APISchemaBase):
         }
     )
     physics.simulationOwner = Relationship(
-        doc="""Single PhysicsScene that will simulate this collider. 
+        doc="""Single PhysicsScene that will simulate this collider.
         By default this object belongs to the first PhysicsScene.
         Note that if a RigidBodyAPI in the hierarchy above has a different
         simulationOwner then it has a precedence over this relationship.

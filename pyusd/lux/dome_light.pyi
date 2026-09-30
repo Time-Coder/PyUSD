@@ -8,31 +8,31 @@ from .nonboundable_light_base import NonboundableLightBase
 class DomeLight(NonboundableLightBase):
     """Light emitted inward from a distant external environment,
     such as a sky or IBL light probe.
-    
+
     In this version of the dome light, the dome's default orientation is such
     that its top pole is aligned with the world's +Y axis. This adheres to the
     OpenEXR specification for latlong environment maps.  From the OpenEXR
     documentation:
-    
+
     -------------------------------------------------------------------------
     Latitude-Longitude Map:
-    
+
     The environment is projected onto the image using polar coordinates
     (latitude and longitude).  A pixel's x coordinate corresponds to
     its longitude, and the y coordinate corresponds to its latitude.
     Pixel (dataWindow.min.x, dataWindow.min.y) has latitude +pi/2 and
     longitude +pi; pixel (dataWindow.max.x, dataWindow.max.y) has
     latitude -pi/2 and longitude -pi.
-    
+
     In 3D space, latitudes -pi/2 and +pi/2 correspond to the negative and
     positive y direction.  Latitude 0, longitude 0 points into positive
     z direction; and latitude 0, longitude pi/2 points into positive x
     direction.
-    
+
     The size of the data window should be 2*N by N pixels (width by height),
     where N can be any integer greater than 0.
     -------------------------------------------------------------------------
-    
+
     """
 
 
@@ -44,10 +44,10 @@ class DomeLight(NonboundableLightBase):
         CubeMapVerticalCross = "cubeMapVerticalCross"
 
     @property
-    def light(self) -> Light: ...
+    def inputs(self) -> Inputs: ...
 
     @property
-    def inputs(self) -> Inputs: ...
+    def light(self) -> Light: ...
 
     @property
     def guideRadius(self)->Attribute[float]:
@@ -62,4 +62,3 @@ class DomeLight(NonboundableLightBase):
 
     @portals.setter
     def portals(self, value:Relationship)->None: ...
-

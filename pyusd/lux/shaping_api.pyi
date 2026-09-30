@@ -6,4 +6,3 @@ class ShapingAPI(APISchemaBase):
 
     @property
     def inputs(self) -> Inputs: ...
-

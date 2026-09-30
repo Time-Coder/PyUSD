@@ -1,4 +1,5 @@
 from ..attribute import Attribute
+from ..common import Axis
 from ..dtypes import string, token
 from ..gf import float3, point3f, quatf, vector3f
 from ..relationship import Relationship
@@ -21,7 +22,7 @@ class Physics(Attribute):
     @property
     def gravityDirection(self)->Attribute[vector3f]:
         """Gravity direction vector in simulation world space. Will be
-        normalized before use. A zero vector is a request to use the negative 
+        normalized before use. A zero vector is a request to use the negative
         upAxis. Unitless."""
 
     @gravityDirection.setter
@@ -29,9 +30,9 @@ class Physics(Attribute):
 
     @property
     def gravityMagnitude(self)->Attribute[float]:
-        """Gravity acceleration magnitude in simulation world space. 
-        A negative value is a request to use a value equivalent to earth 
-        gravity regardless of the metersPerUnit scaling used by this scene. 
+        """Gravity acceleration magnitude in simulation world space.
+        A negative value is a request to use a value equivalent to earth
+        gravity regardless of the metersPerUnit scaling used by this scene.
         Units: distance/second/second."""
 
     @gravityMagnitude.setter
@@ -46,8 +47,8 @@ class Physics(Attribute):
 
     @property
     def kinematicEnabled(self)->Attribute[bool]:
-        """Determines whether the body is kinematic or not. A kinematic 
-        body is a body that is moved through animated poses or through 
+        """Determines whether the body is kinematic or not. A kinematic
+        body is a body that is moved through animated poses or through
         user defined poses. The simulation derives velocities for the
         kinematic body based on the external motion. When a continuous motion
         is not desired, this kinematic flag should be set to false."""
@@ -64,7 +65,7 @@ class Physics(Attribute):
 
     @property
     def velocity(self)->Attribute[vector3f]:
-        """Linear velocity in the same space as the node's xform. 
+        """Linear velocity in the same space as the node's xform.
         Units: distance/second."""
 
     @velocity.setter
@@ -72,7 +73,7 @@ class Physics(Attribute):
 
     @property
     def angularVelocity(self)->Attribute[vector3f]:
-        """Angular velocity in the same space as the node's xform. 
+        """Angular velocity in the same space as the node's xform.
         Units: degrees/second."""
 
     @angularVelocity.setter
@@ -80,8 +81,8 @@ class Physics(Attribute):
 
     @property
     def simulationOwner(self)->Relationship:
-        """Single PhysicsScene that will simulate this body. By 
-        default this is the first PhysicsScene found in the stage using 
+        """Single PhysicsScene that will simulate this body. By
+        default this is the first PhysicsScene found in the stage using
         UsdStage::Traverse()."""
 
     @simulationOwner.setter
@@ -92,10 +93,10 @@ class Physics(Attribute):
         """If non-zero, directly specifies the mass of the object.
         Note that any child prim can also have a mass when they apply massAPI.
         In this case, the precedence rule is 'parent mass overrides the
-        child's'. This may come as counter-intuitive, but mass is a computed 
-        quantity and in general not accumulative. For example, if a parent 
-        has mass of 10, and one of two children has mass of 20, allowing 
-        child's mass to override its parent results in a mass of -10 for the 
+        child's'. This may come as counter-intuitive, but mass is a computed
+        quantity and in general not accumulative. For example, if a parent
+        has mass of 10, and one of two children has mass of 20, allowing
+        child's mass to override its parent results in a mass of -10 for the
         other child. Note if mass is 0.0 it is ignored. Units: mass.
         """
 
@@ -105,13 +106,13 @@ class Physics(Attribute):
     @property
     def density(self)->Attribute[float]:
         """If non-zero, specifies the density of the object.
-        In the context of rigid body physics, density indirectly results in 
-        setting mass via (mass = density x volume of the object). How the 
+        In the context of rigid body physics, density indirectly results in
+        setting mass via (mass = density x volume of the object). How the
         volume is computed is up to implementation of the physics system.
         It is generally computed from the collision approximation rather than
-        the graphical mesh. In the case where both density and mass are 
-        specified for the same object, mass has precedence over density. 
-        Unlike mass, child's prim's density overrides parent prim's density 
+        the graphical mesh. In the case where both density and mass are
+        specified for the same object, mass has precedence over density.
+        Unlike mass, child's prim's density overrides parent prim's density
         as it is accumulative. Note that density of a collisionAPI can be also
         alternatively set through a PhysicsMaterialAPI. The material density
         has the weakest precedence in density definition. Note if density is
@@ -129,8 +130,8 @@ class Physics(Attribute):
 
     @property
     def diagonalInertia(self)->Attribute[float3]:
-        """If non-zero, specifies diagonalized inertia tensor along the 
-        principal axes. Note if diagonalInertial is (0.0, 0.0, 0.0) it is 
+        """If non-zero, specifies diagonalized inertia tensor along the
+        principal axes. Note if diagonalInertial is (0.0, 0.0, 0.0) it is
         ignored. Units: mass*distance*distance."""
 
     @diagonalInertia.setter
@@ -138,7 +139,7 @@ class Physics(Attribute):
 
     @property
     def principalAxes(self)->Attribute[quatf]:
-        """Orientation of the inertia tensor's principal axes in the 
+        """Orientation of the inertia tensor's principal axes in the
         prim's local space."""
 
     @principalAxes.setter
@@ -154,17 +155,17 @@ class Physics(Attribute):
     @property
     def approximation(self)->Attribute[Approximation]:
         """Determines the mesh's collision approximation:
-	"none" - The mesh geometry is used directly as a collider without any 
+    "none" - The mesh geometry is used directly as a collider without any
     approximation.
-	"convexDecomposition" - A convex mesh decomposition is performed. This 
+    "convexDecomposition" - A convex mesh decomposition is performed. This
     results in a set of convex mesh colliders.
-	"convexHull" - A convex hull of the mesh is generated and used as the 
+    "convexHull" - A convex hull of the mesh is generated and used as the
     collider.
-	"boundingSphere" - A bounding sphere is computed around the mesh and used 
+    "boundingSphere" - A bounding sphere is computed around the mesh and used
     as a collider.
-	"boundingCube" - An optimally fitting box collider is computed around the 
+    "boundingCube" - An optimally fitting box collider is computed around the
     mesh.
-	"meshSimplification" - A mesh simplification step is performed, resulting 
+    "meshSimplification" - A mesh simplification step is performed, resulting
     in a simplified triangle mesh collider."""
 
     @approximation.setter
@@ -213,7 +214,7 @@ class Physics(Attribute):
 
     @property
     def filteredGroups(self)->Relationship:
-        """References a list of PhysicsCollisionGroups with which 
+        """References a list of PhysicsCollisionGroups with which
         collisions should be ignored."""
 
     @filteredGroups.setter
@@ -271,7 +272,7 @@ class Physics(Attribute):
     @property
     def breakForce(self)->Attribute[float]:
         """Joint break force. If set, joint is to break when this force
-        limit is reached. (Used for linear DOFs.) 
+        limit is reached. (Used for linear DOFs.)
         Units: mass * distance / second / second"""
 
     @breakForce.setter
@@ -280,7 +281,7 @@ class Physics(Attribute):
     @property
     def breakTorque(self)->Attribute[float]:
         """Joint break torque. If set, joint is to break when this torque
-        limit is reached. (Used for angular DOFs.) 
+        limit is reached. (Used for angular DOFs.)
         Units: mass * distance * distance / second / second"""
 
     @breakTorque.setter
@@ -309,7 +310,7 @@ class Physics(Attribute):
 
     @property
     def lowerLimit(self)->Attribute[float]:
-        """Lower limit. Units: degrees. -inf means not limited in 
+        """Lower limit. Units: degrees. -inf means not limited in
         negative direction."""
 
     @lowerLimit.setter
@@ -317,7 +318,7 @@ class Physics(Attribute):
 
     @property
     def upperLimit(self)->Attribute[float]:
-        """Upper limit. Units: degrees. inf means not limited in 
+        """Upper limit. Units: degrees. inf means not limited in
         positive direction."""
 
     @upperLimit.setter
@@ -325,8 +326,8 @@ class Physics(Attribute):
 
     @property
     def coneAngle0Limit(self)->Attribute[float]:
-        """Cone limit from the primary joint axis in the local0 frame 
-        toward the next axis. (Next axis of X is Y, and of Z is X.) A 
+        """Cone limit from the primary joint axis in the local0 frame
+        toward the next axis. (Next axis of X is Y, and of Z is X.) A
         negative value means not limited. Units: degrees."""
 
     @coneAngle0Limit.setter
@@ -334,8 +335,8 @@ class Physics(Attribute):
 
     @property
     def coneAngle1Limit(self)->Attribute[float]:
-        """Cone limit from the primary joint axis in the local0 frame 
-        toward the second to next axis. A negative value means not limited. 
+        """Cone limit from the primary joint axis in the local0 frame
+        toward the second to next axis. A negative value means not limited.
         Units: degrees."""
 
     @coneAngle1Limit.setter
@@ -343,7 +344,7 @@ class Physics(Attribute):
 
     @property
     def minDistance(self)->Attribute[float]:
-        """Minimum distance. If attribute is negative, the joint is not 
+        """Minimum distance. If attribute is negative, the joint is not
         limited. Units: distance."""
 
     @minDistance.setter
@@ -351,7 +352,7 @@ class Physics(Attribute):
 
     @property
     def maxDistance(self)->Attribute[float]:
-        """Maximum distance. If attribute is negative, the joint is not 
+        """Maximum distance. If attribute is negative, the joint is not
         limited. Units: distance."""
 
     @maxDistance.setter
@@ -367,7 +368,7 @@ class Physics(Attribute):
 
     @property
     def high(self)->Attribute[float]:
-        """Upper limit. Units: degrees or distance depending on trans or 
+        """Upper limit. Units: degrees or distance depending on trans or
         rot axis applied to. inf means not limited in positive direction."""
 
     @high.setter
@@ -375,7 +376,7 @@ class Physics(Attribute):
 
     @property
     def maxForce(self)->Attribute[float]:
-        """Maximum force that can be applied to drive. Units: 
+        """Maximum force that can be applied to drive. Units:
                 if linear drive: mass*DIST_UNITS/second/second
                 if angular drive: mass*DIST_UNITS*DIST_UNITS/second/second
                 inf means not limited. Must be non-negative.
@@ -386,7 +387,7 @@ class Physics(Attribute):
 
     @property
     def targetPosition(self)->Attribute[float]:
-        """Target value for position. Units: 
+        """Target value for position. Units:
         if linear drive: distance
         if angular drive: degrees."""
 
@@ -395,7 +396,7 @@ class Physics(Attribute):
 
     @property
     def targetVelocity(self)->Attribute[float]:
-        """Target value for velocity. Units: 
+        """Target value for velocity. Units:
         if linear drive: distance/second
         if angular drive: degrees/second."""
 
@@ -404,9 +405,9 @@ class Physics(Attribute):
 
     @property
     def damping(self)->Attribute[float]:
-        """Damping of the drive. Units: 
-		if linear drive: mass/second
-		If angular drive: mass*DIST_UNITS*DIST_UNITS/second/degrees."""
+        """Damping of the drive. Units:
+        if linear drive: mass/second
+        If angular drive: mass*DIST_UNITS*DIST_UNITS/second/degrees."""
 
     @damping.setter
     def damping(self, value:float)->None: ...
@@ -414,8 +415,8 @@ class Physics(Attribute):
     @property
     def stiffness(self)->Attribute[float]:
         """Stiffness of the drive. Units:
-		if linear drive: mass/second/second
-		if angular drive: mass*DIST_UNITS*DIST_UNITS/degrees/second/second."""
+        if linear drive: mass/second/second
+        if angular drive: mass*DIST_UNITS*DIST_UNITS/degrees/second/second."""
 
     @stiffness.setter
     def stiffness(self, value:float)->None: ...

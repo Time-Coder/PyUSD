@@ -7,4 +7,3 @@ class ParticleFieldRadianceBaseAPI(APISchemaBase):
     The purpose of this base class is to allow validation to enforce
     that a radiance definition is present for a ParticleField
     """
-

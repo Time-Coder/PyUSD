@@ -7,15 +7,15 @@ class GenerativeProcedural(Boundable):
     Represents an abstract generative procedural prim which delivers its input
     parameters via properties (including relationships) within the "primvars:"
     namespace.
-    
+
     It does not itself have any awareness or participation in the execution of
     the procedural but rather serves as a means of delivering a procedural's
     definition and input parameters.
-    
+
     The value of its "proceduralSystem" property (either authored or provided
     by API schema fallback) indicates to which system the procedural definition
     is meaningful.
-    
+
     """
 
     @property
@@ -26,4 +26,3 @@ class GenerativeProcedural(Boundable):
 
     @proceduralSystem.setter
     def proceduralSystem(self, value:token)->None: ...
-

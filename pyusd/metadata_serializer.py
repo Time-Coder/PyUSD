@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, List
 
-from .utils import infer_type
 from .usda_serializer import UsdaSerializer
+from .utils import infer_type
 
 if TYPE_CHECKING:
     from .metadata import Metadata
@@ -12,9 +12,28 @@ if TYPE_CHECKING:
 class MetadataSerializer:
 
     @staticmethod
+    def _dedupe(values):
+        """Order-preserving de-duplication for composed arc lists.
+
+        The authored list and the programmatic list are two views of the same arcs,
+        so merging them must not repeat an entry on every serialize round trip.
+        """
+        seen = set()
+        result = []
+        for value in values:
+            key = id(value) if not isinstance(value, (str, int, float, bool, tuple)) else value
+            if key in seen:
+                continue
+
+            seen.add(key)
+            result.append(value)
+
+        return result
+
+    @staticmethod
     def to_str(metadata:Metadata, indents:int=0, full:bool=False)->str:
         from .layer import Layer
-        from .prim import PrimSpec
+        from .prim_spec import PrimSpec
 
         tabs = "    " * indents
         next_tabs = "    " * (indents + 1)
@@ -38,7 +57,11 @@ class MetadataSerializer:
                 continue
 
             if key == "inherits":
-                value = metadata._parent._inherits
+                # Inherits are always local paths, never asset references.
+                value = [
+                    f"<{item.path}>" if not isinstance(item, str) else item
+                    for item in metadata._parent._inherits
+                ]
             elif key == "references":
                 value = metadata._parent._references
             elif key == "payloads":
@@ -65,6 +88,7 @@ class MetadataSerializer:
                     value.update(ori_value)
                 else:
                     value += ori_value
+                    value = MetadataSerializer._dedupe(value)
 
             if is_ref and not value:
                 continue

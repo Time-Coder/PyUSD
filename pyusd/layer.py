@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import uuid
-from typing import Any, ClassVar, Dict, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Type, Union
 from weakref import WeakValueDictionary
 
 from beartype import beartype
@@ -11,9 +11,13 @@ from .common import Axis
 from .layer_metadata import LayerMetadata
 from .layer_parser import LayerParser
 from .layer_serializer import LayerSerializer
-from .prim import PrimSpec, PrimType
+from .prim_spec import PrimSpec
 from .sdf import Specifier
 from .utils import in_annotations
+
+if TYPE_CHECKING:
+    from .prim import Prim, PrimType
+    from .stage import Stage
 
 
 class LayerImpl:
@@ -40,6 +44,7 @@ class LayerImpl:
         self._revision = 0
         self._loaded = False
         self._dirty = False
+        self._stage: Optional[Any] = None
 
     def touch(self) -> None:
         self._revision += 1
@@ -61,6 +66,38 @@ class Layer:
     _revision: int
     _loaded: bool
     _dirty: bool
+    _stage: Optional[Any]
+
+    @staticmethod
+    def _root_name(path: str) -> str:
+        return path.strip("/").split("/")[-1]
+
+    @staticmethod
+    def _relocate_key(prim: Union[PrimSpec, Any, str]) -> str:
+        """Relocates are keyed by path so a view and its spec address the same entry."""
+        if isinstance(prim, str):
+            return prim
+
+        path = getattr(prim, "path", None)
+        if path is None:
+            raise TypeError(f"cannot derive a relocates key from {prim!r}")
+
+        return str(path)
+
+    @property
+    def stage(self) -> Stage:
+        """A single-layer stage whose edit target is this layer.
+
+        Created on first use so that layers only reached as composition inputs
+        never pay for an engine they do not need. The stage is cached on the
+        shared impl, so every Layer wrapper for one file sees the same one.
+        """
+        if self._impl._stage is None:
+            from .stage import Stage
+
+            self._impl._stage = Stage(self)
+
+        return self._impl._stage
 
     def __init__(self, file_name: str = "", _impl: Optional[LayerImpl] = None) -> None:
         if _impl is None:
@@ -121,12 +158,12 @@ class Layer:
     def load(file_name:str)->Layer:
         return LayerParser.load(file_name)
 
-    def relocate(self, prim:PrimSpec, new_path:str)->None:
-        self._relocates[prim] = f"<{new_path}>"
+    def relocate(self, prim:Union[PrimSpec, Any, str], new_path:str)->None:
+        self._relocates[self._relocate_key(prim)] = f"<{new_path}>"
         self._touch()
 
-    def remove_relacate(self, prim:PrimSpec)->None:
-        del self._relocates[prim]
+    def remove_relacate(self, prim:Union[PrimSpec, Any, str])->None:
+        del self._relocates[self._relocate_key(prim)]
         self._touch()
 
     @property
@@ -138,20 +175,61 @@ class Layer:
         return self._metadata
 
     @property
-    def default_prim(self)->PrimSpec:
-        return self._default_prim
+    def _default_prim_name(self) -> str:
+        """Local default prim name, resolvable without building a stage view.
+
+        Layer stack collection runs during composition, so anything it consults
+        must not go through the stage: doing so re-enters the layer stack.
+        """
+        spec = self._default_prim
+        if spec is not None:
+            return spec.name
+
+        value = self._metadata._builtin_data.get("defaultPrim")
+        return str(value) if value else ""
+
+    @property
+    def default_prim(self)->Optional[Prim]:
+        from .prim import Prim as StagePrim
+
+        name = self._default_prim_name
+        if not name:
+            return None
+
+        return StagePrim(self.stage, "/" + name)
 
     @default_prim.setter
-    @beartype
-    def default_prim(self, prim:PrimSpec)->None:
-        if prim.layer is None or prim.layer._impl is not self._impl:
-            raise ValueError("Prim is not in current layer")
+    def default_prim(self, prim:Union[PrimSpec, Any, str, None])->None:
+        from .prim import Prim as StagePrim
 
-        if prim.depth != 0:
-            raise ValueError("Default prim must be a root prim")
+        if prim is None:
+            self._default_prim = None
+            self.metadata.defaultPrim = None
+            self._touch()
+            return
 
-        self._default_prim = prim
-        self.metadata.defaultPrim = prim.name
+        if isinstance(prim, StagePrim):
+            prim_path = prim.path
+        elif isinstance(prim, PrimSpec):
+            if prim.layer is None or prim.layer._impl is not self._impl:
+                raise ValueError("Prim is not in current layer")
+
+            if prim.depth != 0:
+                raise ValueError("Default prim must be a root prim")
+
+            prim_path = prim.path
+        else:
+            prim_path = str(prim)
+            if not prim_path.startswith("/"):
+                prim_path = "/" + prim_path
+
+        name = self._root_name(prim_path)
+        spec = self._root_prims.get(name)
+        if spec is None:
+            raise ValueError(f"{prim_path} is not a root prim of this layer")
+
+        self._default_prim = spec
+        self.metadata.defaultPrim = name
         self._touch()
 
     def id(self, rel_layer:Optional[Union[str, Layer]]=None)->str:
@@ -207,13 +285,8 @@ class Layer:
         self._sub_layers.remove(layer)
         self._touch()
 
-    def __getitem__(self, path:str)->PrimSpec:
-        path_items = path[1:].split("/") if path.startswith("/") else path.split("/")
-
-        root_name = path_items[0]
-        path_items = path_items[1:]
-        root_prim = self._root_prims[root_name]
-        return root_prim._getitem(path_items)
+    def __getitem__(self, path: str) -> Prim:
+        return self.stage[path]
 
     def __setitem__(self, path:str, prim:PrimSpec)->None:
         path_items = path[1:].split("/") if path.startswith("/") else path.split("/")
@@ -284,23 +357,44 @@ class Layer:
         self._touch()
         return prim
 
-    def def_(self, prim_type:Type[PrimType], path:str)->PrimType:
-        prim = prim_type(specifier = Specifier.Def)
-        self[path] = prim
-        return prim
+    def def_(self, prim_type: Type[PrimType], path: str) -> PrimType:
+        return self.stage.def_(prim_type, path)
 
-    def class_(self, path:str)->PrimSpec:
-        prim = PrimSpec(specifier = Specifier.Class)
-        self[path] = prim
-        return prim
+    def class_(self, path: str) -> Prim:
+        return self.stage.class_(path)
 
-    def over_(self, path:str)->PrimSpec:
-        prim = PrimSpec(specifier = Specifier.Over)
-        self[path] = prim
-        return prim
+    def over_(self, path: str) -> Prim:
+        return self.stage.over_(path)
 
-    def root_prim(self, name:str)->PrimSpec:
-        return self._root_prims[name]
+    def root_prim(self, name: str) -> Prim:
+        return self.stage["/" + name.lstrip("/")]
+
+    def prim_at(self, path:str)->Optional[Prim]:
+        return self.stage.stage_has_prim(path)
+
+    def prim_spec_at(self, path:str)->Optional[PrimSpec]:
+        """The authored storage node at ``path``, if this layer defines one.
+
+        The low-level escape hatch: views are the normal way to read and write,
+        but operations that shape the stored data itself (create_attr, relocates,
+        variant contents) still operate on the spec.
+        """
+        path = str(path)
+        if not path.startswith("/"):
+            path = "/" + path
+
+        parts = [part for part in path.split("/") if part]
+        if not parts:
+            return None
+
+        spec = self._root_prims.get(parts[0])
+        for part in parts[1:]:
+            if spec is None:
+                return None
+
+            spec = spec._children.get(part)
+
+        return spec
 
     def __str__(self)->str:
         return f'Layer("{self.file_name}")'

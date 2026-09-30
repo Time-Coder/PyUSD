@@ -8,10 +8,10 @@ from ..typed import Typed
 class SkelAnimation(Typed):
     """Describes a skel animation, where joint animation is stored in a
     vectorized form.
-    
+
     See the extended \\ref UsdSkel_SkelAnimation "Skel Animation"
     documentation for more information.
-    
+
     """
 
     @property
@@ -26,7 +26,7 @@ class SkelAnimation(Typed):
 
     @property
     def translations(self)->Attribute[List[float3]]:
-        """Joint-local translations of all affected joints. Array length 
+        """Joint-local translations of all affected joints. Array length
         should match the size of the *joints* attribute."""
 
     @translations.setter
@@ -34,8 +34,8 @@ class SkelAnimation(Typed):
 
     @property
     def rotations(self)->Attribute[List[quatf]]:
-        """Joint-local unit quaternion rotations of all affected joints, 
-        in 32-bit precision. Array length should match the size of the 
+        """Joint-local unit quaternion rotations of all affected joints,
+        in 32-bit precision. Array length should match the size of the
         *joints* attribute."""
 
     @rotations.setter
@@ -44,7 +44,7 @@ class SkelAnimation(Typed):
     @property
     def scales(self)->Attribute[List[half3]]:
         """Joint-local scales of all affected joints, in
-        16 bit precision. Array length should match the size of the *joints* 
+        16 bit precision. Array length should match the size of the *joints*
         attribute."""
 
     @scales.setter
@@ -70,4 +70,3 @@ class SkelAnimation(Typed):
 
     @blendShapeWeights.setter
     def blendShapeWeights(self, value:List[float])->None: ...
-

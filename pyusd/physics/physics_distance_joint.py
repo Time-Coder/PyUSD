@@ -19,7 +19,7 @@ class PhysicsDistanceJoint(PhysicsJoint):
 
     physics: Attribute[namespace] = Attribute(namespace, is_leaf=False)
     physics.minDistance = Attribute(float,
-        doc="""Minimum distance. If attribute is negative, the joint is not 
+        doc="""Minimum distance. If attribute is negative, the joint is not
         limited. Units: distance.
         """,
         metadata={
@@ -30,7 +30,7 @@ class PhysicsDistanceJoint(PhysicsJoint):
         }
     )
     physics.maxDistance = Attribute(float,
-        doc="""Maximum distance. If attribute is negative, the joint is not 
+        doc="""Maximum distance. If attribute is negative, the joint is not
         limited. Units: distance.
         """,
         metadata={

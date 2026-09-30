@@ -8,4 +8,3 @@ class ShadowAPI(APISchemaBase):
 
     @property
     def inputs(self) -> Inputs: ...
-

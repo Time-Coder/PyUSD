@@ -11,8 +11,8 @@ class Capsule(Gprim):
     """Defines a primitive capsule, i.e. a cylinder capped by two half
     spheres, centered at the origin, whose spine is along the specified
     \\em axis.
-    The spherical cap heights (sagitta) of the two endcaps are a function of 
-    the relative radii of the endcaps, such that cylinder tangent and sphere 
+    The spherical cap heights (sagitta) of the two endcaps are a function of
+    the relative radii of the endcaps, such that cylinder tangent and sphere
     tangent are coincident and maintain C1 continuity."""
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
@@ -35,7 +35,7 @@ class Capsule(Gprim):
     radius: Attribute[double] = Attribute(double, value=0.5, doc=
         """The radius of the capsule.  If you
         author \\em radius you must also author \\em extent.
-        
+
         \\sa GetExtentAttr()"""
     )
     axis: Attribute[Axis] = Attribute(Axis, value=Axis.Z, uniform=True,

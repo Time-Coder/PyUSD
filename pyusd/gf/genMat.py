@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import ctypes
-from typing import Any, Tuple, TypeAlias, Union
+from typing import Any, Callable, Tuple, TypeAlias, Union, cast
 
 from .genType import MathForm, genType
 from .genVec import VecType, genVec
@@ -14,11 +14,16 @@ class genMatIterator:
         self.__mat:genMat = mat
         self.__current_index:int = 0
 
+    def __iter__(self)->genMatIterator:
+        # An iterator has to be iterable, otherwise iter() on an iterator that
+        # genMat.__iter__ already handed out fails.
+        return self
+
     def __next__(self)->genVec:
         if self.__current_index >= self.__mat.rows:
             raise StopIteration()
 
-        result = self.__mat[self.__current_index]
+        result:genVec = cast(genVec, self.__mat[self.__current_index])
         self.__current_index += 1
         return result
 
@@ -27,6 +32,11 @@ class genMat(genType, ctypes.Array):
 
     _type_ = ctypes.c_double
     _length_ = 0
+
+    def __len__(self)->int:
+        # genType declares __len__ and comes first in the MRO, so ctypes.Array's
+        # implementation has to be reached explicitly.
+        return ctypes.Array.__len__(self)
 
     def __init__(self, *args):
         genType.__init__(self)
@@ -99,10 +109,12 @@ class genMat(genType, ctypes.Array):
         return self._type_
 
     @staticmethod
-    def mat_type(dtype:type, shape:Tuple[int]):
+    def mat_type(dtype:type, shape:Tuple[int, ...]):
         return genType.gen_type(MathForm.Mat, dtype, shape)
 
-    def __getitem__(self, index:Union[int,Tuple[int]])->Union[int,bool,float,genVec]:
+    # ctypes types these as fixed slot wrappers, so the tuple index that genMat
+    # adds on top of the C signature can never match; the override is deliberate.
+    def __getitem__(self, index:Union[int,Tuple[int, int]])->Union[int,bool,float,genVec]:  # ty: ignore
         if isinstance(index, int):
             result_type = genVec.vec_type(self.dtype, self.rows)
             result:genVec = result_type(*(ctypes.Array.__getitem__(self, index*self.cols + j) for j in range(self.rows)))
@@ -112,22 +124,31 @@ class genMat(genType, ctypes.Array):
         elif isinstance(index, tuple):
             return ctypes.Array.__getitem__(self, index[0]*self.cols + index[1])
 
-    def __setitem__(self, index:Union[int,Tuple[int]], value:Union[float,int,bool,genVec])->None:
+    def __setitem__(self, index:Union[int,Tuple[int, int]], value:Union[float,int,bool,genVec])->None:  # ty: ignore
         if isinstance(index, int):
             for j in range(self.cols):
-                ctypes.Array.__setitem__(self, self.cols*index + j, value[j])
+                ctypes.Array.__setitem__(self, self.cols*index + j, cast(genVec, value)[j])
         elif isinstance(index, tuple):
             ctypes.Array.__setitem__(self, index[0]*self.cols + index[1], value)
 
     def __iter__(self)->genMatIterator:
         return genMatIterator(self)
 
+    def at(self, row:int, col:int)->float:
+        """One element by (row, col).
+
+        __getitem__ has to advertise genVec as well because an int index yields a
+        row, so element-wise callers use this to get a plain scalar.
+        """
+        return cast(float, self[row, col])
+
+    def put(self, row:int, col:int, value:float)->None:
+        """Store one element by (row, col)."""
+        self[row, col] = value
+
     def __contains__(self, value:Any)->bool:
         if is_number(value):
-            for i in range(len(self)):
-                if self[i] == value:
-                    return True
-            return False
+            return any(self[i] == value for i in range(len(self)))
         elif isinstance(value, genVec) and len(value) == self.rows:
             for i in range(self.cols):
                 if self[i] == value:
@@ -135,7 +156,7 @@ class genMat(genType, ctypes.Array):
 
         return False
 
-    def _op(self, operator:str, other:Union[float, bool, int, genMat, genVec])->Union[genMat, genVec]:
+    def _op(self, operator:str, other:Union[float, bool, int, genType])->Union[genMat, genVec]:
         if operator == "**" or (operator in ["/", "//", "%"] and isinstance(other, genType)):
             raise TypeError(f"unsupported operand type(s) for {operator}: '{self.__class__.__name__}' and '{other.__class__.__name__}'")
 
@@ -148,13 +169,15 @@ class genMat(genType, ctypes.Array):
             result_type = self.gen_type(other.math_form, result_dtype, result_shape)
             result = result_type()
             if isinstance(result, genMat):
+                # result is a matrix, so the product was matrix * matrix.
+                right = cast(genMat, other)
                 for i in range(result.rows):
                     for j in range(result.cols):
                         value = 0
                         for k in range(self.cols):
-                            value += self[i, k] * other[k, j]
+                            value += self.at(i, k) * right.at(k, j)
 
-                        result[i, j] = value
+                        result.put(i, j, value)
             elif isinstance(result, genVec):
                 for i in range(len(result)):
                     value = 0
@@ -165,9 +188,11 @@ class genMat(genType, ctypes.Array):
 
             return result
 
-        return genType._op(self, operator, other)
+        # The base builds the result through _bin_op_type, which preserves the math
+        # form, so for this subclass the result really is a genMat or a genVec.
+        return cast("Union[genMat, genVec]", genType._op(self, operator, other))
 
-    def _iop(self, operator:str, other:Union[float, bool, int, genMat])->genMat:
+    def _iop(self, operator:str, other:Union[float, bool, int, genType])->genMat:
         if operator == "**" or (operator in ["/", "//", "%"] and isinstance(other, genType)):
             raise TypeError(f"unsupported operand type(s) for {operator}=: '{self.__class__.__name__}' and '{other.__class__.__name__}'")
 
@@ -178,11 +203,41 @@ class genMat(genType, ctypes.Array):
             if self.cols != other.rows or other.rows != other.cols:
                 raise TypeError(f"unsupported operand type(s) for {operator}=: '{self.__class__.__name__}' and '{other.__class__.__name__}'")
 
-            result:genMat = self * other
-            self[:] = result[:]
+            # self[:] = product[:] used to be a silent no-op: a slice index matched
+            # neither branch of __setitem__, so `matrix *= matrix` never wrote
+            # anything back. Copy the elements instead.
+            product:genMat = cast(genMat, self * other)
+            for i in range(self.rows):
+                for j in range(self.cols):
+                    self.put(i, j, product.at(i, j))
+
             self._update_data()
             return self
 
-        return genType._iop(self, operator, other)
+        return cast(genMat, genType._iop(self, operator, other))
+
+    def _compare_op(self, operator:str, other:Union[float, bool, int, genType])->genType:
+        # A matrix index yields a row, so walk rows and columns to stay
+        # element-wise; len(self) counts elements and would overrun.
+        other_is_homo:bool = self._is_homo(other)
+        if not other_is_homo and not is_number(other):
+            raise TypeError(f"unsupported operand type(s) for {operator}: '{self.__class__.__name__}' and '{other.__class__.__name__}'")
+
+        result:genMat = self.gen_type(self.math_form, ctypes.c_bool, self.shape)()
+        operator_func:Callable[[Any,Any], Any] = self._operator_funcs[operator]
+        for i in range(self.rows):
+            for j in range(self.cols):
+                result[i, j] = operator_func(self[i, j], genType._at(other, (i, j)) if other_is_homo else other)
+
+        return result
+
+    def _compare_rop(self, operator:str, other:Union[float, bool, int, genType])->genType:
+        result:genMat = self.gen_type(self.math_form, ctypes.c_bool, self.shape)()
+        operator_func:Callable[[Any,Any], Any] = self._operator_funcs[operator]
+        for i in range(self.rows):
+            for j in range(self.cols):
+                result[i, j] = operator_func(other, self[i, j])
+
+        return result
 
 MatType: TypeAlias = Union[genMat, Tuple[VecType, ...]]

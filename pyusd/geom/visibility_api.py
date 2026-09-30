@@ -8,13 +8,13 @@ class VisibilityAPI(APISchemaBase):
     """
     UsdGeomVisibilityAPI introduces properties that can be used to author
     visibility opinions.
-   
+
     \\note
     Currently, this schema only introduces the attributes that are used to
     control purpose visibility. Later, this schema will define _all_
     visibility-related properties and UsdGeomImageable will no longer define
     those properties.
-   
+
     The purpose visibility attributes added by this schema,
     _guideVisibility_, _proxyVisibility_, and _renderVisibility_ can each be
     used to control visibility for geometry of the corresponding purpose

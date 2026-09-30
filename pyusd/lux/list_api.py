@@ -2,14 +2,13 @@ from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
 from ..common import SchemaKind
 from ..dtypes import namespace, token
-from ..relationship import Relationship
 
 
 class ListAPI(APISchemaBase):
     """
     \\deprecated
     Use LightListAPI instead
-    
+
     """
 
     schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
@@ -38,5 +37,3 @@ class ListAPI(APISchemaBase):
 
         """
     )
-
-    lightList = Relationship(doc="Relationship to lights in the scene.")

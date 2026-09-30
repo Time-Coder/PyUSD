@@ -9,7 +9,7 @@ from .gprim import Gprim
 
 class Sphere(Gprim):
     """Defines a primitive sphere centered at the origin.
-    
+
     The fallback values for Cube, Sphere, Cone, and Cylinder are set so that
     they all pack into the same volume/bounds."""
 
@@ -26,7 +26,7 @@ class Sphere(Gprim):
     radius: Attribute[double] = Attribute(double, value=1.0, doc=
         """Indicates the sphere's radius.  If you
         author \\em radius you must also author \\em extent.
-        
+
         \\sa GetExtentAttr()"""
     )
 

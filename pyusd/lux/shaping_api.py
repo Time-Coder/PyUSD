@@ -37,8 +37,8 @@ class ShapingAPI(APISchemaBase):
 
         Values < 0 are ignored.
 
-        Note that the absolute value in the formula above means that sphere and 
-        cylinder lights will emit "behind" the light as well as in front. If it 
+        Note that the absolute value in the formula above means that sphere and
+        cylinder lights will emit "behind" the light as well as in front. If it
         is desired that the light emits forward only, this can be achieved by setting
         the `inputs:shaping:coneAngle` to 90 degrees or less.
 
@@ -70,8 +70,8 @@ class ShapingAPI(APISchemaBase):
         Note that this implies that a focusTint of pure white will disable
         focus.
 
-        Note that the absolute value in the formula above means that sphere and 
-        cylinder lights will emit "behind" the light as well as in front. If it 
+        Note that the absolute value in the formula above means that sphere and
+        cylinder lights will emit "behind" the light as well as in front. If it
         is desired that the light emits forward only, this can be achieved by setting
         the `inputs:shaping:coneAngle` to 90 degrees or less.
 
@@ -120,7 +120,7 @@ class ShapingAPI(APISchemaBase):
     inputs.shaping.cone.softness = Attribute(float,
         doc="""Controls the cutoff softness for cone angle.
 
-        At the default of coneSoftness = 0, the luminance is unaltered if 
+        At the default of coneSoftness = 0, the luminance is unaltered if
         emissionOffAxisAngle <= coneAngle, and 0 if
         emissionOffAxisAngle > coneAngle, so in this situation the coneAngle
         functions as a hard binary "off" toggle for all angles > coneAngle.

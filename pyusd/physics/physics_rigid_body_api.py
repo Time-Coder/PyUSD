@@ -9,7 +9,7 @@ from ..relationship import Relationship
 class PhysicsRigidBodyAPI(APISchemaBase):
     """Applies physics body attributes to any UsdGeomXformable prim and
     marks that prim to be driven by a simulation. If a simulation is running
-    it will update this prim's pose. All prims in the hierarchy below this 
+    it will update this prim's pose. All prims in the hierarchy below this
     prim should move rigidly along with the body, except when the descendant
     prim has its own UsdPhysicsRigidBodyAPI (marking a separate rigid body
     subtree which moves independently of the parent rigid body).
@@ -37,8 +37,8 @@ class PhysicsRigidBodyAPI(APISchemaBase):
         }
     )
     physics.kinematicEnabled = Attribute(bool,
-        doc="""Determines whether the body is kinematic or not. A kinematic 
-        body is a body that is moved through animated poses or through 
+        doc="""Determines whether the body is kinematic or not. A kinematic
+        body is a body that is moved through animated poses or through
         user defined poses. The simulation derives velocities for the
         kinematic body based on the external motion. When a continuous motion
         is not desired, this kinematic flag should be set to false.
@@ -61,7 +61,7 @@ class PhysicsRigidBodyAPI(APISchemaBase):
         }
     )
     physics.velocity = Attribute(vector3f,
-        doc="""Linear velocity in the same space as the node's xform. 
+        doc="""Linear velocity in the same space as the node's xform.
         Units: distance/second.
         """,
         metadata={
@@ -72,7 +72,7 @@ class PhysicsRigidBodyAPI(APISchemaBase):
         }
     )
     physics.angularVelocity = Attribute(vector3f,
-        doc="""Angular velocity in the same space as the node's xform. 
+        doc="""Angular velocity in the same space as the node's xform.
         Units: degrees/second.
         """,
         metadata={
@@ -83,8 +83,8 @@ class PhysicsRigidBodyAPI(APISchemaBase):
         }
     )
     physics.simulationOwner = Relationship(
-        doc="""Single PhysicsScene that will simulate this body. By 
-        default this is the first PhysicsScene found in the stage using 
+        doc="""Single PhysicsScene that will simulate this body. By
+        default this is the first PhysicsScene found in the stage using
         UsdStage::Traverse().
         """,
         metadata={

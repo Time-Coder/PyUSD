@@ -15,8 +15,8 @@ class Exposure(Attribute):
     def time(self)->Attribute[float]:
         """Time in seconds that the sensor is exposed to light when calculating exposure.
                  Longer exposure times create a brighter image, shorter times darker.
-                 Note that shutter:open and shutter:close model essentially the 
-                 same property of a physical camera, but are for specifying the 
+                 Note that shutter:open and shutter:close model essentially the
+                 same property of a physical camera, but are for specifying the
                  size of the motion blur streak which is for practical purposes
                  useful to keep separate."""
 
@@ -28,7 +28,7 @@ class Exposure(Attribute):
         """f-stop of the aperture when calculating exposure. Smaller numbers
                  create a brighter image, larger numbers darker.
                  Note that the `fStop` attribute also models the diameter of the camera
-                 aperture, but for specifying depth of field.  For practical 
+                 aperture, but for specifying depth of field.  For practical
                  purposes it is useful to keep the exposure and the depth of field
                  controls separate.
                  """
@@ -38,7 +38,7 @@ class Exposure(Attribute):
 
     @property
     def responsivity(self)->Attribute[float]:
-        """Scalar multiplier representing overall responsivity of the 
+        """Scalar multiplier representing overall responsivity of the
                  sensor system to light when calculating exposure. Intended to be
                  used as a per camera/lens system measured scaling value."""
 

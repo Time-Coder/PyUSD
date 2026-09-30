@@ -140,7 +140,10 @@ class UsdaParser:
 
     @staticmethod
     def node_text(node:Node)->str:
-        return node.text.decode("utf-8")
+        # tree-sitter types Node.text as Optional[bytes]; it is None only for
+        # zero-width or error nodes, which we never ask for.
+        text = node.text
+        return "" if text is None else text.decode("utf-8")
 
     @staticmethod
     def resolve_asset_path(file_name, rel_path:str)->str:

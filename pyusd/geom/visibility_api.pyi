@@ -1,17 +1,18 @@
 from ..api_schema_base import APISchemaBase
+from ..attribute import Attribute
 from ..dtypes import token
 
 class VisibilityAPI(APISchemaBase):
     """
     UsdGeomVisibilityAPI introduces properties that can be used to author
     visibility opinions.
-    
+
     \\note
     Currently, this schema only introduces the attributes that are used to
     control purpose visibility. Later, this schema will define _all_
     visibility-related properties and UsdGeomImageable will no longer define
     those properties.
-    
+
     The purpose visibility attributes added by this schema,
     _guideVisibility_, _proxyVisibility_, and _renderVisibility_ can each be
     used to control visibility for geometry of the corresponding purpose
@@ -19,7 +20,7 @@ class VisibilityAPI(APISchemaBase):
     override. I.e., if _visibility_ evaluates to "invisible", purpose
     visibility is invisible; otherwise, purpose visibility is determined by
     the corresponding purpose visibility attribute.
-    
+
     Note that the behavior of _guideVisibility_ is subtly different from the
     _proxyVisibility_ and _renderVisibility_ attributes, in that "guide"
     purpose visibility always evaluates to either "invisible" or "visible",
@@ -29,11 +30,11 @@ class VisibilityAPI(APISchemaBase):
     we have never found a need to have all guides visible in a scene by
     default, whereas we do find that flexibility useful for "proxy" and
     "render" geometry.
-    
+
     This schema can only be applied to UsdGeomImageable prims. The
     UseGeomImageable schema provides API for computing the purpose visibility
     values that result from the attributes introduced by this schema.
-    
+
     """
 
 
@@ -130,4 +131,3 @@ class VisibilityAPI(APISchemaBase):
 
     @renderVisibility.setter
     def renderVisibility(self, value:RenderVisibility)->None: ...
-

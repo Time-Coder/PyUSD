@@ -1,8 +1,10 @@
 import os
 import re
 from typing import (
+    TYPE_CHECKING,
     Any,
     List,
+    Optional,
     Tuple,
     get_args,
     get_origin,
@@ -27,6 +29,12 @@ from .dtypes import (
     uint,
     uint64,
 )
+
+if TYPE_CHECKING:
+    # Only needed for annotations: utils is imported by these modules, so a
+    # runtime import here would be circular.
+    from .layer import Layer
+    from .prim_spec import PrimSpec
 from .gf import (
     color3d,
     color3f,
@@ -69,7 +77,6 @@ from .gf import (
     vector3f,
     vector3h,
 )
-
 
 usd_scalar_types = (
     bool,
@@ -180,9 +187,12 @@ def analyze_list_type(type_hint):
             inner_type = args[0]
             inner_origin = get_origin(inner_type)
 
-            if inner_origin is not None and inner_origin is not list:
-                if inner_origin in [dict, tuple, set, frozenset]:
-                    raise TypeError(f"not support type {inner_origin}")
+            if (
+                inner_origin is not None
+                and inner_origin is not list
+                and inner_origin in [dict, tuple, set, frozenset]
+            ):
+                raise TypeError(f"not support type {inner_origin}")
 
             depth += 1
             current_type = inner_type
@@ -228,7 +238,7 @@ def _analyze_type(item: Any) -> Tuple[int, type]:
         if not issubclass(val_type, allowed_types):
             raise TypeError(f"not supported type: {val_type}")
 
-        if val_type == float:
+        if val_type is float:
             val_type = double
 
         return 0, val_type
@@ -247,7 +257,7 @@ def infer_type(data: Any) -> type:
         target_type = NUMPY_TO_PY_TYPE_MAP.get(data.dtype, data.dtype)
 
         ndim = data.ndim
-        result = target_type
+        result: Any = target_type
         for _ in range(ndim):
             result = List[result]
         return result
@@ -257,7 +267,7 @@ def infer_type(data: Any) -> type:
     if depth == 0:
         return element_type
 
-    current_type = element_type
+    current_type: Any = element_type
     for _ in range(depth):
         current_type = List[current_type]
 
@@ -280,9 +290,8 @@ def nest_map(nested_list, func):
 
 def in_annotations(name:str, cls:type)->bool:
     for klass in cls.__mro__:
-        if hasattr(klass, '__annotations__'):
-            if name in klass.__annotations__:
-                return True
+        if hasattr(klass, '__annotations__') and name in klass.__annotations__:
+            return True
 
     return False
 
@@ -296,3 +305,132 @@ def camel_to_snake(name: str) -> str:
 def snake_to_pascal(name: str) -> str:
     name = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', name)
     return ''.join(word.capitalize() for word in name.split('_'))
+
+
+# --- paths -----------------------------------------------------------------
+#
+# The whole path-helper family lives together here because they are mutually
+# recursive and are consumed from prim, stage, layer, and composition alike.
+# The USD path grammar is only partly implemented; see core_spec.md for the
+# escaping, XID, and expression rules still to cover.
+
+
+def path_from_reference_text(text: str) -> str:
+    text = str(text).strip()
+    if text.startswith("<") and text.endswith(">"):
+        text = text[1:-1]
+
+    return text
+
+
+def normalize_prim_path(path: str) -> str:
+    if path is None:
+        raise ValueError("path cannot be None")
+
+    path = str(path).strip()
+    if not path or path == "/":
+        return "/"
+
+    path = path_from_reference_text(path)
+    if not path.startswith("/"):
+        path = "/" + path
+
+    while "//" in path:
+        path = path.replace("//", "/")
+
+    if len(path) > 1:
+        path = path.rstrip("/")
+
+    return path
+
+
+def normalize_property_name(name: str) -> str:
+    return str(name).strip().replace(".", ":")
+
+
+def path_items(path: str) -> List[str]:
+    path = normalize_prim_path(path)
+    if path == "/":
+        return []
+
+    return path.strip("/").split("/")
+
+
+def ancestors(path: str) -> List[str]:
+    parts = path_items(path)
+    result: List[str] = []
+    for index in range(len(parts)):
+        result.append("/" + "/".join(parts[: index + 1]))
+
+    return result
+
+
+def path_is_under(path: str, prefix: str) -> bool:
+    path = normalize_prim_path(path)
+    prefix = normalize_prim_path(prefix)
+    return path == prefix or path.startswith(prefix + "/")
+
+
+def path_suffix(prefix: str, path: str) -> str:
+    prefix = normalize_prim_path(prefix)
+    path = normalize_prim_path(path)
+    if prefix == path:
+        return ""
+
+    if path.startswith(prefix + "/"):
+        return path[len(prefix) + 1 :]
+
+    return ""
+
+
+def join_path(base: str, suffix: str) -> str:
+    base = normalize_prim_path(base)
+    suffix = str(suffix).strip("/")
+    if not suffix:
+        return base
+
+    if base == "/":
+        return normalize_prim_path("/" + suffix)
+
+    return normalize_prim_path(base + "/" + suffix)
+
+
+def join_relative_path(base_path: str, path: str) -> str:
+    base_path = normalize_prim_path(base_path) if base_path else ""
+    path = str(path)
+    if path.startswith("/"):
+        return normalize_prim_path(path)
+
+    if not base_path or base_path == "/":
+        return normalize_prim_path("/" + path)
+
+    return normalize_prim_path(base_path + "/" + path)
+
+
+def prim_descendant(prim: "PrimSpec", suffix: str) -> Optional["PrimSpec"]:
+    """Descend a storage prim by relative path, without touching the engine."""
+    suffix = str(suffix).strip("/")
+    if not suffix:
+        return prim
+
+    current = prim
+    for item in suffix.split("/"):
+        if item not in current._children:
+            return None
+
+        current = current._children[item]
+
+    return current
+
+
+def prim_at(layer: "Layer", path: str) -> Optional["PrimSpec"]:
+    """The authored storage prim at ``path`` within one layer, if it defines one."""
+    parts = path_items(path)
+    if not parts:
+        return None
+
+    prim = layer._root_prims.get(parts[0])
+    if prim is None:
+        return None
+
+    return prim_descendant(prim, "/".join(parts[1:]))

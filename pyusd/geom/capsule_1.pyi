@@ -5,9 +5,9 @@ from .gprim import Gprim
 class Capsule_1(Gprim):
     """Defines a primitive capsule, i.e. a cylinder capped by two half
     spheres, with potentially different radii, centered at the origin, and whose
-    spine is along the specified \\em axis. 
-    The spherical cap heights (sagitta) of the two endcaps are a function of 
-    the relative radii of the endcaps, such that cylinder tangent and sphere 
+    spine is along the specified \\em axis.
+    The spherical cap heights (sagitta) of the two endcaps are a function of
+    the relative radii of the endcaps, such that cylinder tangent and sphere
     tangent are coincident and maintain C1 continuity."""
 
     def __init__(self, name:str="")->None: ...
