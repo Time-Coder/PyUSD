@@ -1,8 +1,8 @@
-from ..api_schema_base import APISchemaBase
 from ..common import SchemaKind
+from ..geom.xformable import Xformable
 
 
-class NonboundableLightBase(APISchemaBase):
+class NonboundableLightBase(Xformable):
     """Base class for intrinsic lights that are not boundable.
 
     The primary purpose of this class is to provide a direct API to the
@@ -10,7 +10,7 @@ class NonboundableLightBase(APISchemaBase):
 
     """
 
-    schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
+    schema_kind: SchemaKind = SchemaKind.AbstractTyped
 
     meta = {
         "customData": {

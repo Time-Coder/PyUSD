@@ -1,4 +1,4 @@
-from ..api_schema_base import APISchemaBase
+from ..geom.xformable import Xformable
 
-class VolumeFieldBase(APISchemaBase):
+class VolumeFieldBase(Xformable):
     "Base class for volume field primitives."

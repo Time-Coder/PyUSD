@@ -1,13 +1,13 @@
-from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
 from ..common import SchemaKind
 from ..dtypes import asset, token
+from .field_base import FieldBase
 
 
-class VolumeFieldAsset(APISchemaBase):
+class VolumeFieldAsset(FieldBase):
     "Base class for volume field primitives defined by an external file."
 
-    schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
+    schema_kind: SchemaKind = SchemaKind.AbstractTyped
 
     class VectorDataRoleHint(token):
         None_ = "None"

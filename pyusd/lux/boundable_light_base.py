@@ -1,8 +1,8 @@
-from ..api_schema_base import APISchemaBase
 from ..common import SchemaKind
+from ..geom.boundable import Boundable
 
 
-class BoundableLightBase(APISchemaBase):
+class BoundableLightBase(Boundable):
     """Base class for intrinsic lights that are boundable.
 
     The primary purpose of this class is to provide a direct API to the
@@ -10,7 +10,7 @@ class BoundableLightBase(APISchemaBase):
 
     """
 
-    schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
+    schema_kind: SchemaKind = SchemaKind.AbstractTyped
 
     meta = {
         "customData": {

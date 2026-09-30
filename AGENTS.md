@@ -96,6 +96,56 @@ Useful checks and workflows:
   the second raised `KeyError`. `dictionary.update_one` also called the unbound
   `dictionary.update` on values that were plain dicts. Both are covered in
   `workspace/test_prim_view.py`.
+- `Prim.prop_names` reports namespaced property names, and that took two separate fixes
+  to get right. It used to filter out every name containing a `:`, which hid every
+  namespaced declaration in the package: Gprim's `primvars:displayColor`, Material's
+  `outputs:surface`, Camera's `exposure:*` and `shutter:*`. A Material reported nothing
+  at all. USD has no such filter. The filter had been added to suppress 19 phantom
+  `xformOp:*` leaves that `declared_leaf_names` invented by walking into `xformOp`,
+  which is not a namespace group but an `XformOp` instance -- a schema over one op
+  attribute. It must not be expanded, and it is not a property name either; the op
+  attributes come into being when `AddXformOp` authors them.
+- `declared_leaf_names` therefore has three cases, and each one is load-bearing: a
+  non-leaf entry whose type is not `Attribute` is a nested schema and is skipped; a
+  non-leaf entry typed `dtypes.namespace` is a pure namespace and contributes only its
+  children; any other non-leaf entry is also a property in its own right, so its own
+  name is reported too. That last case is `UsdGeomCamera`'s legacy top-level `float
+  exposure`, which the generated class models as the head of the `exposure:` group --
+  without it a Camera reported 21 of pxr's 22 names.
+- Three generator methods used to classify a schema by whether it had an explicit name,
+  which is true of nothing arriving from an `#include`: `_determine_base_class` returned
+  `APISchemaBase` for all of them, `_determine_schema_kind` returned `NonAppliedAPI`, and
+  `_generate_imports` resolved the base through a table assuming every base lives in
+  `geom/`, so `geom/xformable.py` imported `..geom.imageable`. All three go by `inherits`
+  first now. Regenerating `Imageable`, `Xformable`, `Boundable` or `Gprim` before this
+  was fixed would have collapsed the typed hierarchy, and `DistantLight` was not even
+  `Xformable`. A base that resolves to a class in the same schema directory is imported
+  with a same-directory relative import; the `cross_module_bases` table is only the
+  fallback for bases from another namespace.
+- `pyusd/api_schema_base.py` and `pyusd/model_api.py` are hand-written but sit where
+  `generate_pyclasses` would write, and a full `generate_all` used to replace them with
+  a schema dump. `_generate_class_file` now refuses any target that holds real
+  executable code and prints what it skipped. The test is that a function body is
+  something other than `...`, which a generated class file never has -- so the guard
+  needs no list to go stale, and it is scoped to the `.py` path on purpose: 52 of the
+  118 generated `.pyi` stubs carry property getters with docstring bodies, so the same
+  test would block them.
+- Generated modules import the shared core modules from the package root, and that
+  relative prefix used to be spelled `..` in 24 places. That is right for a namespace
+  directory but escapes the package when the schema *is* the root one: regenerating
+  `pyusd/typed.py` produced `from ..common import SchemaKind`. `_package_prefix`
+  derives it from the schema directory instead. The core schema is not in
+  `generate_code.py` at all, which is why this went unnoticed -- that script's real cost
+  is that running it rewrites 243 files, so do not run it as part of an unrelated change.
+- `Xformable` still cannot be regenerated. Its `xformOp: XformOp = XformOp()` declaration
+  is what backs `prim.xformOp.translate = ...` and the automatic `xformOpOrder` upkeep,
+  but the generator no longer emits it: `XformOp` is not in the geom class table and
+  `xformOp` is not among the parsed attributes of `Xformable`, which are just
+  `xformOpOrder`. Regenerating that one file silently drops the xformOp authoring API;
+  `workspace/test_prim_view.py` catches it.
+- The generator emits imports in its own order and `ruff check --fix` sorts them, so a
+  generate-then-lint cycle is only idempotent as a pair. That is why the accessor
+  generation above leaves import order to `ruff`.
 
 - `pyusd/gf/` carries bool result types alongside the numeric ones: `bool2`, `bool3`,
   `bool4`, `matrix2b`, `matrix3b`, `matrix4b`, and `quatb`. `genType.gen_type` builds

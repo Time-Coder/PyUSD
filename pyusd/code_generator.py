@@ -1136,19 +1136,15 @@ class CodeGenerator:
         return result
 
     def _determine_base_class(self, class_info: Dict[str, Any]) -> str:
-        """确定基类"""
-        kind = class_info['kind']
-        has_explicit_name = class_info['has_explicit_name']
-        class_info.get('api_schemas', [])
+        """确定基类
 
-        # API schemas
-        if kind == 'class' and not has_explicit_name:
-            # AbstractTyped API schema
-            api_schema_type = class_info.get('custom_data', {}).get('apiSchemaType', '')
-            if api_schema_type == 'nonAppliedAPI' or api_schema_type == 'singleApplyAPI' or api_schema_type == 'multipleApplyAPI':
-                return 'APISchemaBase'
-            return 'APISchemaBase'
-
+        ``inherits`` is the only thing consulted. It used to be preceded by a shortcut
+        returning ``APISchemaBase`` for any ``class`` without an explicit name, which
+        caught every schema pulled in from an ``#include`` rather than declared in the
+        .usda itself: ``Imageable``, ``Xformable``, ``Boundable`` and ``Gprim`` all
+        lost their real parent and regenerated as ``APISchemaBase``. The shortcut is
+        redundant anyway, because an API schema's parent *is* ``APISchemaBase``.
+        """
         # 优先使用 inherits 字段
         inherits = class_info.get('inherits', [])
         if inherits:
@@ -1175,35 +1171,38 @@ class CodeGenerator:
             if parent_name in self.classes_info:
                 return parent_name
 
-        # Typed schemas（如果没有 inherits）
-        if kind == 'class' and has_explicit_name:
-            return 'Typed'
-
-        return 'Typed'
+        # 无 inherits：只剩两个手写根类。Prim 是本项目里所有 schema 类的根，
+        # 所以 Typed 的基类是 Prim 而不是它自己。
+        return 'Prim'
 
     def _determine_schema_kind(self, class_info: Dict[str, Any]) -> str:
-        """确定 schema_kind"""
-        kind = class_info['kind']
-        has_explicit_name = class_info['has_explicit_name']
+        """确定 schema_kind
 
-        # API schemas
-        if kind == 'class' and not has_explicit_name:
-            api_schema_type = class_info.get('custom_data', {}).get('apiSchemaType', '')
-            if api_schema_type == 'nonApplied' or api_schema_type == 'nonAppliedAPI':
-                return 'SchemaKind.NonAppliedAPI'
-            elif api_schema_type == 'singleApply' or api_schema_type == 'singleApplyAPI':
+        是否为 API schema 由父类或 ``apiSchemaType`` 决定，绝不能靠"没有显式名字"
+        来判断。那个判断原本排在最前面，导致所有从 ``#include`` 引入（而非在 .usda 里
+        直接声明）的 schema 都被当成 ``NonAppliedAPI``：``Xformable`` 会被重新生成为
+        API schema，而它实际是 ``AbstractTyped``。``VisibilityAPI`` 完全没有
+        ``apiSchemaType``，所以父类也必须参与判断，否则它会被误判为 typed schema。
+        """
+        inherits = class_info.get('inherits', [])
+        parent = inherits[0].lstrip('</').rstrip('>') if inherits else ''
+        api_schema_type = class_info.get('custom_data', {}).get('apiSchemaType', '')
+
+        if parent == 'APISchemaBase' or api_schema_type:
+            if api_schema_type in ('singleApply', 'singleApplyAPI'):
                 return 'SchemaKind.SingleApplyAPI'
-            elif api_schema_type == 'multipleApply' or api_schema_type == 'multipleApplyAPI':
+            if api_schema_type in ('multipleApply', 'multipleApplyAPI'):
                 return 'SchemaKind.MultipleApplyAPI'
             return 'SchemaKind.NonAppliedAPI'
 
         # Typed schemas
-        if kind == 'class' and has_explicit_name:
+        if class_info.get('has_explicit_name'):
             return 'SchemaKind.ConcreteTyped'
 
         return 'SchemaKind.AbstractTyped'
 
     def _generate_class_file(self, class_name: str, class_info: Dict[str, Any]) -> None:
+        up = self._package_prefix()
         """生成单个类的 Python 文件（.py）"""
         base_class = self._determine_base_class(class_info)
 
@@ -1213,7 +1212,7 @@ class CodeGenerator:
         # 检查是否有需要从 common.py 导入的枚举类
         _, imported_token_classes = self._generate_token_classes(class_info['attributes'])
         if imported_token_classes:
-            imports += f"\nfrom ..common import {', '.join(sorted(set(imported_token_classes)))}"
+            imports += f"\nfrom {up}common import {', '.join(sorted(set(imported_token_classes)))}"
 
         # 生成类定义
         class_def = self._generate_class_definition(class_info)
@@ -1225,9 +1224,68 @@ class CodeGenerator:
         file_name = self._camel_to_snake(class_name) + '.py'
         file_path = os.path.join(self.schema_dir, file_name)
 
+        if self._holds_hand_written_code(file_path):
+            print(f"Skipped {file_path}: hand-written module, not regenerable. "
+                  f"Edit it by hand; the generator will not overwrite it.")
+            return
+
         self._write_generated(file_path, content)
 
         print(f"Generated: {file_path}")
+
+    def _package_prefix(self) -> str:
+        """Relative prefix that reaches the package root from this schema directory.
+
+        Every generated module imports the shared core modules -- ``attribute``,
+        ``common``, ``dtypes``, ``gf``, ``typed``, ``api_schema_base`` -- from the
+        package root. That used to be spelled ``..`` everywhere, which is right for a
+        namespace directory such as ``pyusd/geom`` but escapes the package when the
+        schema *is* the root one: regenerating ``pyusd/typed.py`` produced
+        ``from {up}common import SchemaKind``, which does not resolve.
+
+        The package root is the directory holding this module, so the prefix is a
+        plain relative path from the schema directory to it.
+        """
+        root = os.path.dirname(os.path.abspath(__file__))
+        relative = os.path.relpath(root, os.path.abspath(self.schema_dir))
+        return relative.replace(os.sep, '.')
+
+    @staticmethod
+    def _holds_hand_written_code(file_path: str) -> bool:
+        """Whether an existing target file carries code the generator never emits.
+
+        ``pyusd/api_schema_base.py`` and ``pyusd/model_api.py`` are written by hand but
+        sit exactly where ``generate_pyclasses`` writes, so a full ``generate_all``
+        used to replace them with a schema dump and lose their implementations. A
+        generated class file only ever declares ``meta``, ``schema_kind`` and attribute
+        values; every method body in one is ``...``. So a function with a real body is
+        a reliable signal of a hand-owned module, and it needs no list that can go
+        stale the moment somebody adds another hand-written file.
+
+        A file that does not parse is not treated as hand-written: it is already
+        broken, and refusing to regenerate it would only prevent its repair.
+        """
+        if not os.path.isfile(file_path):
+            return False
+
+        try:
+            with open(file_path, encoding='utf-8') as handle:
+                tree = ast.parse(handle.read())
+        except (OSError, SyntaxError, ValueError):
+            return False
+
+        for node in ast.walk(tree):
+            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            body = [n for n in node.body if not isinstance(n, ast.Pass)]
+            if not body:
+                continue
+            if len(body) == 1 and isinstance(body[0], ast.Expr):
+                value = body[0].value
+                if isinstance(value, ast.Constant) and value.value is Ellipsis:
+                    continue
+            return True
+        return False
 
     def _generate_pyi_file(self, class_name: str, class_info: Dict[str, Any], base_class: str, imported_token_classes: List[str]) -> None:
         """生成类型存根文件 (.pyi) - 第一遍生成（不包含命名空间导入）"""
@@ -1247,13 +1305,14 @@ class CodeGenerator:
         self._write_generated(file_path, content)
 
     def _generate_namespace_pyi(self, ns_prefix: str, ns_class_name: str, members: List[Dict[str, Any]]) -> str:
+        up = self._package_prefix()
         """生成命名空间类的 .pyi 文件内容"""
         lines = []
 
         # 收集需要的导入
-        imports = ["from ..attribute import Attribute"]
+        imports = [f"from {up}attribute import Attribute"]
         if any('type' not in member for member in members):
-            imports.append("from ..relationship import Relationship")
+            imports.append(f"from {up}relationship import Relationship")
         needed_types = set()
 
         for member in members:
@@ -1266,11 +1325,11 @@ class CodeGenerator:
         common_imports = sorted(needed_types & self.common_types)
 
         if gf_imports:
-            imports.append(f"from ..gf import {', '.join(gf_imports)}")
+            imports.append(f"from {up}gf import {', '.join(gf_imports)}")
         if dtypes_imports:
-            imports.append(f"from ..dtypes import {', '.join(dtypes_imports)}")
+            imports.append(f"from {up}dtypes import {', '.join(dtypes_imports)}")
         if common_imports:
-            imports.append(f"from ..common import {', '.join(common_imports)}")
+            imports.append(f"from {up}common import {', '.join(common_imports)}")
 
         if any(member.get('type', '').endswith('[]') for member in members if 'type' in member):
             imports.append("from typing import List")
@@ -1283,7 +1342,7 @@ class CodeGenerator:
         # imported. The member type is plain `token` in the schema, which is why
         # collecting needed types from the types alone never finds them.
         if imported_token_classes:
-            imports.append(f"from ..common import {', '.join(sorted(set(imported_token_classes)))}")
+            imports.append(f"from {up}common import {', '.join(sorted(set(imported_token_classes)))}")
 
         # 类声明
         lines.append("\n".join(imports))
@@ -1322,42 +1381,51 @@ class CodeGenerator:
         return prefixes
 
     def _generate_pyi_imports(self, base_class: str, class_info: Dict[str, Any], imported_token_classes: List[str], generated_ns_files: Optional[Set[str]] = None) -> str:
+        up = self._package_prefix()
         """生成 .pyi 文件的导入语句"""
         imports = []
 
         # 基类导入
         if base_class in ['Typed', 'APISchemaBase']:
             if base_class == 'Typed':
-                imports.append("from ..typed import Typed")
+                imports.append(f"from {up}typed import Typed")
             else:
-                imports.append("from ..api_schema_base import APISchemaBase")
+                imports.append(f"from {up}api_schema_base import APISchemaBase")
         else:
-            # 跨模块继承
-            cross_module_bases = {
-                'Imageable': ('geom', 'Imageable'),
-                'Gprim': ('geom', 'Gprim'),
-                'Boundable': ('geom', 'Boundable'),
-                'Xformable': ('geom', 'Xformable'),
-                'PointBased': ('geom', 'PointBased'),
-                'GeomModelAPI': ('geom', 'GeomModelAPI'),
-                'PrimvarsAPI': ('geom', 'PrimvarsAPI'),
-                'VisibilityAPI': ('geom', 'VisibilityAPI'),
-                'MotionAPI': ('geom', 'MotionAPI'),
-                'XformCommonAPI': ('geom', 'XformCommonAPI'),
-            }
-
-            if base_class in cross_module_bases:
-                module, cls = cross_module_bases[base_class]
-                imports.append(f"from ..{module}.{self._camel_to_snake(cls)} import {cls}")
+            # 同一 schema 目录内的基类用同目录相对导入。这个判断必须排在下面的
+            # 跨模块表之前：那张表把这些基类统统硬编码到 geom/ 下，于是生成
+            # geom/xformable.py 时会产出 from ..geom.imageable import Imageable，
+            # 让一个模块导入它自己。
+            if base_class in self.classes_info:
+                imports.append(
+                    f"from .{self._camel_to_snake(base_class)} import {base_class}")
             else:
-                imports.append(f"from .{self._camel_to_snake(base_class)} import {base_class}")
+                # 跨模块继承
+                cross_module_bases = {
+                    'Imageable': ('geom', 'Imageable'),
+                    'Gprim': ('geom', 'Gprim'),
+                    'Boundable': ('geom', 'Boundable'),
+                    'Xformable': ('geom', 'Xformable'),
+                    'PointBased': ('geom', 'PointBased'),
+                    'GeomModelAPI': ('geom', 'GeomModelAPI'),
+                    'PrimvarsAPI': ('geom', 'PrimvarsAPI'),
+                    'VisibilityAPI': ('geom', 'VisibilityAPI'),
+                    'MotionAPI': ('geom', 'MotionAPI'),
+                    'XformCommonAPI': ('geom', 'XformCommonAPI'),
+                }
+
+                if base_class in cross_module_bases:
+                    module, cls = cross_module_bases[base_class]
+                    imports.append(f"from ..{module}.{self._camel_to_snake(cls)} import {cls}")
+                else:
+                    imports.append(f"from .{self._camel_to_snake(base_class)} import {base_class}")
 
         # 添加常用导入
         if class_info['attributes'] or class_info['relationships']:
             if class_info['attributes']:
-                imports.append("from ..attribute import Attribute")
+                imports.append(f"from {up}attribute import Attribute")
             if class_info['relationships']:
-                imports.append("from ..relationship import Relationship")
+                imports.append(f"from {up}relationship import Relationship")
 
             # 收集所有需要的类型
             needed_types = set()
@@ -1381,15 +1449,15 @@ class CodeGenerator:
             common_imports = sorted(needed_types & self.common_types)
 
             if gf_imports:
-                imports.append(f"from ..gf import {', '.join(gf_imports)}")
+                imports.append(f"from {up}gf import {', '.join(gf_imports)}")
             if dtypes_imports:
-                imports.append(f"from ..dtypes import {', '.join(dtypes_imports)}")
+                imports.append(f"from {up}dtypes import {', '.join(dtypes_imports)}")
             if common_imports:
-                imports.append(f"from ..common import {', '.join(common_imports)}")
+                imports.append(f"from {up}common import {', '.join(common_imports)}")
 
         # 添加从 common 导入的枚举类
         if imported_token_classes:
-            imports.append(f"from ..common import {', '.join(sorted(set(imported_token_classes)))}")
+            imports.append(f"from {up}common import {', '.join(sorted(set(imported_token_classes)))}")
 
         # 添加命名空间类的导入
         if generated_ns_files:
@@ -1401,41 +1469,50 @@ class CodeGenerator:
         return "\n".join(imports)
 
     def _generate_imports(self, base_class: str, class_info: Dict[str, Any]) -> str:
+        up = self._package_prefix()
         """生成导入语句"""
         imports = []
 
         # 基类导入
         if base_class in ['Typed', 'APISchemaBase']:
             if base_class == 'Typed':
-                imports.append("from ..typed import Typed")
+                imports.append(f"from {up}typed import Typed")
             else:
-                imports.append("from ..api_schema_base import APISchemaBase")
+                imports.append(f"from {up}api_schema_base import APISchemaBase")
         else:
-            # 跨模块继承
-            cross_module_bases = {
-                'Imageable': ('geom', 'Imageable'),
-                'Gprim': ('geom', 'Gprim'),
-                'Boundable': ('geom', 'Boundable'),
-                'Xformable': ('geom', 'Xformable'),
-                'PointBased': ('geom', 'PointBased'),
-                'GeomModelAPI': ('geom', 'GeomModelAPI'),
-                'PrimvarsAPI': ('geom', 'PrimvarsAPI'),
-                'VisibilityAPI': ('geom', 'VisibilityAPI'),
-                'MotionAPI': ('geom', 'MotionAPI'),
-                'XformCommonAPI': ('geom', 'XformCommonAPI'),
-            }
-
-            if base_class in cross_module_bases:
-                module, cls = cross_module_bases[base_class]
-                imports.append(f"from ..{module}.{self._camel_to_snake(cls)} import {cls}")
+            # 同一 schema 目录内的基类用同目录相对导入。这个判断必须排在下面的
+            # 跨模块表之前：那张表把这些基类统统硬编码到 geom/ 下，于是生成
+            # geom/xformable.py 时会产出 from ..geom.imageable import Imageable，
+            # 让一个模块导入它自己。
+            if base_class in self.classes_info:
+                imports.append(
+                    f"from .{self._camel_to_snake(base_class)} import {base_class}")
             else:
-                imports.append(f"from .{self._camel_to_snake(base_class)} import {base_class}")
+                # 跨模块继承
+                cross_module_bases = {
+                    'Imageable': ('geom', 'Imageable'),
+                    'Gprim': ('geom', 'Gprim'),
+                    'Boundable': ('geom', 'Boundable'),
+                    'Xformable': ('geom', 'Xformable'),
+                    'PointBased': ('geom', 'PointBased'),
+                    'GeomModelAPI': ('geom', 'GeomModelAPI'),
+                    'PrimvarsAPI': ('geom', 'PrimvarsAPI'),
+                    'VisibilityAPI': ('geom', 'VisibilityAPI'),
+                    'MotionAPI': ('geom', 'MotionAPI'),
+                    'XformCommonAPI': ('geom', 'XformCommonAPI'),
+                }
+
+                if base_class in cross_module_bases:
+                    module, cls = cross_module_bases[base_class]
+                    imports.append(f"from ..{module}.{self._camel_to_snake(cls)} import {cls}")
+                else:
+                    imports.append(f"from .{self._camel_to_snake(base_class)} import {base_class}")
 
         # 添加常用导入
         if class_info['attributes'] or class_info['relationships']:
-            imports.append("from ..attribute import Attribute")
+            imports.append(f"from {up}attribute import Attribute")
             if class_info['relationships']:
-                imports.append("from ..relationship import Relationship")
+                imports.append(f"from {up}relationship import Relationship")
 
             # 检查是否需要 List（只有当有数组类型属性时才需要）
             has_array = any(attr['type'].endswith('[]') for attr in class_info['attributes'])
@@ -1446,7 +1523,7 @@ class CodeGenerator:
             has_namespace_attrs = any(attr.get('full_name', '').count(':') > 0 for attr in class_info['attributes'])
             has_namespace_rels = any(rel.get('full_name', '').count(':') > 0 for rel in class_info['relationships'])
             if has_namespace_attrs or has_namespace_rels:
-                imports.append("from ..dtypes import namespace")
+                imports.append(f"from {up}dtypes import namespace")
 
             # 收集所有需要的类型
             needed_types = set()
@@ -1464,14 +1541,14 @@ class CodeGenerator:
 
             needed_gf_types = needed_types & self.gf_types
             if needed_gf_types:
-                imports.append(f"from ..gf import {', '.join(sorted(needed_gf_types))}")
+                imports.append(f"from {up}gf import {', '.join(sorted(needed_gf_types))}")
 
             needed_dtype_types = needed_types & self.dtypes_types
             if needed_dtype_types:
-                imports.append(f"from ..dtypes import {', '.join(sorted(needed_dtype_types))}")
+                imports.append(f"from {up}dtypes import {', '.join(sorted(needed_dtype_types))}")
 
         # 添加 SchemaKind 导入
-        imports.append("from ..common import SchemaKind")
+        imports.append(f"from {up}common import SchemaKind")
 
         return "\n".join(imports)
 

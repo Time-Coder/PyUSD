@@ -1,18 +1,18 @@
-from ..api_schema_base import APISchemaBase
 from ..attribute import Attribute
 from ..common import SchemaKind
 from ..dtypes import token
 from ..gf import float4, int2
 from ..relationship import Relationship
+from ..typed import Typed
 
 
-class RenderSettingsBase(APISchemaBase):
+class RenderSettingsBase(Typed):
     """Abstract base class that defines render settings that
     can be specified on either a RenderSettings prim or a RenderProduct
     prim.
     """
 
-    schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
+    schema_kind: SchemaKind = SchemaKind.AbstractTyped
 
     meta = {
         "customData": {

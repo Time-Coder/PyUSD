@@ -1,6 +1,6 @@
-from ..api_schema_base import APISchemaBase
+from ..geom.boundable import Boundable
 
-class BoundableLightBase(APISchemaBase):
+class BoundableLightBase(Boundable):
     """Base class for intrinsic lights that are boundable.
 
     The primary purpose of this class is to provide a direct API to the
