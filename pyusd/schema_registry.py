@@ -59,13 +59,37 @@ class SchemaType:
         return current
 
     def declared_leaf_names(self) -> List[str]:
-        """Names of declared leaf properties, namespaces expanded to ``ns:leaf``."""
+        """Names of declared leaf properties, namespaces expanded to ``ns:leaf``.
+
+        Only a plain ``Attribute`` is expanded. That is a namespace group whose
+        children are genuine declared attributes, such as ``primvars`` or
+        ``exposure``. ``Xformable`` also declares a non-leaf ``xformOp``, but that
+        entry is an ``XformOp`` instance -- a schema over one op attribute, not a
+        namespace -- and expanding it would invent 19 ``xformOp:translate``-style
+        properties that USD never declares. They come into being when
+        ``AddXformOp`` authors them, which is why ``UsdPrim::GetPropertyNames``
+        does not report them either. A nested schema is skipped rather than
+        reported, since it is not a property name at all.
+
+        A group whose value type is ``dtypes.namespace`` is a pure namespace and
+        contributes only its children. Any other group is also a property in its
+        own right: ``UsdGeomCamera`` declares a legacy top-level ``float exposure``
+        *and* the ``exposure:`` namespace, and the generated class models the legacy
+        attribute as the head of the group, so its own name has to be reported too.
+        """
+        from .attribute import Attribute
+        from .dtypes import namespace
+
         names: List[str] = []
 
         def walk(props: Dict[str, Property], prefix: str) -> None:
             for name, prop in props.items():
                 full = name if not prefix else f"{prefix}:{name}"
                 if not prop.is_leaf and prop._props:
+                    if type(prop) is not Attribute:
+                        continue
+                    if getattr(prop, "_type", None) is not namespace:
+                        names.append(full)
                     walk(prop._props, full)
                 else:
                     names.append(full)

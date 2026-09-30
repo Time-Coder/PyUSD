@@ -155,8 +155,13 @@ class Prim:
 
     @property
     def prop_names(self) -> List[str]:
-        names = self._stage._engine.property_names(self._path)
-        return [name for name in names if ":" not in name]
+        # Namespaced names are real properties: Gprim declares
+        # primvars:displayColor and primvars:displayOpacity, Material declares
+        # outputs:surface, Camera declares exposure:* and shutter:*. UsdPrim's own
+        # GetPropertyNames has no such filter, so neither does this. The op
+        # attributes under xformOp: are absent because nothing declares them -- they
+        # are created on demand by AddXformOp -- not because they were filtered out.
+        return self._stage._engine.property_names(self._path)
 
     @property
     def props(self) -> List[StageProperty]:
