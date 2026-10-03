@@ -10,16 +10,18 @@ from __future__ import annotations
 import os
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union, cast
 
+from .attribute import Attribute
 from .attribute_spec import AttributeSpec
 from .composition import CompositionEngine, LayerCache
 from .layer import Layer
 from .prim import Prim, PrimType
 from .prim_spec import PrimSpec
+from .property import Property
 from .property_spec import PropertySpec
+from .relationship import Relationship
 from .relationship_spec import RelationshipSpec
 from .sdf import Specifier
 from .stage_metadata import StageMetadata
-from .stage_property import StageProperty
 from .utils import (
     in_annotations,
     infer_type,
@@ -264,9 +266,9 @@ class Stage:
             self.invalidate()
             return prop
 
-        if isinstance(template, RelationshipSpec) or StageProperty._is_relationship_value(value):
+        if isinstance(template, RelationshipSpec) or Relationship._is_relationship_value(value):
             rel = self._ensure_edit_relationship(edit_prim, prop_name, template)
-            rel._targets = StageProperty._coerce_relationship_targets(value)
+            rel._targets = Relationship._coerce_relationship_targets(value)
             rel._value_state = PropertySpec.ValueState.Authored
             self.invalidate()
             return rel
@@ -288,7 +290,7 @@ class Stage:
         uniform: bool = False,
         custom: bool = True,
         fix_type: bool = True,
-    ) -> StageProperty:
+    ) -> Property:
         edit_prim = self._ensure_edit_prim(prim_path)
         prop_name = normalize_property_name(prop_name)
         attr = AttributeSpec(
@@ -307,7 +309,7 @@ class Stage:
         if value is not None:
             attr.set(value)
         self.invalidate()
-        return StageProperty(self, prim_path, prop_name)
+        return Attribute(self, prim_path, prop_name)
 
     def _create_relationship(
         self,
@@ -318,7 +320,7 @@ class Stage:
         metadata: Optional[dict] = None,
         custom: bool = True,
         is_leaf: bool = True,
-    ) -> StageProperty:
+    ) -> Property:
         edit_prim = self._ensure_edit_prim(prim_path)
         prop_name = normalize_property_name(prop_name)
         rel = RelationshipSpec(
@@ -330,11 +332,11 @@ class Stage:
         )
         rel._value_state = PropertySpec.ValueState.NotAuthored
         if targets is not None:
-            rel._targets = StageProperty._coerce_relationship_targets(targets)
+            rel._targets = Relationship._coerce_relationship_targets(targets)
             rel._value_state = PropertySpec.ValueState.Authored
         self._install_property(edit_prim, prop_name, rel)
         self.invalidate()
-        return StageProperty(self, prim_path, prop_name)
+        return Relationship(self, prim_path, prop_name)
 
     def _set_metadata(self, prim_path: Optional[str], key: str, value: Any, prop_name: str = "") -> None:
         if prim_path is None:

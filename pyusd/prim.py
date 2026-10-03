@@ -17,9 +17,9 @@ from typing import TYPE_CHECKING, Any, List, Optional, Type, TypeVar, Union, cas
 
 from .composition import normalize_prim_path, path_items, prim_at
 from .prim_spec import PrimSpec
+from .property import Property
 from .sdf import Specifier
 from .stage_metadata import StageMetadata
-from .stage_property import StageProperty
 from .stage_variant_sets import StageVariantSets
 from .utils import join_relative_path
 
@@ -195,17 +195,17 @@ class Prim:
         return self._stage._engine.property_names(self._path)
 
     @property
-    def props(self) -> List[StageProperty]:
-        return [StageProperty(self._stage, self._path, name) for name in self.prop_names]
+    def props(self) -> List[Property]:
+        return [Property.wrap(self._stage, self._path, name) for name in self.prop_names]
 
     def has_prop(self, name: str) -> bool:
         return self._stage._engine.resolve_property(self._path, name) is not None
 
-    def prop(self, name: str) -> StageProperty:
+    def prop(self, name: str) -> Property:
         if not self.has_prop(name):
             raise KeyError(name)
 
-        return StageProperty(self._stage, self._path, name)
+        return Property.wrap(self._stage, self._path, name)
 
     def child(self, name: str) -> Prim:
         return self[join_relative_path("", name)]
@@ -286,11 +286,11 @@ class Prim:
         # An API schema is not a property. PrimSpec.__getattr__ is what consults the
         # API registry, checks apiSchemaCanOnlyApplyTo, and hands back the schema
         # object (or an APIWrapper for multiple-apply), so route _api names there
-        # instead of fabricating a StageProperty that resolves to nothing.
+        # instead of fabricating a property handle that resolves to nothing.
         if name.endswith("_api"):
             return getattr(self._edit_spec(), name)
 
-        return StageProperty(self._stage, self._path, name)
+        return Property.wrap(self._stage, self._path, name)
 
     def __setattr__(self, name: str, value: Any) -> None:
         if name.startswith("_"):

@@ -23,8 +23,30 @@ path and neither needs a bound/unbound mode.
   opinion. It is not exported from `pyusd`; reach it through `Prim.resolved_prim`,
   `Prim.authored_prim`, or `Layer.prim_spec_at` when an operation has to shape
   stored data rather than the composed result.
-- Property, metadata, and variant views live in `stage_property.py`,
-  `stage_metadata.py`, and `stage_variant_sets.py`, mirroring their `Stage*` classes.
+- Stored properties are `PropertySpec` and its subclasses `AttributeSpec` and
+  `RelationshipSpec`, in `property_spec.py`, `attribute_spec.py`, and
+  `relationship_spec.py`. They are what a layer serialises and what
+  `PrimSpec._props` holds. The names `Property`, `Attribute`, and `Relationship`
+  belong to the composed handles in `property.py`, `attribute.py`, and
+  `relationship.py` -- USD's own split, `Usd.Attribute` versus
+  `Sdf.AttributeSpec` -- so a prim attribute and a stored spec are never confused
+  for one another.
+- `Property.wrap` is the single place that decides which handle a name means: it
+  looks at the resolved spec and returns a `Relationship` only for a
+  `RelationshipSpec`, otherwise an `Attribute`. A name nothing declares and
+  nothing authored still becomes an `Attribute` with `exists == False`, matching
+  `pxr`, where `prim.GetAttribute(name)` returns an invalid `Usd.Attribute`
+  rather than `None` -- that is what lets `prim.radius = 5` work on a property
+  nobody has heard of yet. `is_valid()` is the pxr spelling of `exists`.
+- `Property.__getattr__` allows member access in exactly two cases: the resolved
+  spec owns the child, which is the nested-schema case (`xformOp.translate`, and
+  authoring through it is what maintains `xformOpOrder`), or the prim's type
+  declares the child, which is what makes `prim.exposure.iso` reachable on a
+  fresh `Camera` that no layer has materialised. Anything else raises
+  `AttributeError`, because a plain attribute has no members and `prim.radius.foo`
+  is a typo rather than a request for a property named `radius:foo`.
+- Metadata and variant views live in `stage_metadata.py` and
+  `stage_variant_sets.py`, mirroring their `Stage*` classes.
 - The composition engine reads storage nodes directly, so it needs the in-layer
   path and the raw authored arcs, neither of which a composed view can express.
 - Variants are the exception: a prim inside a variant has no absolute stage path, so
@@ -55,7 +77,11 @@ Useful checks and workflows:
   remain and are load-bearing: `layer_metadata` and `prim_metadata`, whose
   implementations are empty `class X(Metadata): pass` shells whose only declarations
   live in the stub. Do not add a `.pyi` next to a `.py` that already declares
-  everything; that reintroduces the split.
+  everything; that reintroduces the split. The generator enforces this in both
+  directions now: `_generate_class_file` refuses to overwrite hand-written
+  implementations, and `_regenerate_pyi_file` refuses to write a stub beside one.
+  The stub guard has to test the sibling `.py` rather than the stub itself, because
+  52 generated stubs carry property getters whose body is a docstring.
 - API schema accessors are generated into `pyusd/prim.py`, between the
   `generated api imports` and `generated api accessors` marker pairs. They used to be
   declared in a `pyusd/prim.pyi`; that stub is what kept the duplicate-`Prim` problem
@@ -112,6 +138,16 @@ Useful checks and workflows:
   name is reported too. That last case is `UsdGeomCamera`'s legacy top-level `float
   exposure`, which the generated class models as the head of the `exposure:` group --
   without it a Camera reported 21 of pxr's 22 names.
+- `_generate_pyi_attribute_signature` drops a member whose name collides with a
+  `PropertySpec` attribute -- `name`, `type`, `value`, `path` and the rest -- rather
+  than shadowing it in a stub. That is lossy but long-standing, and it is invisible
+  until a namespace's *only* member is dropped: the emitted class then has an empty
+  body, which is not valid Python. `colorSpace` is exactly that case, since its only
+  member is `colorSpace:name`. A namespace stub whose members all vanish is now
+  skipped instead of written, so `color_space.pyi` does not exist. Note the two
+  "skip" guards test different things: `_generate_namespace_pyi` returning empty means
+  there is nothing declarable, while `_holds_hand_written_code` means the sibling
+  `.py` is hand-written and must not gain a stub at all.
 - Three generator methods used to classify a schema by whether it had an explicit name,
   which is true of nothing arriving from an `#include`: `_determine_base_class` returned
   `APISchemaBase` for all of them, `_determine_schema_kind` returned `NonAppliedAPI`, and
