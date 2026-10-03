@@ -70,6 +70,16 @@ class PrimIndex:
 
         return self.specs[0]
 
+    @property
+    def type_name(self) -> str:
+        """Composed typeName, strongest opinion first; empty when untyped."""
+        for spec in self.specs:
+            value = spec.prim._metadata._builtin_data.get("typeName")
+            if value:
+                return str(value)
+
+        return ""
+
 
 class LayerCache:
     def __init__(self) -> None:
@@ -172,6 +182,28 @@ class CompositionEngine:
 
         return bool(self.prim_index(path, root_layer).specs)
 
+    def resolve_view_type_name(
+        self, path: str, root_layer: Optional[Layer] = None
+    ) -> Optional[str]:
+        """Composed typeName at ``path``, or None when there is no prim there.
+
+        A composed view needs both answers at once -- does the prim exist, and what
+        class models it -- and ``has_prim`` plus ``resolve_type_name`` each fetch the
+        prim index to give one of them. That is not a cheap fetch twice over: every
+        ``prim_index`` call rebuilds a cache key holding a signature of the whole layer
+        stack and a sorted list of unloaded payloads. Answering both from one index
+        halves the cost of a view lookup.
+        """
+        path = normalize_prim_path(path)
+        if path == "/":
+            return ""
+
+        specs = self.prim_index(path, root_layer).specs
+        if not specs:
+            return None
+
+        return PrimIndex(path, specs).type_name
+
     def is_populated(self, path: str, root_layer: Optional[Layer] = None) -> bool:
         """A path joins the namespace only when some contributing spec is a def.
 
@@ -251,12 +283,7 @@ class CompositionEngine:
         if path == "/":
             return ""
 
-        for spec in self.prim_index(path, root_layer).specs:
-            value = spec.prim._metadata._builtin_data.get("typeName")
-            if value:
-                return str(value)
-
-        return ""
+        return self.prim_index(path, root_layer).type_name
 
     def resolve_property(self, path: str, prop_name: str, root_layer: Optional[Layer] = None) -> Optional[Property]:
         path = normalize_prim_path(path)

@@ -203,10 +203,13 @@ class Stage:
 
     def __getitem__(self, path: str) -> Prim:
         path = normalize_prim_path(path)
-        if path != "/" and not self.has_prim(path):
+        # One prim_index fetch answers both "is there a prim" and "what class models
+        # it"; the composed typeName is then handed to Prim so it need not ask again.
+        type_name = self._engine.resolve_view_type_name(path)
+        if type_name is None:
             raise KeyError(path)
 
-        return Prim(self, path)
+        return Prim(self, path, _type_name=type_name)
 
     def __setitem__(self, path: str, prim: PrimSpec) -> None:
         self.edit_layer[normalize_prim_path(path)] = prim

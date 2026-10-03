@@ -77,13 +77,19 @@ class Prim:
     _stage: Stage
     _path: str
 
-    def __new__(cls, stage: Stage, path: str) -> Prim:
+    def __new__(cls, stage: Stage, path: str, _type_name: Optional[str] = None) -> Prim:
         """Dispatch to the schema class that models this prim's typeName.
 
         A plain ``Prim(stage, path)`` looks the composed typeName up in the schema
         registry and becomes a ``Mesh``, ``Xform`` and so on. Passing a concrete
         class (``def_``) skips the lookup. Either way ``__init__`` keeps the single
         ``(stage, path)`` shape, so there is no bound-vs-unbound mode to track.
+
+        ``_type_name`` lets a caller that already resolved it pass the answer down.
+        ``Stage.__getitem__`` has to know the typeName anyway, to tell a missing prim
+        from an untyped one, and resolving it twice means paying for two prim index
+        fetches -- each of which rebuilds a key holding a signature of the whole layer
+        stack. The parameter is private because it is an optimisation, not an API.
 
         Views are interned per stage, so ``stage["/M"] is stage["/M"]``: asking twice
         for the same path means asking for the same thing, and a handle that compares
@@ -101,7 +107,10 @@ class Prim:
         if cls is Prim:
             from .schema_registry import prim_class
 
-            resolved = prim_class(stage._engine.resolve_type_name(path))
+            if _type_name is None:
+                _type_name = stage._engine.resolve_type_name(path)
+
+            resolved = prim_class(_type_name)
             if resolved is not None:
                 cls = resolved
 
@@ -115,7 +124,10 @@ class Prim:
             views[key] = view
         return view
 
-    def __init__(self, stage: Stage, path: str) -> None:
+    def __init__(self, stage: Stage, path: str, _type_name: Optional[str] = None) -> None:
+        # _type_name is accepted only so that it reaches __new__ without error: Python
+        # passes the same arguments to both. The instance holds (stage, path) and
+        # nothing else, which is what lets a cached view be handed straight back.
         object.__setattr__(self, "_stage", stage)
         object.__setattr__(self, "_path", normalize_prim_path(path))
 
