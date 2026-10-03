@@ -8,7 +8,7 @@ writes opinions into the edit layer.
 from __future__ import annotations
 
 import os
-from typing import Any, Iterable, List, Optional, Type, Union, cast
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union, cast
 
 from .attribute import Attribute
 from .composition import CompositionEngine, LayerCache
@@ -35,12 +35,20 @@ class StageImpl:
     edit_layer: Layer
     layer_cache: LayerCache
     _engine: CompositionEngine
+    prim_views: Dict[Tuple[str, type], Prim]
 
     def __init__(self, root_layer: Layer, edit_layer: Optional[Layer] = None) -> None:
         self.root_layer = root_layer
         self.edit_layer = edit_layer or root_layer
         self.layer_cache = LayerCache()
         self._engine = CompositionEngine(root_layer, self.layer_cache)
+        # One Prim view per (path, class), so asking a stage for the same path twice
+        # hands back the same object. Keying on the class rather than the path alone
+        # is what keeps this correct without an invalidation hook: the class comes from
+        # the composed typeName, so a stronger layer that retypes a prim lands on a
+        # different key and the stale view is never handed out again. It stays in the
+        # dict, unreferenced by anything but itself.
+        self.prim_views: Dict[Tuple[str, type], Prim] = {}
 
 
 class Stage:
@@ -49,6 +57,7 @@ class Stage:
     edit_layer: Layer
     layer_cache: LayerCache
     _engine: CompositionEngine
+    prim_views: Dict[Tuple[str, type], Prim]
 
     def __init__(
         self,

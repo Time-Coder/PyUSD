@@ -84,6 +84,19 @@ class Prim:
         registry and becomes a ``Mesh``, ``Xform`` and so on. Passing a concrete
         class (``def_``) skips the lookup. Either way ``__init__`` keeps the single
         ``(stage, path)`` shape, so there is no bound-vs-unbound mode to track.
+
+        Views are interned per stage, so ``stage["/M"] is stage["/M"]``: asking twice
+        for the same path means asking for the same thing, and a handle that compares
+        unequal to itself by ``is`` reads as a bug even though ``==`` agrees. The
+        lookup was already being done to pick the class, so this only trades one small
+        allocation for one dict hit rather than adding work. ``pxr`` cannot offer this:
+        its ``UsdPrim`` wraps a shared ``UsdPrimImpl`` but every Python binding call
+        still builds a fresh wrapper, so there ``is`` is always False.
+
+        Keyed by class as well as path, so a prim retyped by a stronger layer gets a
+        new view instead of the one built for its previous type. ``__init__`` then runs
+        again on the cached object; that is harmless because it only re-assigns the
+        same two attributes and no schema class overrides ``__init__``.
         """
         if cls is Prim:
             from .schema_registry import prim_class
@@ -94,7 +107,13 @@ class Prim:
 
         # cls was narrowed to the schema class modelling this prim's typeName,
         # so the allocation is a Prim even though object.__new__ is typed loosely.
-        return cast(Prim, object.__new__(cls))
+        key = (normalize_prim_path(path), cls)
+        views = stage.prim_views
+        view = views.get(key)
+        if view is None:
+            view = cast(Prim, object.__new__(cls))
+            views[key] = view
+        return view
 
     def __init__(self, stage: Stage, path: str) -> None:
         object.__setattr__(self, "_stage", stage)
