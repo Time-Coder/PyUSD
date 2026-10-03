@@ -146,6 +146,24 @@ Useful checks and workflows:
 - The generator emits imports in its own order and `ruff check --fix` sorts them, so a
   generate-then-lint cycle is only idempotent as a pair. That is why the accessor
   generation above leaves import order to `ruff`.
+- A `Prim` is an interned view: `stage["/M"] is stage["/M"]`. The cache lives on
+  `StageImpl` and is keyed by `(path, class)` -- keying on the class is what keeps it
+  correct with no invalidation hook, since the class comes from the composed typeName,
+  so a prim retyped by a stronger layer lands on a different key and the view built for
+  its old type is never handed out again. It is per Stage, so `stage` and `layer.stage`
+  keep separate caches and stay distinct, which is what the existing `different stages
+  differ` check asserts. `__eq__` still compares `(stage is, path)` and still lets a
+  view compare equal to its path string; that overload is deliberate and must stay.
+  `Prim.__init__` re-runs on a cached object and re-assigns the same two attributes --
+  safe only because no schema class overrides `__init__`.
+- `prim_index` is not cheap to call twice. Its cache key holds a signature of the whole
+  layer stack and a sorted list of unloaded payloads, rebuilt on every lookup, so
+  `Stage.__getitem__` resolves existence and typeName together through
+  `resolve_view_type_name` and passes the answer down as `_type_name`. Note that
+  `__init__` must accept that argument too, because Python passes one call's arguments
+  to both `__new__` and `__init__`. Making the key itself revision-cached would remove
+  most of the remaining cost and is the obvious next step; it touches all ten
+  `prim_index` call sites.
 
 - `pyusd/gf/` carries bool result types alongside the numeric ones: `bool2`, `bool3`,
   `bool4`, `matrix2b`, `matrix3b`, `matrix4b`, and `quatb`. `genType.gen_type` builds
