@@ -12,6 +12,18 @@ _NO_INDENT = 1 << 30
 
 
 class CodeGenerator:
+    # Nested schema declarations that no property declaration in the .usda produces.
+    # UsdGeomXformable declares no `xformOp` property: its ops are authored on demand by
+    # AddXformOp, which is why UsdPrim reports none of them. pyusd exposes the op slots
+    # as a nested XformOp instead, so `prim.xformOp.translate = ...` works and writing
+    # an op keeps xformOpOrder up to date. XformOp arrives through an #include, so the
+    # parser never sees it as an attribute and the declaration cannot be derived from
+    # the schema -- without it, regenerating xformable.py silently drops that authoring
+    # API. Keyed by class name, with (attribute, class, module) triples.
+    NESTED_SCHEMA_DECLARATIONS = {
+        'Xformable': [('xformOp', 'XformOp', 'xformop')],
+    }
+
 
     gf_types = {
         "bool2", "bool3", "bool4",
@@ -886,7 +898,12 @@ class CodeGenerator:
             'metadata': {},
         }
 
-        for child in node.named_children:
+        # Iterate node.children rather than node.named_children: the grammar puts no
+        # wrapper around a default value, so the only way to find one is to notice the
+        # `=` and take the sibling after it. `=` is anonymous, so it is absent from
+        # named_children.
+        children = node.children
+        for index, child in enumerate(children):
             if child.type == 'attribute_type':
                 attr_info['type'] = self._node_text(child)
             elif child.type == 'identifier' or child.type == 'qualified_identifier':
@@ -900,33 +917,69 @@ class CodeGenerator:
                     attr_info['name'] = full_name
             elif child.type == 'uniform':
                 attr_info['is_uniform'] = True
-            elif child.type == 'default_value':
-                attr_info['default_value'] = self._parse_default_value(child)
+            elif child.type == '=':
+                if index + 1 < len(children):
+                    attr_info['default_value'] = self._parse_default_value(
+                        children[index + 1]
+                    )
             elif child.type == 'metadata':
                 self._parse_attribute_metadata(child, attr_info)
-
         return attr_info
 
+    def _literal_value(self, node: Node) -> Tuple[bool, Any]:
+        """Convert one literal node to Python; False when it is not a literal."""
+        kind = node.type
+        text = self._node_text(node)
+        if kind == 'string':
+            return True, text.strip('"')
+        if kind == 'bool':
+            return True, text == 'true'
+        if kind in ('int', 'integer'):
+            # The grammar spells it `integer`; the old code only looked for `int`.
+            return True, int(text)
+        if kind == 'identifier':
+            # A bare token value, as in `token t = foo`.
+            return True, text
+        if kind == 'float':
+            if text == 'inf':
+                return True, float('inf')
+            if text == '-inf':
+                return True, float('-inf')
+            return True, float(text)
+        if kind in ('list', 'array'):
+            return True, self._parse_usd_array(node)
+        if kind == 'tuple':
+            # A vector default, as in `quatf physics:localRot0 = (1.0, 0.0, 0.0, 0.0)`.
+            # Handling it here rather than letting the caller's fallback descend into
+            # the tuple is what stops the first component being taken as the default
+            # for the whole attribute.
+            numbers = []
+            for part in node.named_children:
+                ok, number = self._literal_value(part)
+                numbers.append(number if ok else self._node_text(part))
+            return True, tuple(numbers)
+        if kind == 'dictionary':
+            return True, self._parse_usd_dictionary(node)
+        return False, None
+
     def _parse_default_value(self, node: Node) -> Any:
-        """解析默认值"""
+        """解析默认值
+
+        tree-sitter-usd 没有 default_value 这种节点。声明 `double radius = 1.0` 解析出来是
+        attribute_assignment 底下的 attribute_type / identifier / = / float，默认值就是
+        `=` 之后那个字面量节点本身。以前这里只在子节点里找 default_value，于是这个分支
+        永远不成立，全部 347 个属性一个默认值都没解析出来，生成的结果因此丢掉了默认
+        value。两种形态都接受：既支持字面量节点本身，也支持包着字面量的容器节点。
+        """
+        matched, value = self._literal_value(node)
+        if matched:
+            return value
+
         for child in node.named_children:
-            if child.type == 'string':
-                return self._node_text(child).strip('"')
-            elif child.type == 'bool':
-                return self._node_text(child) == 'true'
-            elif child.type == 'int':
-                return int(self._node_text(child))
-            elif child.type == 'float':
-                text = self._node_text(child)
-                if text == 'inf':
-                    return float('inf')
-                elif text == '-inf':
-                    return float('-inf')
-                return float(text)
-            elif child.type == 'array':
-                return self._parse_usd_array(child)
-            elif child.type == 'dictionary':
-                return self._parse_usd_dictionary(child)
+            matched, value = self._literal_value(child)
+            if matched:
+                return value
+
         return None
 
     def _parse_attribute_metadata(self, node: Node, attr_info: Dict[str, Any]) -> None:
@@ -1029,20 +1082,11 @@ class CodeGenerator:
         """解析 USD 数组"""
         result = []
         for child in node.named_children:
-            if child.type == 'string':
-                result.append(self._node_text(child).strip('"'))
-            elif child.type == 'bool':
-                result.append(self._node_text(child) == 'true')
-            elif child.type == 'int':
-                result.append(int(self._node_text(child)))
-            elif child.type == 'float':
-                text = self._node_text(child)
-                if text == 'inf':
-                    result.append(float('inf'))
-                elif text == '-inf':
-                    result.append(float('-inf'))
-                else:
-                    result.append(float(text))
+            matched, value = self._literal_value(child)
+            if matched:
+                result.append(value)
+            else:
+                result.append(self._node_text(child))
         return result
 
     def _parse_usd_list(self, node: Node) -> List[Any]:
@@ -1547,9 +1591,15 @@ class CodeGenerator:
             if needed_dtype_types:
                 imports.append(f"from {up}dtypes import {', '.join(sorted(needed_dtype_types))}")
 
-        # 添加 SchemaKind 导入
-        imports.append(f"from {up}common import SchemaKind")
+            # 嵌套 schema 的导入（见 NESTED_SCHEMA_DECLARATIONS）
+            for _attr_name, nested_class, nested_module in self.NESTED_SCHEMA_DECLARATIONS.get(
+                    class_info['name'], ()):
+                imports.append(f"from .{nested_module} import {nested_class}")
 
+        # SchemaKind 的导入与返回必须在上面的条件之外：34 个类既没有属性也没有
+        # relationship（Scope、Xform、Volume、各类 API schema 等），return 缩进在
+        # 条件块里会让它们拿到 None 而不是导入列表。
+        imports.append(f"from {up}common import SchemaKind")
         return "\n".join(imports)
 
     def _collect_needed_types(self, py_type: str, needed_types: Set[str]) -> None:
@@ -1616,21 +1666,48 @@ class CodeGenerator:
         # namespaced_rels is known.
         taken_names = set(namespaced_attrs.keys())
 
+        # A schema may declare both ``ns:member`` and a plain member called ``ns``.
+        # UsdGeomCamera does exactly that: a legacy top-level ``float exposure``
+        # alongside the ``exposure:`` namespace, and pxr reports both. So the group
+        # head takes the plain member's type instead of the namespace sentinel, which
+        # is also what lets declared_leaf_names report the head as a property of its
+        # own rather than only its children.
+        plain_by_name = {attr['name']: attr for attr in regular_attrs}
+
         # 生成命名空间属性
         for ns_prefix, attrs in namespaced_attrs.items():
             lines.append("")
-            lines.append(f"    {ns_prefix}: Attribute[namespace] = Attribute(namespace, is_leaf=False)")
+            head = plain_by_name.get(ns_prefix)
+            if head is not None:
+                head_type = self._usd_type_to_python_type(head['type'])
+                lines.append(
+                    f"    {ns_prefix}: Attribute[{head_type}] = Attribute({head_type}, "
+                    f"is_leaf=False)")
+            else:
+                lines.append(f"    {ns_prefix}: Attribute[namespace] = Attribute(namespace, is_leaf=False)")
 
             for attr in attrs:
                 lines.append(self._generate_namespaced_attribute_definition(ns_prefix, attr))
 
         # 生成普通属性
+        # 这一段必须在上面的命名空间循环之外：它此前缩进在循环体里，于是只有「恰好含有
+        # 命名空间属性」的类才会吐出普通属性。Xformable 没有命名空间属性，于是
+        # xformOpOrder 连同下面的嵌套声明一起消失。
         for attr in regular_attrs:
             if attr['name'] in taken_names:
                 continue
-
             lines.append("")
             lines.append(self._generate_attribute_definition(attr))
+
+        # 嵌套 schema 声明（见 NESTED_SCHEMA_DECLARATIONS）
+        for attr_name, class_name, _module in self.NESTED_SCHEMA_DECLARATIONS.get(
+                class_info['name'], ()):
+            if attr_name in taken_names:
+                continue
+            taken_names.add(attr_name)
+            lines.append("")
+            lines.append(f"    {attr_name}: {class_name} = {class_name}()")
+
 
         # 按命名空间分组关系
         namespaced_rels = {}
@@ -1959,20 +2036,25 @@ class CodeGenerator:
 
         attr_name = attr['name']
 
-        # 检查是否与 Attribute/Property 类的属性名冲突
-        reserved_attrs = {
-            'type', 'name', 'value', 'uniform', 'metadata', 'parent_prim',
-            'parent_prop', 'is_leaf', 'full_name', 'path', 'value_state',
-            'custom', 'timeSamples', 'type_name', 'is_namespace'
-        }
-        is_reserved = attr_name in reserved_attrs
-
+        # A leaf attribute is always a plain annotated assignment, even when its name
+        # collides with a member of Attribute (name, value, type, uniform, ...). The
+        # reserved-name branch used to emit ``{attr_name}.create_prop(...)`` here, but
+        # create_prop is an instance method that registers a child on an existing
+        # property object: a leaf name is not such an object, so the generated module
+        # referenced an undefined name and raised NameError on import. Only a child of
+        # a namespace can use that form, and that is a separate code path.
         params_list = []
         if attr['is_uniform']:
             params_list.append("uniform=True")
-        if attr['default_value'] is not None:
-            py_value = self._usd_value_to_python(attr['default_value'])
-            params_list.append(f"value={py_value}")
+        # Only an array-typed property gets a synthesised empty default, which is what
+        # the package has always emitted: xformOpOrder then reads as [] rather than
+        # None when nothing is authored. Defaults parsed from the schema are
+        # deliberately not emitted. Turning those on exercises coercions pyusd does
+        # not support for every dtype -- a token-typed property with a string default
+        # fails outright, because dtypes.token is an Enum with no members and cannot be
+        # called -- and it would rewrite ~113 declarations the tree is fine with.
+        if attr['type'].endswith('[]') and not attr.get('allowed_tokens'):
+            params_list.append("value=[]")
         if attr['doc']:
             doc_str = self._format_doc_string(attr['doc'])
             params_list.append(f"doc={doc_str}")
@@ -1980,12 +2062,10 @@ class CodeGenerator:
             metadata_str = self._format_metadata(attr['metadata'], indent_level=2)
             params_list.append(f"metadata={metadata_str}")
 
-        # 如果是保留字，使用 create_prop 方法
-        if is_reserved:
-            params_list.insert(0, f'name="{attr_name}"')
-            params = ', '.join(params_list)
-            if '\n' in params or len(params) > 80:
-                result = f"    {attr_name}.create_prop(Attribute({py_type}"
+        params = ', '.join(params_list)
+        if '\n' in params or len(params) > 80:
+            result = f"    {attr_name}: Attribute[{py_type}] = Attribute({py_type}"
+            if params_list:
                 result += ",\n"
                 for i, param in enumerate(params_list):
                     result += f"        {param}"
@@ -1993,26 +2073,11 @@ class CodeGenerator:
                         result += ",\n"
                     else:
                         result += "\n"
-                result += "    ))"
-                return result
-            else:
-                return f"    {attr_name}.create_prop(Attribute({py_type}, {params}))"
-        else:
-            params = ', '.join(params_list)
-            if '\n' in params or len(params) > 80:
-                result = f"    {attr_name} = Attribute({py_type}"
-                if params_list:
-                    result += ",\n"
-                    for i, param in enumerate(params_list):
-                        result += f"        {param}"
-                        if i < len(params_list) - 1:
-                            result += ",\n"
-                        else:
-                            result += "\n"
-                result += "    )"
-                return result
-            else:
-                return f"    {attr_name} = Attribute({py_type}{', ' + params if params else ''})"
+            result += "    )"
+            return result
+
+        return (f"    {attr_name}: Attribute[{py_type}] = Attribute({py_type}"
+                f"{', ' + params if params else ''})")
 
     def _generate_relationship_definition(self, rel: Dict[str, Any]) -> str:
         """生成关系定义"""
@@ -2135,9 +2200,12 @@ class CodeGenerator:
                     return f'"""{escaped}"""'
             else:
                 return f'"{value}"'
-        elif isinstance(value, list):
+        elif isinstance(value, (list, tuple)):
+            # A tuple must go through here too: falling back to str() would emit
+            # a bare `inf` for an infinite component, which is not a Python literal.
             items = [self._usd_value_to_python(item) for item in value]
-            return f"[{', '.join(items)}]"
+            open_, close = ('[', ']') if isinstance(value, list) else ('(', ')')
+            return f"{open_}{', '.join(items)}{close}"
         elif isinstance(value, dict):
             items = [f'"{k}": {self._usd_value_to_python(v)}' for k, v in value.items()]
             return '{' + ', '.join(items) + '}'
