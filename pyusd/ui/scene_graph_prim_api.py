@@ -1,5 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace, token
 
@@ -12,8 +12,8 @@ class SceneGraphPrimAPI(APISchemaBase):
 
     schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
 
-    ui: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    ui.displayName = Attribute(token,
+    ui: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    ui.displayName = AttributeSpec(token,
         uniform=True,
         doc="""When publishing a nodegraph or a material, it can be useful to
         provide an optional display name, for readability.
@@ -25,7 +25,7 @@ class SceneGraphPrimAPI(APISchemaBase):
             }
         }
     )
-    ui.displayGroup = Attribute(token,
+    ui.displayGroup = AttributeSpec(token,
         uniform=True,
         doc="""When publishing a nodegraph or a material, it can be useful to
         provide an optional display group, for organizational purposes and

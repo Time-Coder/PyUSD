@@ -1,6 +1,6 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..dtypes import token
 from .point_based import PointBased
 
@@ -74,21 +74,44 @@ class Mesh(PointBased):
 
     The normals generated for smooth subdivision schemes, e.g. Catmull-Clark
     and Loop, will likewise be smooth, but others, e.g. Bilinear, may be
-    discontinuous between faces and/or within non-planar irregular faces."""
+    discontinuous between faces and/or within non-planar irregular faces.
+    """
 
-    def __init__(self, name = "")->None: ...
+
+    class SubdivisionScheme(token):
+        CatmullClark = "catmullClark"
+        Loop = "loop"
+        Bilinear = "bilinear"
+        None_ = "none"
+
+    class InterpolateBoundary(token):
+        None_ = "none"
+        EdgeOnly = "edgeOnly"
+        EdgeAndCorner = "edgeAndCorner"
+
+    class FaceVaryingLinearInterpolation(token):
+        None_ = "none"
+        CornersOnly = "cornersOnly"
+        CornersPlus1 = "cornersPlus1"
+        CornersPlus2 = "cornersPlus2"
+        Boundaries = "boundaries"
+        All = "all"
+
+    class TriangleSubdivisionRule(token):
+        CatmullClark = "catmullClark"
+        Smooth = "smooth"
 
     @property
-    def faceVertexIndices(self)->Attribute[List[int]]:
+    def faceVertexIndices(self)->AttributeSpec[List[int]]:
         """Flat list of the index (into the _points_ attribute) of each
         vertex of each face in the mesh.  If this attribute has more than
         one timeSample, the mesh is considered to be topologically varying."""
 
     @faceVertexIndices.setter
-    def faceVertexIndices(self, value: List[int])->None: ...
+    def faceVertexIndices(self, value:List[int])->None: ...
 
     @property
-    def faceVertexCounts(self)->Attribute[List[int]]:
+    def faceVertexCounts(self)->AttributeSpec[List[int]]:
         """Provides the number of vertices in each face of the mesh,
         which is also the number of consecutive indices in _faceVertexIndices_
         that define the face.  The length of this attribute is the number of
@@ -96,10 +119,10 @@ class Mesh(PointBased):
         one timeSample, the mesh is considered to be topologically varying."""
 
     @faceVertexCounts.setter
-    def faceVertexCounts(self, value: List[int])->None: ...
+    def faceVertexCounts(self, value:List[int])->None: ...
 
     @property
-    def subdivisionScheme(self)->Attribute[token]:
+    def subdivisionScheme(self)->AttributeSpec[SubdivisionScheme]:
         """The subdivision scheme to be applied to the surface.
         Valid values are:
 
@@ -120,10 +143,10 @@ class Mesh(PointBased):
         may also not respect authored normals."""
 
     @subdivisionScheme.setter
-    def subdivisionScheme(self, value: token)->None: ...
+    def subdivisionScheme(self, value:SubdivisionScheme)->None: ...
 
     @property
-    def interpolateBoundary(self)->Attribute[token]:
+    def interpolateBoundary(self)->AttributeSpec[InterpolateBoundary]:
         """Specifies how subdivision is applied for faces adjacent to
         boundary edges and boundary points. Valid values correspond to choices
         available in OpenSubdiv:
@@ -140,10 +163,10 @@ class Mesh(PointBased):
         https://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html#boundary-interpolation-rules"""
 
     @interpolateBoundary.setter
-    def interpolateBoundary(self, value: token)->None: ...
+    def interpolateBoundary(self, value:InterpolateBoundary)->None: ...
 
     @property
-    def faceVaryingLinearInterpolation(self)->Attribute[token]:
+    def faceVaryingLinearInterpolation(self)->AttributeSpec[FaceVaryingLinearInterpolation]:
         """Specifies how elements of a primvar of interpolation type
         "faceVarying" are interpolated for subdivision surfaces. Interpolation
         can be as smooth as a "vertex" primvar or constrained to be linear at
@@ -168,10 +191,10 @@ class Mesh(PointBased):
         https://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html#face-varying-interpolation-rules"""
 
     @faceVaryingLinearInterpolation.setter
-    def faceVaryingLinearInterpolation(self, value: token)->None: ...
+    def faceVaryingLinearInterpolation(self, value:FaceVaryingLinearInterpolation)->None: ...
 
     @property
-    def triangleSubdivisionRule(self)->Attribute[token]:
+    def triangleSubdivisionRule(self)->AttributeSpec[TriangleSubdivisionRule]:
         """Specifies an option to the subdivision rules for the
         Catmull-Clark scheme to try and improve undesirable artifacts when
         subdividing triangles.  Valid values are "catmullClark" for the
@@ -180,48 +203,47 @@ class Mesh(PointBased):
         See https://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html#triangle-subdivision-rule"""
 
     @triangleSubdivisionRule.setter
-    def triangleSubdivisionRule(self, value: token)->None: ...
+    def triangleSubdivisionRule(self, value:TriangleSubdivisionRule)->None: ...
 
     @property
-    def holeIndices(self)->Attribute[List[int]]:
+    def holeIndices(self)->AttributeSpec[List[int]]:
         """The indices of all faces that should be treated as holes,
         i.e. made invisible. This is traditionally a feature of subdivision
         surfaces and not generally applied to polygonal meshes."""
 
     @holeIndices.setter
-    def holeIndices(self, value: List[int])->None: ...
-
+    def holeIndices(self, value:List[int])->None: ...
 
     @property
-    def cornerIndices(self)->Attribute[List[int]]:
+    def cornerIndices(self)->AttributeSpec[List[int]]:
         """The indices of points for which a corresponding sharpness
         value is specified in _cornerSharpnesses_ (so the size of this array
         must match that of _cornerSharpnesses_)."""
 
     @cornerIndices.setter
-    def cornerIndices(self, value: List[int])->None: ...
+    def cornerIndices(self, value:List[int])->None: ...
 
     @property
-    def cornerSharpnesses(self)->Attribute[List[float]]:
+    def cornerSharpnesses(self)->AttributeSpec[List[float]]:
         """The sharpness values associated with a corresponding set of
         points specified in _cornerIndices_ (so the size of this array must
         match that of _cornerIndices_). Use the constant `SHARPNESS_INFINITE`
         for a perfectly sharp corner."""
 
     @cornerSharpnesses.setter
-    def cornerSharpnesses(self, value: List[float])->None: ...
+    def cornerSharpnesses(self, value:List[float])->None: ...
 
     @property
-    def creaseIndices(self)->Attribute[List[int]]:
+    def creaseIndices(self)->AttributeSpec[List[int]]:
         """The indices of points grouped into sets of successive pairs
         that identify edges to be creased. The size of this array must be
         equal to the sum of all elements of the _creaseLengths_ attribute."""
 
     @creaseIndices.setter
-    def creaseIndices(self, value: List[int])->None: ...
+    def creaseIndices(self, value:List[int])->None: ...
 
     @property
-    def creaseLengths(self)->Attribute[List[int]]:
+    def creaseLengths(self)->AttributeSpec[List[int]]:
         """The length of this array specifies the number of creases
         (sets of adjacent sharpened edges) on the mesh. Each element gives
         the number of points of each crease, whose indices are successively
@@ -230,10 +252,10 @@ class Mesh(PointBased):
         least two."""
 
     @creaseLengths.setter
-    def creaseLengths(self, value: List[int])->None: ...
+    def creaseLengths(self, value:List[int])->None: ...
 
     @property
-    def creaseSharpnesses(self)->Attribute[List[float]]:
+    def creaseSharpnesses(self)->AttributeSpec[List[float]]:
         """The per-crease or per-edge sharpness values for all creases.
         Since _creaseLengths_ encodes the number of points in each crease,
         the number of elements in this array will be either len(creaseLengths)
@@ -245,4 +267,4 @@ class Mesh(PointBased):
         perfectly sharp crease."""
 
     @creaseSharpnesses.setter
-    def creaseSharpnesses(self, value: List[float])->None: ...
+    def creaseSharpnesses(self, value:List[float])->None: ...

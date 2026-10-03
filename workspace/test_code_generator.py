@@ -54,7 +54,7 @@ def test_leaf_attribute_is_assigned_not_created() -> None:
 
     check_true(
         "reserved attribute name is assigned",
-        "name: Attribute[token] = Attribute(token," in body,
+        "name: AttributeSpec[token] = AttributeSpec(token," in body,
     )
     check_true(
         "reserved attribute name is not created via create_prop",
@@ -142,7 +142,7 @@ def test_namespace_head_keeps_plain_member_type() -> None:
     body = body_of(geom_generator(), "Camera")
     check_true(
         "exposure head is typed float",
-        "exposure: Attribute[float]" in body,
+        "exposure: AttributeSpec[float]" in body,
     )
     check_true("exposure children are still emitted", "exposure.iso" in body)
 

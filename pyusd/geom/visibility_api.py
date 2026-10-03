@@ -1,5 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import token
 
@@ -36,9 +36,10 @@ class VisibilityAPI(APISchemaBase):
     This schema can only be applied to UsdGeomImageable prims. The
     UseGeomImageable schema provides API for computing the purpose visibility
     values that result from the attributes introduced by this schema.
+
     """
 
-    schema_kind = SchemaKind.SingleApplyAPI
+    schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
 
     meta = {
         "customData": {
@@ -46,13 +47,25 @@ class VisibilityAPI(APISchemaBase):
         }
     }
 
-    class Visibility(token):
+    class GuideVisibility(token):
         Inherited = "inherited"
         Invisible = "invisible"
         Visible = "visible"
 
-    guideVisibility: Attribute[Visibility] = Attribute(Visibility, value=Visibility.Invisible, uniform=True,
-        doc = """
+    class ProxyVisibility(token):
+        Inherited = "inherited"
+        Invisible = "invisible"
+        Visible = "visible"
+
+    class RenderVisibility(token):
+        Inherited = "inherited"
+        Invisible = "invisible"
+        Visible = "visible"
+
+
+    guideVisibility: AttributeSpec[GuideVisibility] = AttributeSpec(GuideVisibility,
+        uniform=True,
+        doc="""
         This attribute controls visibility for geometry with purpose "guide".
 
         Unlike overall _visibility_, _guideVisibility_ is uniform, and
@@ -69,11 +82,13 @@ class VisibilityAPI(APISchemaBase):
         "invisible", the prim is invisible. If _visibility_ evaluates to
         "inherited" and _guideVisibility_ evaluates to "visible", then the
         prim is visible. __Otherwise, it is invisible.__
+
         """
     )
 
-    proxyVisibility: Attribute[Visibility] = Attribute(Visibility, value=Visibility.Inherited, uniform=True,
-        doc = """
+    proxyVisibility: AttributeSpec[ProxyVisibility] = AttributeSpec(ProxyVisibility,
+        uniform=True,
+        doc="""
         This attribute controls visibility for geometry with purpose "proxy".
 
         Unlike overall _visibility_, _proxyVisibility_ is uniform, and
@@ -93,11 +108,13 @@ class VisibilityAPI(APISchemaBase):
         then the prim is invisible; if _proxyVisibility_ evaluates to
         "inherited", then the prim may either be visible or invisible,
         depending on a fallback value determined by the calling context.
+
         """
     )
 
-    renderVisibility: Attribute[Visibility] = Attribute(Visibility, value=Visibility.Inherited, uniform=True,
-        doc = """
+    renderVisibility: AttributeSpec[RenderVisibility] = AttributeSpec(RenderVisibility,
+        uniform=True,
+        doc="""
         This attribute controls visibility for geometry with purpose
         "render".
 
@@ -118,5 +135,6 @@ class VisibilityAPI(APISchemaBase):
         then the prim is invisible; if _renderVisibility_ evaluates to
         "inherited", then the prim may either be visible or invisible,
         depending on a fallback value determined by the calling context.
+
         """
     )

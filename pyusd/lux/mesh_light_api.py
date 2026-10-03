@@ -1,5 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace, token
 
@@ -23,17 +23,19 @@ class MeshLightAPI(APISchemaBase):
         "prepend apiSchemas": ["LightAPI"]
     }
 
-    light: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    light.shaderId = Attribute(token,
+    light: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    light.shaderId = AttributeSpec(token,
         uniform=True,
+        value="MeshLight",
         metadata={
             "customData": {
                 "apiSchemaOverride": True
             }
         }
     )
-    light.materialSyncMode = Attribute(token,
+    light.materialSyncMode = AttributeSpec(token,
         uniform=True,
+        value="materialGlowTintsLight",
         metadata={
             "customData": {
                 "apiSchemaOverride": True

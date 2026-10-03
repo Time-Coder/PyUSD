@@ -1,4 +1,4 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import asset, namespace, token
 from .boundable_light_base import BoundableLightBase
@@ -22,9 +22,10 @@ class RectLight(BoundableLightBase):
         }
     }
 
-    light: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    light.shaderId = Attribute(token,
+    light: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    light.shaderId = AttributeSpec(token,
         uniform=True,
+        value="RectLight",
         metadata={
             "customData": {
                 "apiSchemaOverride": True
@@ -32,8 +33,9 @@ class RectLight(BoundableLightBase):
         }
     )
 
-    inputs: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    inputs.width = Attribute(float,
+    inputs: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    inputs.width = AttributeSpec(float,
+        value=1,
         doc="Width of the rectangle, in the local X axis.",
         metadata={
             "displayGroup": "Geometry",
@@ -43,7 +45,8 @@ class RectLight(BoundableLightBase):
             }
         }
     )
-    inputs.height = Attribute(float,
+    inputs.height = AttributeSpec(float,
+        value=1,
         doc="Height of the rectangle, in the local Y axis.",
         metadata={
             "displayGroup": "Geometry",
@@ -53,7 +56,7 @@ class RectLight(BoundableLightBase):
             }
         }
     )
-    inputs.texture.file = Attribute(asset,
+    inputs.texture.file = AttributeSpec(asset,
         doc="A color texture to use on the rectangle.",
         metadata={
             "displayGroup": "Basic",

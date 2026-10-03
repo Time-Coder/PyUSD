@@ -1,8 +1,8 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..dtypes import asset, string, token
 from ..gf import color3f, float2
 
-class Ui(Attribute):
+class Ui(AttributeSpec):
 
     class ExpansionState(token):
         Open = "open"
@@ -11,7 +11,7 @@ class Ui(Attribute):
 
 
     @property
-    def pos(self)->Attribute[float2]:
+    def pos(self)->AttributeSpec[float2]:
         """
         Declared relative position to the parent in a node graph.
         X is the horizontal position.
@@ -31,7 +31,7 @@ class Ui(Attribute):
     def pos(self, value:float2)->None: ...
 
     @property
-    def stackingOrder(self)->Attribute[int]:
+    def stackingOrder(self)->AttributeSpec[int]:
         """
         This optional value is a useful hint when an application cares about
         the visibility of a node and whether each node overlaps another.
@@ -48,7 +48,7 @@ class Ui(Attribute):
     def stackingOrder(self, value:int)->None: ...
 
     @property
-    def displayColor(self)->Attribute[color3f]:
+    def displayColor(self)->AttributeSpec[color3f]:
         """
         This hint defines what tint the node should have in the node graph.
         """
@@ -57,7 +57,7 @@ class Ui(Attribute):
     def displayColor(self, value:color3f)->None: ...
 
     @property
-    def icon(self)->Attribute[asset]:
+    def icon(self)->AttributeSpec[asset]:
         """
         This points to an image that should be displayed on the node.  It is
         intended to be useful for summary visual classification of nodes, rather
@@ -69,7 +69,7 @@ class Ui(Attribute):
     def icon(self, value:asset)->None: ...
 
     @property
-    def expansionState(self)->Attribute[ExpansionState]:
+    def expansionState(self)->AttributeSpec[ExpansionState]:
         """
         The current expansionState of the node in the ui.
         'open' = fully expanded
@@ -81,7 +81,7 @@ class Ui(Attribute):
     def expansionState(self, value:ExpansionState)->None: ...
 
     @property
-    def size(self)->Attribute[float2]:
+    def size(self)->AttributeSpec[float2]:
         """
         Optional size hint for a node in a node graph.
         X is the width.
@@ -95,7 +95,7 @@ class Ui(Attribute):
     def size(self, value:float2)->None: ...
 
     @property
-    def docURI(self)->Attribute[string]:
+    def docURI(self)->AttributeSpec[string]:
         """
         A URI pointing to additional detailed documentation for this
         node or node type.
@@ -105,7 +105,7 @@ class Ui(Attribute):
     def docURI(self, value:string)->None: ...
 
     @property
-    def displayName(self)->Attribute[token]:
+    def displayName(self)->AttributeSpec[token]:
         """When publishing a nodegraph or a material, it can be useful to
         provide an optional display name, for readability.
         """
@@ -114,7 +114,7 @@ class Ui(Attribute):
     def displayName(self, value:token)->None: ...
 
     @property
-    def displayGroup(self)->Attribute[token]:
+    def displayGroup(self)->AttributeSpec[token]:
         """When publishing a nodegraph or a material, it can be useful to
         provide an optional display group, for organizational purposes and
         readability. This is because often the usd shading hierarchy is rather
@@ -125,7 +125,7 @@ class Ui(Attribute):
     def displayGroup(self, value:token)->None: ...
 
     @property
-    def description(self)->Attribute[token]:
+    def description(self)->AttributeSpec[token]:
         """The text label that is displayed on the backdrop in the node
         graph. This help-description explains what the nodes in a backdrop do.
         """

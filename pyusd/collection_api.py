@@ -1,8 +1,8 @@
 from .api_schema_base import APISchemaBase
-from .attribute import Attribute
+from .attribute_spec import AttributeSpec
 from .common import SchemaKind
 from .dtypes import opaque, pathExpression, token
-from .relationship import Relationship
+from .relationship_spec import RelationshipSpec
 
 
 class CollectionAPI(APISchemaBase):
@@ -143,29 +143,28 @@ class CollectionAPI(APISchemaBase):
     \\section usd_collectionapi_creating_cpp Creating Collections in C++
 
     \\snippet examples_usd.cpp ApplyCollections
+
     """
 
     schema_kind: SchemaKind = SchemaKind.MultipleApplyAPI
 
     meta = {
         "customData": {
-            "extraIncludes": """
-#include "pxr/usd/usd/collectionMembershipQuery.h"
-#include "pxr/usd/usd/primFlags.h"
-#include "pxr/usd/usd/tokens.h"
-#include "pxr/usd/sdf/pathExpression.h"
-""",
+            "extraIncludes": '''
+    #include "pxr/usd/usd/collectionMembershipQuery.h"
+    #include "pxr/usd/usd/primFlags.h"
+    #include "pxr/usd/usd/tokens.h"
+    #include "pxr/usd/sdf/pathExpression.h"
+    ''',
             "apiSchemaType": "multipleApply",
             "propertyNamespacePrefix": "collection",
             "schemaTokens": {
-                "exclude": {
-                    "doc": """
+                "exclude": {"doc": '''
                     This is the token used to exclude a path from a collection.
                     Although it is not a possible value for the "expansionRule"
                     attribute, it is used as the expansionRule for excluded paths
                     in UsdCollectionAPI::MembershipQuery::IsPathIncluded.
-                    """
-                }
+                    '''}
             }
         }
     }
@@ -180,42 +179,32 @@ class CollectionAPI(APISchemaBase):
         Relationship = "relationship"
         Expression = "expression"
 
-    expansionRule: Attribute[ExpansionRule] = Attribute(ExpansionRule, value=ExpansionRule.ExpandPrims, uniform=True,
+
+    expansionRule: AttributeSpec[ExpansionRule] = AttributeSpec(ExpansionRule,
+        uniform=True,
         doc="""Specifies how the paths that are included in
-        the collection must be expanded to determine its members."""
+        the collection must be expanded to determine its members.
+        """
     )
-    includeRoot: Attribute[bool] = Attribute(bool, uniform=True, doc=
-        """Boolean attribute indicating whether the pseudo-root
+
+    includeRoot: AttributeSpec[bool] = AttributeSpec(bool,
+        uniform=True,
+        doc="""Boolean attribute indicating whether the pseudo-root
         path `</>` should be counted as one of the included target
         paths.  The fallback is false.  This separate attribute is
-        required because relationships cannot directly target the root."""
+        required because relationships cannot directly target the root.
+        """
     )
-    includes: Relationship = Relationship(doc=
-        """Specifies a list of targets that are included in the collection.
-        This can target prims or properties directly. A collection can insert
-        the rules of another collection by making its <i>includes</i>
-        relationship target the <b>collection:{collectionName}</b> property on
-        the owning prim of the collection to be included"""
+
+    membershipExpression: AttributeSpec[pathExpression] = AttributeSpec(pathExpression,
+        uniform=True,
+        doc="""Specifies a path expression that determines membership in this
+        collection.
+        """
     )
-    excludes: Relationship = Relationship(doc=
-        """Specifies a list of targets that are excluded below
-        the included paths in this collection. This can target prims or
-        properties directly, but cannot target another collection. This is to
-        keep the membership determining logic simple, efficient and easier to
-        reason about. Finally, it is invalid for a collection to exclude
-        paths that are not included in it. The presence of such "orphaned"
-        excluded paths will not affect the set of paths included in the
-        collection, but may affect the performance of querying membership of
-        a path in the collection (see
-        UsdCollectionAPI::MembershipQuery::IsPathIncluded)
-        or of enumerating the objects belonging to the collection (see
-        UsdCollectionAPI::GetIncludedObjects)."""
-    )
-    membershipExpression: Attribute[pathExpression] = Attribute(pathExpression, uniform=True, doc=
-        """Specifies a path expression that determines membership in this
-        collection."""
-    )
-    mode: Attribute[Mode] = Attribute(Mode, value=Mode.Automatic, uniform=True,
+
+    mode: AttributeSpec[Mode] = AttributeSpec(Mode,
+        uniform=True,
         doc="""Specifies which mode the collection uses to determine
         membership: `automatic`, `relationship`, or `expression`.
         <ul>
@@ -235,18 +224,47 @@ class CollectionAPI(APISchemaBase):
         The `membershipExpression` attribute determines membership, and
         `includes`, `excludes`, and `includeRoot` are ignored.</li>
         </ul>
-        The fallback value is `automatic`."""
+        The fallback value is `automatic`.
+        """
     )
-    __INSTANCE_NAME__: Attribute[opaque] = Attribute(opaque, uniform=True,
-        metadata={
-            "customData": {
-                "apiName": "Collection"
-            }
-        },
+
+    __INSTANCE_NAME__: AttributeSpec[opaque] = AttributeSpec(opaque,
+        uniform=True,
         doc="""This property represents the collection for the purpose of
         allowing another collection to include it. When this property is
         targeted by another collection's <i>includes</i> relationship, the rules
         of this collection will be inserted into the rules of the collection
         that includes it.
+
+        """,
+        metadata={
+            "customData": {
+                "apiName": "Collection"
+            }
+        }
+    )
+
+    includes = RelationshipSpec(
+        doc="""Specifies a list of targets that are included in the collection.
+        This can target prims or properties directly. A collection can insert
+        the rules of another collection by making its <i>includes</i>
+        relationship target the <b>collection:{collectionName}</b> property on
+        the owning prim of the collection to be included
+        """
+    )
+
+    excludes = RelationshipSpec(
+        doc="""Specifies a list of targets that are excluded below
+        the included paths in this collection. This can target prims or
+        properties directly, but cannot target another collection. This is to
+        keep the membership determining logic simple, efficient and easier to
+        reason about. Finally, it is invalid for a collection to exclude
+        paths that are not included in it. The presence of such "orphaned"
+        excluded paths will not affect the set of paths included in the
+        collection, but may affect the performance of querying membership of
+        a path in the collection (see
+        UsdCollectionAPI::MembershipQuery::IsPathIncluded)
+        or of enumerating the objects belonging to the collection (see
+        UsdCollectionAPI::GetIncludedObjects).
         """
     )

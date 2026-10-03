@@ -1,6 +1,6 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import double, namespace, token
 from ..gf import float2, float4
@@ -90,14 +90,15 @@ class Camera(Xformable):
     give a scale of 1.0.
 
     \\sa \\ref UsdGeom_LinAlgBasics
-     """
+
+    """
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     meta = {
         "customData": {
-            "extraIncludes": """
-#include "pxr/base/gf/camera.h" """
+            "extraIncludes": '''
+    #include "pxr/base/gf/camera.h" '''
         }
     }
 
@@ -110,103 +111,120 @@ class Camera(Xformable):
         Left = "left"
         Right = "right"
 
-    projection: Attribute[Projection] = Attribute(Projection, value=Projection.Perspective)
 
-    horizontalAperture: Attribute[float] = Attribute(float, value=20.9550, doc=
-        """Horizontal aperture in tenths of a scene unit; see
-        \\ref UsdGeom_CameraUnits . Default is the equivalent of
-        the standard 35mm spherical projector aperture."""
-    )
-
-    verticalAperture: Attribute[float] = Attribute(float, value=15.2908, doc=
-        """Vertical aperture in tenths of a scene unit; see
-        \\ref UsdGeom_CameraUnits . Default is the equivalent of
-        the standard 35mm spherical projector aperture."""
-    )
-
-    horizontalApertureOffset: Attribute[float] = Attribute(float, value=0.0, doc=
-        """Horizontal aperture offset in the same units as
-        horizontalAperture. Defaults to 0."""
-    )
-
-    verticalApertureOffset: Attribute[float] = Attribute(float, value=0.0, doc=
-        """Vertical aperture offset in the same units as
-        verticalAperture. Defaults to 0."""
-    )
-
-    focalLength: Attribute[float] = Attribute(float, value=50.0, doc=
-        """Perspective focal length in tenths of a scene unit; see
-        \\ref UsdGeom_CameraUnits ."""
-    )
-
-    clippingRange: Attribute[float2] = Attribute(float2, value=(1, 1000000), doc=
-        """Near and far clipping distances in scene units; see
-        \\ref UsdGeom_CameraUnits ."""
-    )
-
-    clippingPlanes: Attribute[List[float4]] = Attribute(List[float4], value=[], doc=
-        """Additional, arbitrarily oriented clipping planes.
-        A vector (a,b,c,d) encodes a clipping plane that cuts off
-        (x,y,z) with a * x + b * y + c * z + d * 1 < 0 where (x,y,z)
-        are the coordinates in the camera's space."""
-    )
-
-    fStop: Attribute[float] = Attribute(float, value=0.0, doc=
-        "Lens aperture. Defaults to 0.0, which turns off depth of field effects."
-    )
-
-    focusDistance: Attribute[float] = Attribute(float, value=0.0, doc=
-        """Distance from the camera to the focus plane in scene units; see
-        \\ref UsdGeom_CameraUnits ."""
-    )
-
-    stereoRole: Attribute[StereoRole] = Attribute(StereoRole, value=StereoRole.Mono, uniform=True,
-        doc = """If different from mono, the camera is intended to be the left
-        or right camera of a stereo setup."""
-    )
-
-    shutter: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    shutter.open = Attribute(double, value=0.0, doc=
-        """Frame relative shutter open time in UsdTimeCode units (negative
+    shutter: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    shutter.open = AttributeSpec(double,
+        value=0.0,
+        doc="""Frame relative shutter open time in UsdTimeCode units (negative
         value indicates that the shutter opens before the current
-        frame time). Used for motion blur."""
+        frame time). Used for motion blur.
+        """
     )
-    shutter.close = Attribute(double, value=0.0, doc=
-        """Frame relative shutter close time, analogous comments from
+    shutter.close = AttributeSpec(double,
+        value=0.0,
+        doc="""Frame relative shutter close time, analogous comments from
         shutter:open apply. A value greater or equal to shutter:open
         should be authored, otherwise there is no exposure and a
-        renderer should produce a black image. Used for motion blur."""
+        renderer should produce a black image. Used for motion blur.
+        """
     )
 
-    exposure: Attribute[float] = Attribute(float, value=0.0, is_leaf=False, doc=
-        """Exposure compensation, as a log base-2 value.  The default
-        of 0.0 has no effect.  A value of 1.0 will double the
-        image-plane intensities in a rendered image; a value of
-        -1.0 will halve them."""
+    exposure: AttributeSpec[float] = AttributeSpec(float, is_leaf=False)
+    exposure.iso = AttributeSpec(float,
+        value=100.0,
+        doc="""The speed rating of the sensor or film when calculating exposure.
+        Higher numbers give a brighter image, lower numbers darker.
+        """
     )
-    exposure.iso = Attribute(float, value=100.0, doc=
-        """The speed rating of the sensor or film when calculating exposure.
-        Higher numbers give a brighter image, lower numbers darker."""
-    )
-    exposure.time = Attribute(float, value=1.0, doc=
-        """Time in seconds that the sensor is exposed to light when calculating exposure.
+    exposure.time = AttributeSpec(float,
+        value=1.0,
+        doc="""Time in seconds that the sensor is exposed to light when calculating exposure.
         Longer exposure times create a brighter image, shorter times darker.
         Note that shutter:open and shutter:close model essentially the
         same property of a physical camera, but are for specifying the
         size of the motion blur streak which is for practical purposes
-        useful to keep separate."""
+        useful to keep separate.
+        """
     )
-    exposure.fStop = Attribute(float, value=1.0, doc=
-        """f-stop of the aperture when calculating exposure. Smaller numbers
+    exposure.fStop = AttributeSpec(float,
+        value=1.0,
+        doc="""f-stop of the aperture when calculating exposure. Smaller numbers
         create a brighter image, larger numbers darker.
         Note that the `fStop` attribute also models the diameter of the camera
         aperture, but for specifying depth of field.  For practical
         purposes it is useful to keep the exposure and the depth of field
         controls separate.
+
         """
     )
-    exposure.responsivity = Attribute(float, value=1.0, doc=
-        """Scalar multiplier representing overall responsivity of the
+    exposure.responsivity = AttributeSpec(float,
+        value=1.0,
+        doc="""Scalar multiplier representing overall responsivity of the
         sensor system to light when calculating exposure. Intended to be
-        used as a per camera/lens system measured scaling value."""
+        used as a per camera/lens system measured scaling value.
+        """
+    )
+
+    projection: AttributeSpec[Projection] = AttributeSpec(Projection)
+
+    horizontalAperture: AttributeSpec[float] = AttributeSpec(float,
+        doc="""Horizontal aperture in tenths of a scene unit; see
+        \\ref UsdGeom_CameraUnits . Default is the equivalent of
+        the standard 35mm spherical projector aperture.
+        """
+    )
+
+    verticalAperture: AttributeSpec[float] = AttributeSpec(float,
+        doc="""Vertical aperture in tenths of a scene unit; see
+        \\ref UsdGeom_CameraUnits . Default is the equivalent of
+        the standard 35mm spherical projector aperture.
+        """
+    )
+
+    horizontalApertureOffset: AttributeSpec[float] = AttributeSpec(float,
+        doc="""Horizontal aperture offset in the same units as
+        horizontalAperture. Defaults to 0.
+        """
+    )
+
+    verticalApertureOffset: AttributeSpec[float] = AttributeSpec(float,
+        doc="""Vertical aperture offset in the same units as
+        verticalAperture. Defaults to 0.
+        """
+    )
+
+    focalLength: AttributeSpec[float] = AttributeSpec(float,
+        doc="""Perspective focal length in tenths of a scene unit; see
+        \\ref UsdGeom_CameraUnits .
+        """
+    )
+
+    clippingRange: AttributeSpec[float2] = AttributeSpec(float2,
+        doc="""Near and far clipping distances in scene units; see
+        \\ref UsdGeom_CameraUnits .
+        """
+    )
+
+    clippingPlanes: AttributeSpec[List[float4]] = AttributeSpec(List[float4],
+        value=[],
+        doc="""Additional, arbitrarily oriented clipping planes.
+        A vector (a,b,c,d) encodes a clipping plane that cuts off
+        (x,y,z) with a * x + b * y + c * z + d * 1 < 0 where (x,y,z)
+        are the coordinates in the camera's space.
+        """
+    )
+
+    fStop: AttributeSpec[float] = AttributeSpec(float, doc="Lens aperture. Defaults to 0.0, which turns off depth of field effects.")
+
+    focusDistance: AttributeSpec[float] = AttributeSpec(float,
+        doc="""Distance from the camera to the focus plane in scene units; see
+        \\ref UsdGeom_CameraUnits .
+        """
+    )
+
+    stereoRole: AttributeSpec[StereoRole] = AttributeSpec(StereoRole,
+        uniform=True,
+        doc="""If different from mono, the camera is intended to be the left
+        or right camera of a stereo setup.
+        """
     )

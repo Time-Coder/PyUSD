@@ -1,6 +1,6 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..gf import vector3f
 from ..typed import Typed
 
@@ -14,7 +14,7 @@ class BlendShape(Typed):
     """
 
     @property
-    def offsets(self)->Attribute[List[vector3f]]:
+    def offsets(self)->AttributeSpec[List[vector3f]]:
         """**Required property**. Position offsets which, when added to the
         base pose, provides the target shape."""
 
@@ -22,7 +22,7 @@ class BlendShape(Typed):
     def offsets(self, value:List[vector3f])->None: ...
 
     @property
-    def normalOffsets(self)->Attribute[List[vector3f]]:
+    def normalOffsets(self)->AttributeSpec[List[vector3f]]:
         """**Required property**. Normal offsets which, when added to the
         base pose, provides the normals of the target shape."""
 
@@ -30,7 +30,7 @@ class BlendShape(Typed):
     def normalOffsets(self, value:List[vector3f])->None: ...
 
     @property
-    def pointIndices(self)->Attribute[List[int]]:
+    def pointIndices(self)->AttributeSpec[List[int]]:
         """**Optional property**. Indices into the original mesh that
         correspond to the values in *offsets* and of any inbetween shapes. If
         authored, the number of elements must be equal to the number of elements

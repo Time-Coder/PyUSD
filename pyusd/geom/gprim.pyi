@@ -1,22 +1,27 @@
-from ..attribute import Attribute
+
+from ..attribute_spec import AttributeSpec
 from ..dtypes import token
 from .boundable import Boundable
-from .primvars import PrimVars
+from .primvars import Primvars
 
 class Gprim(Boundable):
     """Base class for all geometric primitives.
 
     Gprim encodes basic graphical properties such as \\em doubleSided and
     \\em orientation, and provides primvars for "display color" and "display
-    opacity" that travel with geometry to be used as shader overrides.  """
+    opacity" that travel with geometry to be used as shader overrides.
+    """
 
-    def __init__(self, name:str="")->None: ...
+
+    class Orientation(token):
+        RightHanded = "rightHanded"
+        LeftHanded = "leftHanded"
 
     @property
-    def primvars(self) -> PrimVars: ...
+    def primvars(self) -> Primvars: ...
 
     @property
-    def doubleSided(self) -> Attribute[bool]:
+    def doubleSided(self)->AttributeSpec[bool]:
         """Although some renderers treat all parametric or polygonal
         surfaces as if they were effectively laminae with outward-facing
         normals on both sides, some renderers derive significant optimizations
@@ -36,10 +41,10 @@ class Gprim(Boundable):
         calculations."""
 
     @doubleSided.setter
-    def doubleSided(self, value:bool) -> None: ...
+    def doubleSided(self, value:bool)->None: ...
 
     @property
-    def orientation(self) -> Attribute[token]:
+    def orientation(self)->AttributeSpec[Orientation]:
         """Orientation specifies whether the gprim's surface normal
         should be computed using the right hand rule, or the left hand rule.
         Please see \\ref UsdGeom_WindingOrder for a deeper explanation and
@@ -47,4 +52,4 @@ class Gprim(Boundable):
         hierarchies."""
 
     @orientation.setter
-    def orientation(self, value:token) -> None: ...
+    def orientation(self, value:Orientation)->None: ...

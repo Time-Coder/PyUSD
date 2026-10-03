@@ -1,8 +1,8 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..dtypes import asset, token
 from ..gf import color3f
 
-class Inputs(Attribute):
+class Inputs(AttributeSpec):
 
     class Format(token):
         Automatic = "automatic"
@@ -13,7 +13,7 @@ class Inputs(Attribute):
 
 
     @property
-    def intensity(self)->Attribute[float]:
+    def intensity(self)->AttributeSpec[float]:
         """Scales the brightness of the light linearly.
 
         Expresses the "base", unmultiplied luminance emitted (L) of the light,
@@ -35,7 +35,7 @@ class Inputs(Attribute):
     def intensity(self, value:float)->None: ...
 
     @property
-    def exposure(self)->Attribute[float]:
+    def exposure(self)->AttributeSpec[float]:
         """Scales the brightness of the light exponentially as a power
         of 2 (similar to an F-stop control over exposure).  The result
         is multiplied against the intensity:
@@ -56,7 +56,7 @@ class Inputs(Attribute):
     def exposure(self, value:float)->None: ...
 
     @property
-    def diffuse(self)->Attribute[float]:
+    def diffuse(self)->AttributeSpec[float]:
         """A multiplier for the effect of this light on the diffuse
         response of materials.  This is a non-physical control."""
 
@@ -64,7 +64,7 @@ class Inputs(Attribute):
     def diffuse(self, value:float)->None: ...
 
     @property
-    def specular(self)->Attribute[float]:
+    def specular(self)->AttributeSpec[float]:
         """A multiplier for the effect of this light on the specular
         response of materials.  This is a non-physical control."""
 
@@ -72,7 +72,7 @@ class Inputs(Attribute):
     def specular(self, value:float)->None: ...
 
     @property
-    def normalize(self)->Attribute[bool]:
+    def normalize(self)->AttributeSpec[bool]:
         """Normalizes the emission such that the power of the light
         remains constant while altering the size of the light, by dividing the
         luminance by the world-space surface area of the light.
@@ -190,7 +190,7 @@ class Inputs(Attribute):
     def normalize(self, value:bool)->None: ...
 
     @property
-    def color(self)->Attribute[color3f]:
+    def color(self)->AttributeSpec[color3f]:
         """The color of emitted light, in the rendering color space.
 
         This color is just multiplied with the emission:
@@ -211,14 +211,14 @@ class Inputs(Attribute):
     def color(self, value:color3f)->None: ...
 
     @property
-    def enableColorTemperature(self)->Attribute[bool]:
+    def enableColorTemperature(self)->AttributeSpec[bool]:
         """Enables using colorTemperature."""
 
     @enableColorTemperature.setter
     def enableColorTemperature(self, value:bool)->None: ...
 
     @property
-    def colorTemperature(self)->Attribute[float]:
+    def colorTemperature(self)->AttributeSpec[float]:
         """Color temperature, in degrees Kelvin, representing the
         white point.  The default is a common white point, D65.  Lower
         values are warmer and higher values are cooler.  The valid range
@@ -242,7 +242,7 @@ class Inputs(Attribute):
     def colorTemperature(self, value:float)->None: ...
 
     @property
-    def focus(self)->Attribute[float]:
+    def focus(self)->AttributeSpec[float]:
         """A control to shape the spread of light.  Higher focus
         values pull light towards the center and narrow the spread.
 
@@ -270,7 +270,7 @@ class Inputs(Attribute):
     def focus(self, value:float)->None: ...
 
     @property
-    def focusTint(self)->Attribute[color3f]:
+    def focusTint(self)->AttributeSpec[color3f]:
         """Off-axis color tint.  This tints the emission in the
         falloff region.  The default tint is black.
 
@@ -299,7 +299,7 @@ class Inputs(Attribute):
     def focusTint(self, value:color3f)->None: ...
 
     @property
-    def angle(self)->Attribute[float]:
+    def angle(self)->AttributeSpec[float]:
         """Angular limit off the primary axis to restrict the light
         spread, in degrees.
 
@@ -328,7 +328,7 @@ class Inputs(Attribute):
     def angle(self, value:float)->None: ...
 
     @property
-    def softness(self)->Attribute[float]:
+    def softness(self)->AttributeSpec[float]:
         """Controls the cutoff softness for cone angle.
 
         At the default of coneSoftness = 0, the luminance is unaltered if
@@ -360,7 +360,7 @@ class Inputs(Attribute):
     def softness(self, value:float)->None: ...
 
     @property
-    def file(self)->Attribute[asset]:
+    def file(self)->AttributeSpec[asset]:
         """An IES (Illumination Engineering Society) light
         profile describing the angular distribution of light.
 
@@ -399,7 +399,7 @@ class Inputs(Attribute):
     def file(self, value:asset)->None: ...
 
     @property
-    def angleScale(self)->Attribute[float]:
+    def angleScale(self)->AttributeSpec[float]:
         """Rescales the angular distribution of the IES profile.
 
         Applies a scaling factor to the latitudinal theta/vertical polar
@@ -475,7 +475,7 @@ class Inputs(Attribute):
     def angleScale(self, value:float)->None: ...
 
     @property
-    def normalize(self)->Attribute[bool]:
+    def normalize(self)->AttributeSpec[bool]:
         """Normalizes the IES profile so that it affects the shaping
         of the light while preserving the overall energy output.
 
@@ -489,14 +489,14 @@ class Inputs(Attribute):
     def normalize(self, value:bool)->None: ...
 
     @property
-    def enable(self)->Attribute[bool]:
+    def enable(self)->AttributeSpec[bool]:
         """Enables shadows to be cast by this light."""
 
     @enable.setter
     def enable(self, value:bool)->None: ...
 
     @property
-    def color(self)->Attribute[color3f]:
+    def color(self)->AttributeSpec[color3f]:
         """The color of shadows cast by the light.  This is a
         non-physical control.  The default is to cast black shadows."""
 
@@ -504,7 +504,7 @@ class Inputs(Attribute):
     def color(self, value:color3f)->None: ...
 
     @property
-    def distance(self)->Attribute[float]:
+    def distance(self)->AttributeSpec[float]:
         """The maximum distance shadows are cast. The distance is
         measured as the distance between the point on the surface and the
         occluder.
@@ -515,7 +515,7 @@ class Inputs(Attribute):
     def distance(self, value:float)->None: ...
 
     @property
-    def falloff(self)->Attribute[float]:
+    def falloff(self)->AttributeSpec[float]:
         """The size of the shadow falloff zone within the shadow max
         distance, which can be used to hide the hard cut-off for shadows seen
         stretching past the max distance. The falloff zone is the area that
@@ -529,7 +529,7 @@ class Inputs(Attribute):
     def falloff(self, value:float)->None: ...
 
     @property
-    def falloffGamma(self)->Attribute[float]:
+    def falloffGamma(self)->AttributeSpec[float]:
         """A gamma (i.e., exponential) control over shadow strength
         with linear distance within the falloff zone. This controls the rate
         of the falloff.
@@ -539,7 +539,7 @@ class Inputs(Attribute):
     def falloffGamma(self, value:float)->None: ...
 
     @property
-    def angle(self)->Attribute[float]:
+    def angle(self)->AttributeSpec[float]:
         """Angular diameter of the light in degrees.
         As an example, the Sun is approximately 0.53 degrees as seen from Earth.
         Higher values broaden the light and therefore soften shadow edges.
@@ -556,42 +556,42 @@ class Inputs(Attribute):
     def angle(self, value:float)->None: ...
 
     @property
-    def radius(self)->Attribute[float]:
+    def radius(self)->AttributeSpec[float]:
         """Radius of the disk."""
 
     @radius.setter
     def radius(self, value:float)->None: ...
 
     @property
-    def width(self)->Attribute[float]:
+    def width(self)->AttributeSpec[float]:
         """Width of the rectangle, in the local X axis."""
 
     @width.setter
     def width(self, value:float)->None: ...
 
     @property
-    def height(self)->Attribute[float]:
+    def height(self)->AttributeSpec[float]:
         """Height of the rectangle, in the local Y axis."""
 
     @height.setter
     def height(self, value:float)->None: ...
 
     @property
-    def file(self)->Attribute[asset]:
+    def file(self)->AttributeSpec[asset]:
         """A color texture to use on the rectangle."""
 
     @file.setter
     def file(self, value:asset)->None: ...
 
     @property
-    def length(self)->Attribute[float]:
+    def length(self)->AttributeSpec[float]:
         """Length of the cylinder, in the local X axis."""
 
     @length.setter
     def length(self, value:float)->None: ...
 
     @property
-    def format(self)->Attribute[Format]:
+    def format(self)->AttributeSpec[Format]:
         """
         Specifies the parameterization of the color map file.
         Valid values are:

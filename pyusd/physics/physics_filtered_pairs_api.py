@@ -1,8 +1,8 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace
-from ..relationship import Relationship
+from ..relationship_spec import RelationshipSpec
 
 
 class PhysicsFilteredPairsAPI(APISchemaBase):
@@ -22,8 +22,8 @@ class PhysicsFilteredPairsAPI(APISchemaBase):
         }
     }
 
-    physics: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    physics.filteredPairs = Relationship(
+    physics: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    physics.filteredPairs = RelationshipSpec(
         doc="Relationship to objects that should be filtered.",
         metadata={
             "customData": {

@@ -1,24 +1,24 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..dtypes import token
 
-class Outputs(Attribute):
+class Outputs(AttributeSpec):
 
     @property
-    def surface(self)->Attribute[token]:
+    def surface(self)->AttributeSpec[token]:
         ...
 
     @surface.setter
     def surface(self, value:token)->None: ...
 
     @property
-    def displacement(self)->Attribute[token]:
+    def displacement(self)->AttributeSpec[token]:
         ...
 
     @displacement.setter
     def displacement(self, value:token)->None: ...
 
     @property
-    def volume(self)->Attribute[token]:
+    def volume(self)->AttributeSpec[token]:
         ...
 
     @volume.setter

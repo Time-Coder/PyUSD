@@ -1,5 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace, token
 
@@ -61,9 +61,10 @@ class NodeDefAPI(APISchemaBase):
         SourceCode = "sourceCode"
 
 
-    info: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    info.implementationSource = Attribute(ImplementationSource,
+    info: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    info.implementationSource = AttributeSpec(ImplementationSource,
         uniform=True,
+        value="id",
         doc="""Specifies the attribute that should be consulted to get the
         shader's implementation or its source code.
 
@@ -86,7 +87,7 @@ class NodeDefAPI(APISchemaBase):
             }
         }
     )
-    info.id = Attribute(token,
+    info.id = AttributeSpec(token,
         uniform=True,
         doc="""The id is an identifier for the type or purpose of the
         shader. E.g.: Texture or FractalFloat.

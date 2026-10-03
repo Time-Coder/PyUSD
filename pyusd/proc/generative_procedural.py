@@ -1,4 +1,4 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import token
 from ..geom.boundable import Boundable
@@ -27,7 +27,7 @@ class GenerativeProcedural(Boundable):
         }
     }
 
-    proceduralSystem = Attribute(token,
+    proceduralSystem: AttributeSpec[token] = AttributeSpec(token,
         doc="""The name or convention of the system responsible for evaluating
         the procedural.
         NOTE: A fallback value for this is typically set via an API schema.

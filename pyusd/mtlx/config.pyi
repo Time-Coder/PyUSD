@@ -1,10 +1,10 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..dtypes import string
 
-class Config(Attribute):
+class Config(AttributeSpec):
 
     @property
-    def version(self)->Attribute[string]:
+    def version(self)->AttributeSpec[string]:
         """MaterialX library version that the data has been authored
         against. Defaults to 1.38 to allow correct verisoning of old files."""
 

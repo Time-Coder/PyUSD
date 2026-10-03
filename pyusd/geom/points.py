@@ -1,6 +1,6 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import int64
 from .point_based import PointBased
@@ -16,7 +16,8 @@ class Points(PointBased):
 
     While not technically UsdGeomPrimvars, the widths and normals also
     have interpolation metadata.  It's common for authored widths and normals
-    to have constant or varying interpolation."""
+    to have constant or varying interpolation.
+    """
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
@@ -28,20 +29,24 @@ class Points(PointBased):
         }
     }
 
-    widths: Attribute[List[float]] = Attribute(List[float], "widths", doc=
-        """Widths are defined as the \\em diameter of the points, in
+    widths: AttributeSpec[List[float]] = AttributeSpec(List[float],
+        value=[],
+        doc="""Widths are defined as the \\em diameter of the points, in
         object space.  'widths' is not a generic Primvar, but
         the number of elements in this attribute will be determined by
         its 'interpolation'.  See \\ref SetWidthsInterpolation() .  If
         'widths' and 'primvars:widths' are both specified, the latter
-        has precedence."""
+        has precedence.
+        """
     )
 
-    ids: Attribute[List[int64]] = Attribute(List[int64], "ids", doc=
-        """Ids are optional; if authored, the ids array should be the same
+    ids: AttributeSpec[List[int64]] = AttributeSpec(List[int64],
+        value=[],
+        doc="""Ids are optional; if authored, the ids array should be the same
         length as the points array, specifying (at each timesample if
         point identities are changing) the id of each point. The
         type is signed intentionally, so that clients can encode some
         binary state on Id'd points without adding a separate
-        primvar."""
+        primvar.
+        """
     )

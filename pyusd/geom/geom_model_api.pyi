@@ -108,4 +108,3 @@ class GeomModelAPI(APISchemaBase):
 
     @property
     def model(self) -> Model: ...
-

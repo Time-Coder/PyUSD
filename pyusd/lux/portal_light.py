@@ -1,4 +1,4 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace, token
 from .boundable_light_base import BoundableLightBase
@@ -20,9 +20,10 @@ class PortalLight(BoundableLightBase):
         }
     }
 
-    light: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    light.shaderId = Attribute(token,
+    light: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    light.shaderId = AttributeSpec(token,
         uniform=True,
+        value="PortalLight",
         metadata={
             "customData": {
                 "apiSchemaOverride": True
@@ -30,8 +31,9 @@ class PortalLight(BoundableLightBase):
         }
     )
 
-    inputs: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    inputs.width = Attribute(float,
+    inputs: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    inputs.width = AttributeSpec(float,
+        value=1,
         doc="Width of the portal rectangle in the local X axis.",
         metadata={
             "displayGroup": "Geometry",
@@ -41,7 +43,8 @@ class PortalLight(BoundableLightBase):
             }
         }
     )
-    inputs.height = Attribute(float,
+    inputs.height = AttributeSpec(float,
+        value=1,
         doc="Height of the portal rectangle in the local Y axis.",
         metadata={
             "displayGroup": "Geometry",

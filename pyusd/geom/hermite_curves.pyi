@@ -1,6 +1,6 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..gf import vector3f
 from .curves import Curves
 
@@ -34,14 +34,13 @@ class HermiteCurves(Curves):
     for this type, as we lack a specification for primvar tangents. This
     also means that width and normal interpolation should be restricted to
     varying (linear), uniform (per curve element), or constant (per prim).
+
     """
 
-    def __init__(self, name:str="")->None: ...
-
     @property
-    def tangents(self)->Attribute[List[vector3f]]:
+    def tangents(self)->AttributeSpec[List[vector3f]]:
         """Defines the outgoing trajectory tangent for each point.
-        Tangents should be the same size as the points attribute."""
+                 Tangents should be the same size as the points attribute."""
 
     @tangents.setter
     def tangents(self, value:List[vector3f])->None: ...

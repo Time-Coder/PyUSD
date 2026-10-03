@@ -1,6 +1,6 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..gf import float3
 from .xformable import Xformable
@@ -32,12 +32,14 @@ class Boundable(Xformable):
 
     When intermediate bounds are authored on Boundable parents, the child prims
     will be pruned from BBox computation; the authored extent is expected to
-    incorporate all child bounds."""
+    incorporate all child bounds.
+    """
 
     schema_kind: SchemaKind = SchemaKind.AbstractTyped
 
-    extent: Attribute[List[float3]] = Attribute(List[float3], doc=
-        """Extent is a three dimensional range measuring the geometric
+    extent: AttributeSpec[List[float3]] = AttributeSpec(List[float3],
+        value=[],
+        doc="""Extent is a three dimensional range measuring the geometric
         extent of the authored gprim in its own local space (i.e. its own
         transform not applied), \\em without accounting for any shader-induced
         displacement. If __any__ extent value has been authored for a given
@@ -52,5 +54,6 @@ class Boundable(Xformable):
 
         An authored extent on a prim which has children is expected to include
         the extent of all children, as they will be pruned from BBox computation
-        during traversal."""
+        during traversal.
+        """
     )

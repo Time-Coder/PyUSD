@@ -1,5 +1,6 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
+from ..common import SchemaKind
 from ..dtypes import asset, namespace, token
 from ..gf import float3
 
@@ -92,7 +93,27 @@ class GeomModelAPI(APISchemaBase):
 
     All card faces are drawn and textured as single-sided.
 
-    \\todo CreatePayload() """
+    \\todo CreatePayload()
+    """
+
+    schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
+
+    meta = {
+        "customData": {
+            "className": "ModelAPI",
+            "extraIncludes": '''
+    #include "pxr/usd/usdGeom/bboxCache.h"
+    #include "pxr/usd/usdGeom/constraintTarget.h"
+    #include "pxr/usd/usdGeom/imageable.h" ''',
+            "schemaTokens": {
+                "extentsHint": {"doc": '''Name of the attribute used to author extents
+                    hints at the root of leaf models. Extents hints are stored by purpose
+                    as a vector of GfVec3f values. They are ordered based on the order
+                    of purpose tokens returned by
+                    UsdGeomImageable::GetOrderedPurposeTokens.'''}
+            }
+        }
+    }
 
     class DrawMode(token):
         Origin = "origin"
@@ -106,51 +127,70 @@ class GeomModelAPI(APISchemaBase):
         Box = "box"
         FromTexture = "fromTexture"
 
-    model: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    model.drawMode = Attribute(DrawMode, value=DrawMode.Inherited, uniform=True,
-        doc = """Alternate imaging mode; applied to this prim or child prims
+
+    model: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    model.drawMode = AttributeSpec(DrawMode,
+        uniform=True,
+        value="inherited",
+        doc="""Alternate imaging mode; applied to this prim or child prims
         where \\em model:applyDrawMode is true, or where the prim
         has kind \\em component and \\em model:applyDrawMode is not
         authored. See \\ref UsdGeomModelAPI_drawMode
-        for mode descriptions."""
+        for mode descriptions.
+        """
     )
-    model.applyDrawMode = Attribute(bool, value=False, uniform=True, doc=
-        """If true, and the resolved value of \\em model:drawMode is
+    model.applyDrawMode = AttributeSpec(bool,
+        uniform=True,
+        value=False,
+        doc="""If true, and the resolved value of \\em model:drawMode is
         non-default, apply an alternate imaging mode to this prim. See
-        \\ref UsdGeomModelAPI_drawMode."""
+        \\ref UsdGeomModelAPI_drawMode.
+        """
     )
-    model.drawModeColor = Attribute(float3, value=(0.18, 0.18, 0.18), uniform=True, doc=
-        """The base color of imaging prims inserted for alternate
+    model.drawModeColor = AttributeSpec(float3,
+        uniform=True,
+        value=(0.18, 0.18, 0.18),
+        doc="""The base color of imaging prims inserted for alternate
         imaging modes. For \\em origin and \\em bounds modes, this
         controls line color; for \\em cards mode, this controls the
-        fallback quad color."""
+        fallback quad color.
+        """
     )
-    model.cardGeometry = Attribute(CardGeometry, value=CardGeometry.Cross, uniform=True,
-        doc = """The geometry to generate for imaging prims inserted for \\em
+    model.cardGeometry = AttributeSpec(CardGeometry,
+        uniform=True,
+        value="cross",
+        doc="""The geometry to generate for imaging prims inserted for \\em
         cards imaging mode. See \\ref UsdGeomModelAPI_cardGeometry for
-        geometry descriptions."""
+        geometry descriptions.
+        """
     )
-    model.cardTextureXPos = Attribute(asset, doc=
-        """In \\em cards imaging mode, the texture applied to the X+ quad.
-        The texture axes (s,t) are mapped to model-space axes (-y, -z)."""
+    model.cardTextureXPos = AttributeSpec(asset,
+        doc="""In \\em cards imaging mode, the texture applied to the X+ quad.
+        The texture axes (s,t) are mapped to model-space axes (-y, -z).
+        """
     )
-    model.cardTextureYPos = Attribute(asset, doc=
-        """In \\em cards imaging mode, the texture applied to the Y+ quad.
-        The texture axes (s,t) are mapped to model-space axes (x, -z)."""
+    model.cardTextureYPos = AttributeSpec(asset,
+        doc="""In \\em cards imaging mode, the texture applied to the Y+ quad.
+        The texture axes (s,t) are mapped to model-space axes (x, -z).
+        """
     )
-    model.cardTextureZPos = Attribute(asset, doc=
-        """In \\em cards imaging mode, the texture applied to the Z+ quad.
-        The texture axes (s,t) are mapped to model-space axes (x, -y)."""
+    model.cardTextureZPos = AttributeSpec(asset,
+        doc="""In \\em cards imaging mode, the texture applied to the Z+ quad.
+        The texture axes (s,t) are mapped to model-space axes (x, -y).
+        """
     )
-    model.cardTextureXNeg = Attribute(asset, doc=
-        """In \\em cards imaging mode, the texture applied to the X- quad.
-        The texture axes (s,t) are mapped to model-space axes (y, -z)."""
+    model.cardTextureXNeg = AttributeSpec(asset,
+        doc="""In \\em cards imaging mode, the texture applied to the X- quad.
+        The texture axes (s,t) are mapped to model-space axes (y, -z).
+        """
     )
-    model.cardTextureYNeg = Attribute(asset, doc=
-        """In \\em cards imaging mode, the texture applied to the Y- quad.
-        The texture axes (s,t) are mapped to model-space axes (-x, -z)."""
+    model.cardTextureYNeg = AttributeSpec(asset,
+        doc="""In \\em cards imaging mode, the texture applied to the Y- quad.
+        The texture axes (s,t) are mapped to model-space axes (-x, -z).
+        """
     )
-    model.cardTextureZNeg = Attribute(asset, doc=
-        """In \\em cards imaging mode, the texture applied to the Z- quad.
-        The texture axes (s,t) are mapped to model-space axes (-x, -y)."""
+    model.cardTextureZNeg = AttributeSpec(asset,
+        doc="""In \\em cards imaging mode, the texture applied to the Z- quad.
+        The texture axes (s,t) are mapped to model-space axes (-x, -y).
+        """
     )

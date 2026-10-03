@@ -1,5 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace, token
 
@@ -27,9 +27,10 @@ class PhysicsMeshCollisionAPI(APISchemaBase):
         MeshSimplification = "meshSimplification"
 
 
-    physics: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    physics.approximation = Attribute(Approximation,
+    physics: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    physics.approximation = AttributeSpec(Approximation,
         uniform=True,
+        value="none",
         doc="""Determines the mesh's collision approximation:
         "none" - The mesh geometry is used directly as a collider without any
            approximation.

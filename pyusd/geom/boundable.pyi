@@ -1,6 +1,6 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..gf import float3
 from .xformable import Xformable
 
@@ -30,12 +30,11 @@ class Boundable(Xformable):
 
     When intermediate bounds are authored on Boundable parents, the child prims
     will be pruned from BBox computation; the authored extent is expected to
-    incorporate all child bounds."""
-
-    def __init__(self, name:str="")->None: ...
+    incorporate all child bounds.
+    """
 
     @property
-    def extent(self)->Attribute[List[float3]]:
+    def extent(self)->AttributeSpec[List[float3]]:
         """Extent is a three dimensional range measuring the geometric
         extent of the authored gprim in its own local space (i.e. its own
         transform not applied), \\em without accounting for any shader-induced

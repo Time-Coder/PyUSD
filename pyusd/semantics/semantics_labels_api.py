@@ -1,7 +1,7 @@
 from typing import List
 
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import token
 
@@ -24,7 +24,8 @@ class SemanticsLabelsAPI(APISchemaBase):
         }
     }
 
-    __INSTANCE_NAME__ = Attribute(List[token],
+    __INSTANCE_NAME__: AttributeSpec[List[token]] = AttributeSpec(List[token],
+        value=[],
         doc="Array of labels specified directly at this prim.",
         metadata={
             "customData": {

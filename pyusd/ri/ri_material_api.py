@@ -1,5 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace, token
 
@@ -26,8 +26,8 @@ class RiMaterialAPI(APISchemaBase):
         }
     }
 
-    outputs: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    outputs.ri.surface = Attribute(token,
+    outputs: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    outputs.ri.surface = AttributeSpec(token,
         metadata={
             "displayGroup": "Outputs",
             "customData": {
@@ -35,7 +35,7 @@ class RiMaterialAPI(APISchemaBase):
             }
         }
     )
-    outputs.ri.displacement = Attribute(token,
+    outputs.ri.displacement = AttributeSpec(token,
         metadata={
             "displayGroup": "Outputs",
             "customData": {
@@ -43,7 +43,7 @@ class RiMaterialAPI(APISchemaBase):
             }
         }
     )
-    outputs.ri.volume = Attribute(token,
+    outputs.ri.volume = AttributeSpec(token,
         metadata={
             "displayGroup": "Outputs",
             "customData": {

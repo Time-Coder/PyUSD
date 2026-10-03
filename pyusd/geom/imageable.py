@@ -1,7 +1,7 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import token
-from ..relationship import Relationship
+from ..relationship_spec import RelationshipSpec
 from ..typed import Typed
 
 
@@ -15,15 +15,16 @@ class Imageable(Typed):
     \\deprecated Imageable also provides API for accessing primvars, which
     has been moved to the UsdGeomPrimvarsAPI schema, because primvars can now
     be applied on non-Imageable prim types.  This API is planned
-    to be removed, UsdGeomPrimvarsAPI should be used directly instead."""
+    to be removed, UsdGeomPrimvarsAPI should be used directly instead.
+    """
 
     schema_kind: SchemaKind = SchemaKind.AbstractTyped
 
     meta = {
         "customData": {
-            "extraIncludes": """
-#include "pxr/base/gf/bbox3d.h"
-#include "pxr/usd/usdGeom/primvar.h" """
+            "extraIncludes": '''
+    #include "pxr/base/gf/bbox3d.h"
+    #include "pxr/usd/usdGeom/primvar.h" '''
         }
     }
 
@@ -37,26 +38,30 @@ class Imageable(Typed):
         Proxy = "proxy"
         Guide = "guide"
 
-    visibility: Attribute[Visibility] = Attribute(Visibility, value=Visibility.Inherited,
-        doc = """Visibility is meant to be the simplest form of "pruning"
+
+    visibility: AttributeSpec[Visibility] = AttributeSpec(Visibility,
+        doc="""Visibility is meant to be the simplest form of "pruning"
         visibility that is supported by most DCC apps.  Visibility is
         animatable, allowing a sub-tree of geometry to be present for some
         segment of a shot, and absent from others; unlike the action of
         deactivating geometry prims, invisible geometry is still
-        available for inspection, for positioning, for defining volumes, etc."""
+        available for inspection, for positioning, for defining volumes, etc.
+        """
     )
 
-    purpose: Attribute[Purpose] = Attribute(Purpose, value=Purpose.Default, uniform=True,
-        doc = """Purpose is a classification of geometry into categories that
+    purpose: AttributeSpec[Purpose] = AttributeSpec(Purpose,
+        uniform=True,
+        doc="""Purpose is a classification of geometry into categories that
         can each be independently included or excluded from traversals of prims
         on a stage, such as rendering or bounding-box computation traversals.
 
         See \\ref UsdGeom_ImageablePurpose for more detail about how
-        \\em purpose is computed and used."""
+        \\em purpose is computed and used.
+        """
     )
 
-    proxyPrim: Relationship = Relationship(doc=
-        """The \\em proxyPrim relationship allows us to link a
+    proxyPrim = RelationshipSpec(
+        doc="""The \\em proxyPrim relationship allows us to link a
         prim whose \\em purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
         useful in several scenarios:
@@ -75,5 +80,6 @@ class Imageable(Typed):
         to map a picked proxy prim back to its render geometry for selection.
 
         \\note It is only valid to author the proxyPrim relationship on
-        prims whose purpose is "render"."""
+        prims whose purpose is "render".
+        """
     )

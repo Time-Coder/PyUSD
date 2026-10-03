@@ -1,7 +1,7 @@
 from typing import List
 
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace
 from ..gf import float3, half3
@@ -45,16 +45,17 @@ class ParticleFieldSphericalHarmonicsAttributeAPI(APISchemaBase):
         "prepend apiSchemas": ["ParticleFieldRadianceBaseAPI"]
     }
 
-    radiance: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    radiance.sphericalHarmonicsDegree = Attribute(int,
+    radiance: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    radiance.sphericalHarmonicsDegree = AttributeSpec(int,
         uniform=True,
+        value=3,
         doc="""The highest degree of the spherical harmonics. A degree of N
         implies a coefficient element size (per particle) of (N+1)*(N+1) values.
         The spherical harmonics degree is the same for all particles in the
         ParticleField.
         """
     )
-    radiance.sphericalHarmonicsCoefficients = Attribute(List[float3],
+    radiance.sphericalHarmonicsCoefficients = AttributeSpec(List[float3],
         doc="""Flattened array of SH coefficients.
         The SH coefficients are grouped in the array by particle, meaning each
         particle has N contiguous coefficients, Y(m,l) sorted first by order (m)
@@ -63,7 +64,7 @@ class ParticleFieldSphericalHarmonicsAttributeAPI(APISchemaBase):
         the array by particle.
         """
     )
-    radiance.sphericalHarmonicsCoefficientsh = Attribute(List[half3],
+    radiance.sphericalHarmonicsCoefficientsh = AttributeSpec(List[half3],
         doc="""Flattened array of SH coefficients.
         The SH coefficients are grouped in the array by particle, meaning each
         particle has N contiguous coefficients, Y(m,l) sorted first by order (m)

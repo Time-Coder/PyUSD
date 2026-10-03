@@ -1,7 +1,7 @@
 from typing import List
 
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..dtypes import token
 
 class SemanticsLabelsAPI(APISchemaBase):
@@ -13,7 +13,7 @@ class SemanticsLabelsAPI(APISchemaBase):
     """
 
     @property
-    def __INSTANCE_NAME__(self)->Attribute[List[token]]:
+    def __INSTANCE_NAME__(self)->AttributeSpec[List[token]]:
         """Array of labels specified directly at this prim."""
 
     @__INSTANCE_NAME__.setter

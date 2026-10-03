@@ -1,7 +1,7 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import asset, namespace, token
-from ..relationship import Relationship
+from ..relationship_spec import RelationshipSpec
 from .nonboundable_light_base import NonboundableLightBase
 
 
@@ -62,9 +62,10 @@ class DomeLight_1(NonboundableLightBase):
         Z = "Z"
 
 
-    light: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    light.shaderId = Attribute(token,
+    light: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    light.shaderId = AttributeSpec(token,
         uniform=True,
+        value="DomeLight",
         metadata={
             "customData": {
                 "apiSchemaOverride": True
@@ -72,8 +73,8 @@ class DomeLight_1(NonboundableLightBase):
         }
     )
 
-    inputs: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    inputs.texture.file = Attribute(asset,
+    inputs: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    inputs.texture.file = AttributeSpec(asset,
         doc="""A color texture to use on the dome, such as an HDR (high
         dynamic range) texture intended for IBL (image based lighting).
         """,
@@ -85,7 +86,8 @@ class DomeLight_1(NonboundableLightBase):
             }
         }
     )
-    inputs.texture.format = Attribute(Format,
+    inputs.texture.format = AttributeSpec(Format,
+        value="automatic",
         doc="""
         Specifies the parameterization of the color map file.
         Valid values are:
@@ -111,7 +113,7 @@ class DomeLight_1(NonboundableLightBase):
         }
     )
 
-    guideRadius = Attribute(float,
+    guideRadius: AttributeSpec[float] = AttributeSpec(float,
         doc="The radius of guide geometry to use to visualize the dome light.  The default is 1 km for scenes whose metersPerUnit is the USD default of 0.01 (i.e., 1 world unit is 1 cm).",
         metadata={
             "displayGroup": "Guides",
@@ -119,7 +121,7 @@ class DomeLight_1(NonboundableLightBase):
         }
     )
 
-    poleAxis = Attribute(PoleAxis,
+    poleAxis: AttributeSpec[PoleAxis] = AttributeSpec(PoleAxis,
         uniform=True,
         doc="""
         A token which indicates the starting alignment of the dome
@@ -137,4 +139,4 @@ class DomeLight_1(NonboundableLightBase):
         }
     )
 
-    portals = Relationship(doc="Optional portals to guide light sampling.")
+    portals = RelationshipSpec(doc="Optional portals to guide light sampling.")

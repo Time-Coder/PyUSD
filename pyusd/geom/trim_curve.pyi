@@ -1,13 +1,13 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..dtypes import double
 from ..gf import double2, double3
 
-class TrimCurve(Attribute):
+class TrimCurve(AttributeSpec):
 
     @property
-    def counts(self)->Attribute[List[int]]:
+    def counts(self)->AttributeSpec[List[int]]:
         """Each element specifies how many curves are present in each
         "loop" of the trimCurve, and the length of the array determines how
         many loops the trimCurve contains.  The sum of all elements is the
@@ -18,14 +18,14 @@ class TrimCurve(Attribute):
     def counts(self, value:List[int])->None: ...
 
     @property
-    def orders(self)->Attribute[List[int]]:
+    def orders(self)->AttributeSpec[List[int]]:
         """Flat list of orders for each of the \\em nCurves curves."""
 
     @orders.setter
     def orders(self, value:List[int])->None: ...
 
     @property
-    def vertexCounts(self)->Attribute[List[int]]:
+    def vertexCounts(self)->AttributeSpec[List[int]]:
         """Flat list of number of vertices for each of the
          \\em nCurves curves."""
 
@@ -33,7 +33,7 @@ class TrimCurve(Attribute):
     def vertexCounts(self, value:List[int])->None: ...
 
     @property
-    def knots(self)->Attribute[List[double]]:
+    def knots(self)->AttributeSpec[List[double]]:
         """Flat list of parametric values for each of the
         \\em nCurves curves.  There will be as many knots as the sum over
         all elements of \\em vertexCounts plus the sum over all elements of
@@ -43,7 +43,7 @@ class TrimCurve(Attribute):
     def knots(self, value:List[double])->None: ...
 
     @property
-    def ranges(self)->Attribute[List[double2]]:
+    def ranges(self)->AttributeSpec[List[double2]]:
         """Flat list of minimum and maximum parametric values
         (as defined by \\em knots) for each of the \\em nCurves curves."""
 
@@ -51,7 +51,7 @@ class TrimCurve(Attribute):
     def ranges(self, value:List[double2])->None: ...
 
     @property
-    def points(self)->Attribute[List[double3]]:
+    def points(self)->AttributeSpec[List[double3]]:
         """Flat list of homogeneous 2D points (u, v, w) that comprise
         the \\em nCurves curves.  The number of points should be equal to the
         um over all elements of \\em vertexCounts."""

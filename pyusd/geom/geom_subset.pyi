@@ -1,6 +1,6 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..dtypes import token
 from ..typed import Typed
 
@@ -23,12 +23,19 @@ class GeomSubset(Typed):
 
     Materials are bound to GeomSubsets just as they are for regular
     geometry using API available in UsdShade (UsdShadeMaterial::Bind).
-"""
 
-    def __init__(self, name:str="")->None: ...
+    """
+
+
+    class ElementType(token):
+        Face = "face"
+        Point = "point"
+        Edge = "edge"
+        Segment = "segment"
+        Tetrahedron = "tetrahedron"
 
     @property
-    def elementType(self)->Attribute[token]:
+    def elementType(self)->AttributeSpec[ElementType]:
         """The type of element that the indices target. "elementType" can
         have one of the following values:
         <ul><li><b>face</b>: Identifies faces on a Gprim's surface. For a
@@ -58,10 +65,10 @@ class GeomSubset(Typed):
         </li></ul>"""
 
     @elementType.setter
-    def elementType(self, value:token)->None: ...
+    def elementType(self, value:ElementType)->None: ...
 
     @property
-    def indices(self)->Attribute[List[int]]:
+    def indices(self)->AttributeSpec[List[int]]:
         """The set of indices identifying elements included in this
         subset. The indices need not be sorted, but the same element should not
         be identfied more than once. Indices sampled at a given time are
@@ -72,7 +79,7 @@ class GeomSubset(Typed):
     def indices(self, value:List[int])->None: ...
 
     @property
-    def familyName(self)->Attribute[token]:
+    def familyName(self)->AttributeSpec[token]:
         """The name of the family of subsets that this subset belongs to.
         This is optional and is primarily useful when there are multiple
         families of subsets under a geometric prim. In some cases, this could

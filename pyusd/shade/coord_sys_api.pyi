@@ -1,5 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..relationship import Relationship
+from ..relationship_spec import RelationshipSpec
 
 class CoordSysAPI(APISchemaBase):
     """UsdShadeCoordSysAPI provides a way to designate, name,
@@ -29,8 +29,8 @@ class CoordSysAPI(APISchemaBase):
     """
 
     @property
-    def binding(self)->Relationship:
+    def binding(self)->RelationshipSpec:
         """Prim binding expressing the appropriate coordinate systems."""
 
     @binding.setter
-    def binding(self, value:Relationship)->None: ...
+    def binding(self, value:RelationshipSpec)->None: ...

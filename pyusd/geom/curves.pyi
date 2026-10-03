@@ -1,6 +1,6 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from .point_based import PointBased
 
 class Curves(PointBased):
@@ -22,12 +22,11 @@ class Curves(PointBased):
     internal or future shipped schemas will follow this pattern. Be
     sure to key any indexing behavior off the concrete type, not this
     abstract type.
+
     """
 
-    def __init__(self, name:str="")->None: ...
-
     @property
-    def curveVertexCounts(self)->Attribute[List[int]]:
+    def curveVertexCounts(self)->AttributeSpec[List[int]]:
         """Curves-derived primitives can represent multiple distinct,
         potentially disconnected curves.  The length of 'curveVertexCounts'
         gives the number of such curves, and each element describes the
@@ -37,7 +36,7 @@ class Curves(PointBased):
     def curveVertexCounts(self, value:List[int])->None: ...
 
     @property
-    def widths(self)->Attribute[List[float]]:
+    def widths(self)->AttributeSpec[List[float]]:
         """Provides width specification for the curves, whose application
         will depend on whether the curve is oriented (normals are defined for
         it), in which case widths are "ribbon width", or unoriented, in which

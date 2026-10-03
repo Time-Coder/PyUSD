@@ -1,4 +1,4 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from .boundable_light_base import BoundableLightBase
 from .inputs import Inputs
 from .light import Light
@@ -11,13 +11,13 @@ class CylinderLight(BoundableLightBase):
     """
 
     @property
-    def inputs(self) -> Inputs: ...
-
-    @property
     def light(self) -> Light: ...
 
     @property
-    def treatAsLine(self)->Attribute[bool]:
+    def inputs(self) -> Inputs: ...
+
+    @property
+    def treatAsLine(self)->AttributeSpec[bool]:
         """A hint that this light can be treated as a 'line'
         light (effectively, a zero-radius cylinder) by renderers that
         benefit from non-area lighting. Renderers that only support

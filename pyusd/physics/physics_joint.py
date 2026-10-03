@@ -1,9 +1,9 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace
 from ..geom.imageable import Imageable
 from ..gf import point3f, quatf
-from ..relationship import Relationship
+from ..relationship_spec import RelationshipSpec
 
 
 class PhysicsJoint(Imageable):
@@ -23,8 +23,9 @@ class PhysicsJoint(Imageable):
         }
     }
 
-    physics: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    physics.localPos0 = Attribute(point3f,
+    physics: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    physics.localPos0 = AttributeSpec(point3f,
+        value=(0.0, 0.0, 0.0),
         doc="Relative position of the joint frame to body0's frame.",
         metadata={
             "customData": {
@@ -33,7 +34,8 @@ class PhysicsJoint(Imageable):
             "displayName": "Local Position 0"
         }
     )
-    physics.localRot0 = Attribute(quatf,
+    physics.localRot0 = AttributeSpec(quatf,
+        value=(1.0, 0.0, 0.0, 0.0),
         doc="Relative orientation of the joint frame to body0's frame.",
         metadata={
             "customData": {
@@ -42,7 +44,8 @@ class PhysicsJoint(Imageable):
             "displayName": "Local Rotation 0"
         }
     )
-    physics.localPos1 = Attribute(point3f,
+    physics.localPos1 = AttributeSpec(point3f,
+        value=(0.0, 0.0, 0.0),
         doc="Relative position of the joint frame to body1's frame.",
         metadata={
             "customData": {
@@ -51,7 +54,8 @@ class PhysicsJoint(Imageable):
             "displayName": "Local Position 1"
         }
     )
-    physics.localRot1 = Attribute(quatf,
+    physics.localRot1 = AttributeSpec(quatf,
+        value=(1.0, 0.0, 0.0, 0.0),
         doc="Relative orientation of the joint frame to body1's frame.",
         metadata={
             "customData": {
@@ -60,7 +64,8 @@ class PhysicsJoint(Imageable):
             "displayName": "Local Rotation 1"
         }
     )
-    physics.jointEnabled = Attribute(bool,
+    physics.jointEnabled = AttributeSpec(bool,
+        value=True,
         doc="Determines if the joint is enabled.",
         metadata={
             "customData": {
@@ -69,7 +74,8 @@ class PhysicsJoint(Imageable):
             "displayName": "Joint Enabled"
         }
     )
-    physics.collisionEnabled = Attribute(bool,
+    physics.collisionEnabled = AttributeSpec(bool,
+        value=False,
         doc="Determines if the jointed subtrees should collide or not.",
         metadata={
             "customData": {
@@ -78,8 +84,9 @@ class PhysicsJoint(Imageable):
             "displayName": "Collision Enabled"
         }
     )
-    physics.excludeFromArticulation = Attribute(bool,
+    physics.excludeFromArticulation = AttributeSpec(bool,
         uniform=True,
+        value=False,
         doc="Determines if the joint can be included in an Articulation.",
         metadata={
             "customData": {
@@ -88,7 +95,8 @@ class PhysicsJoint(Imageable):
             "displayName": "Exclude From Articulation"
         }
     )
-    physics.breakForce = Attribute(float,
+    physics.breakForce = AttributeSpec(float,
+        value=float('inf'),
         doc="""Joint break force. If set, joint is to break when this force
         limit is reached. (Used for linear DOFs.)
         Units: mass * distance / second / second
@@ -100,7 +108,8 @@ class PhysicsJoint(Imageable):
             "displayName": "Break Force"
         }
     )
-    physics.breakTorque = Attribute(float,
+    physics.breakTorque = AttributeSpec(float,
+        value=float('inf'),
         doc="""Joint break torque. If set, joint is to break when this torque
         limit is reached. (Used for angular DOFs.)
         Units: mass * distance * distance / second / second
@@ -112,7 +121,7 @@ class PhysicsJoint(Imageable):
             "displayName": "Break Torque"
         }
     )
-    physics.body0 = Relationship(
+    physics.body0 = RelationshipSpec(
         doc="Relationship to any UsdGeomXformable.",
         metadata={
             "customData": {
@@ -121,7 +130,7 @@ class PhysicsJoint(Imageable):
             "displayName": "Body 0"
         }
     )
-    physics.body1 = Relationship(
+    physics.body1 = RelationshipSpec(
         doc="Relationship to any UsdGeomXformable.",
         metadata={
             "customData": {

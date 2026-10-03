@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Dict, List, Type
 
 from .common import SchemaKind
 from .metadata import Metadata
-from .property import Property
+from .property_spec import PropertySpec
 from .utils import camel_to_snake
 
 if TYPE_CHECKING:
@@ -205,7 +205,7 @@ class APISchemaBase:
 
         props_str_list = []
         for name, prop in cls.__dict__.items():
-            if not isinstance(prop, Property):
+            if not isinstance(prop, PropertySpec):
                 continue
 
             prop._name = name

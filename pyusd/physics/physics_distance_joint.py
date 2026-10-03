@@ -1,4 +1,4 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace
 from .physics_joint import PhysicsJoint
@@ -17,8 +17,9 @@ class PhysicsDistanceJoint(PhysicsJoint):
         }
     }
 
-    physics: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    physics.minDistance = Attribute(float,
+    physics: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    physics.minDistance = AttributeSpec(float,
+        value=-1.0,
         doc="""Minimum distance. If attribute is negative, the joint is not
         limited. Units: distance.
         """,
@@ -29,7 +30,8 @@ class PhysicsDistanceJoint(PhysicsJoint):
             "displayName": "Minimum Distance"
         }
     )
-    physics.maxDistance = Attribute(float,
+    physics.maxDistance = AttributeSpec(float,
+        value=-1.0,
         doc="""Maximum distance. If attribute is negative, the joint is not
         limited. Units: distance.
         """,

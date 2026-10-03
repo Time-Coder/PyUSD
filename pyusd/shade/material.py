@@ -1,4 +1,4 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace, token
 from .node_graph import NodeGraph
@@ -101,8 +101,8 @@ class Material(NodeGraph):
         }
     }
 
-    outputs: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    outputs.surface = Attribute(token,
+    outputs: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    outputs.surface = AttributeSpec(token,
         doc="""Represents the universal "surface" output terminal of a
         material.
         """,
@@ -113,7 +113,7 @@ class Material(NodeGraph):
             }
         }
     )
-    outputs.displacement = Attribute(token,
+    outputs.displacement = AttributeSpec(token,
         doc="""Represents the universal "displacement" output terminal of a
         material.
         """,
@@ -124,7 +124,7 @@ class Material(NodeGraph):
             }
         }
     )
-    outputs.volume = Attribute(token,
+    outputs.volume = AttributeSpec(token,
         doc="""Represents the universal "volume" output terminal of a
         material.
         """,

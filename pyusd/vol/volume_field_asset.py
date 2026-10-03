@@ -1,4 +1,4 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import asset, token
 from .field_base import FieldBase
@@ -17,7 +17,7 @@ class VolumeFieldAsset(FieldBase):
         Color = "Color"
 
 
-    filePath = Attribute(asset,
+    filePath: AttributeSpec[asset] = AttributeSpec(asset,
         doc="""An asset path attribute that points to a file on disk.
         For each supported file format, a separate FieldAsset
         subclass is required.
@@ -29,13 +29,13 @@ class VolumeFieldAsset(FieldBase):
         """
     )
 
-    fieldName = Attribute(token,
+    fieldName: AttributeSpec[token] = AttributeSpec(token,
         doc="""Name of an individual field within the file specified by
         the filePath attribute.
         """
     )
 
-    fieldIndex = Attribute(int,
+    fieldIndex: AttributeSpec[int] = AttributeSpec(int,
         doc="""A file can contain multiple fields with the same
         name. This optional attribute is an index used to
         disambiguate between these multiple fields with the same
@@ -43,7 +43,7 @@ class VolumeFieldAsset(FieldBase):
         """
     )
 
-    fieldDataType = Attribute(token,
+    fieldDataType: AttributeSpec[token] = AttributeSpec(token,
         doc="""Token which is used to indicate the data type of an
         individual field. Authors use this to tell consumers more
         about the field without opening the file on disk. The list of
@@ -52,7 +52,7 @@ class VolumeFieldAsset(FieldBase):
         """
     )
 
-    vectorDataRoleHint = Attribute(VectorDataRoleHint,
+    vectorDataRoleHint: AttributeSpec[VectorDataRoleHint] = AttributeSpec(VectorDataRoleHint,
         doc="""Optional token which is used to indicate the role of a vector
         valued field. This can drive the data type in which fields
         are made available in a renderer or whether the vector values

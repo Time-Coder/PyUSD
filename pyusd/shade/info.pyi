@@ -1,7 +1,7 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..dtypes import token
 
-class Info(Attribute):
+class Info(AttributeSpec):
 
     class ImplementationSource(token):
         Id = "id"
@@ -10,7 +10,7 @@ class Info(Attribute):
 
 
     @property
-    def implementationSource(self)->Attribute[ImplementationSource]:
+    def implementationSource(self)->AttributeSpec[ImplementationSource]:
         """Specifies the attribute that should be consulted to get the
         shader's implementation or its source code.
 
@@ -31,7 +31,7 @@ class Info(Attribute):
     def implementationSource(self, value:ImplementationSource)->None: ...
 
     @property
-    def id(self)->Attribute[token]:
+    def id(self)->AttributeSpec[token]:
         """The id is an identifier for the type or purpose of the
         shader. E.g.: Texture or FractalFloat.
         The use of this id will depend on the render context: some will turn it

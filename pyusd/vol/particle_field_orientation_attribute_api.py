@@ -1,7 +1,7 @@
 from typing import List
 
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..gf import quatf, quath
 
@@ -33,9 +33,10 @@ class ParticleFieldOrientationAttributeAPI(APISchemaBase):
         }
     }
 
-    orientations = Attribute(List[quatf], doc="Quaternion orientation for each particle.")
+    orientations: AttributeSpec[List[quatf]] = AttributeSpec(List[quatf], value=[], doc="Quaternion orientation for each particle.")
 
-    orientationsh = Attribute(List[quath],
+    orientationsh: AttributeSpec[List[quath]] = AttributeSpec(List[quath],
+        value=[],
         doc="""Quaternion orientation for each particle. If the float
         precision version is defined it should be preferred.
         """

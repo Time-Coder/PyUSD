@@ -51,6 +51,7 @@ class ClipsAPI(APISchemaBase):
     clips will provide the time-sampled animation.
 
     For further information, see \\ref Usd_Page_ValueClips
+
     """
 
     schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
@@ -59,20 +60,15 @@ class ClipsAPI(APISchemaBase):
         "customData": {
             "apiSchemaType": "nonApplied",
             "schemaTokens": {
-                "clips": {
-                    "doc": """
-                    Dictionary that contains the definition of the clip sets on
-                    this prim. See \\ref UsdClipsAPI::GetClips.
-                    """
-                },
-
-                "clipSets": {
-                    "doc": """
-                    ListOp that may be used to affect how opinions from
-                    clip sets are applied during value resolution.
-                    See \\ref UsdClipsAPI::GetClipSets.
-                    """
-                }
+                "clips": {"doc": '''
+                  Dictionary that contains the definition of the clip sets on
+                  this prim. See \\ref UsdClipsAPI::GetClips.
+                  '''},
+                "clipSets": {"doc": '''
+                  ListOp that may be used to affect how opinions from
+                  clip sets are applied during value resolution.
+                  See \\ref UsdClipsAPI::GetClipSets.
+                  '''}
             }
         }
     }

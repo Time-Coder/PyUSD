@@ -1,7 +1,7 @@
 from typing import List
 
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..gf import point3f, point3h
 
 class ParticleFieldPositionAttributeAPI(APISchemaBase):
@@ -18,14 +18,14 @@ class ParticleFieldPositionAttributeAPI(APISchemaBase):
     """
 
     @property
-    def positions(self)->Attribute[List[point3f]]:
+    def positions(self)->AttributeSpec[List[point3f]]:
         """Defines the position for each particle in local space."""
 
     @positions.setter
     def positions(self, value:List[point3f])->None: ...
 
     @property
-    def positionsh(self)->Attribute[List[point3h]]:
+    def positionsh(self)->AttributeSpec[List[point3h]]:
         """Defines the position for each particle in local space. If the
                 float precision attribute is defined it should be preferred."""
 

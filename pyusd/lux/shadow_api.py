@@ -1,5 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace
 from ..gf import color3f
@@ -20,8 +20,9 @@ class ShadowAPI(APISchemaBase):
         }
     }
 
-    inputs: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    inputs.shadow.enable = Attribute(bool,
+    inputs: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    inputs.shadow.enable = AttributeSpec(bool,
+        value=True,
         doc="Enables shadows to be cast by this light.",
         metadata={
             "displayGroup": "Shadows",
@@ -31,7 +32,8 @@ class ShadowAPI(APISchemaBase):
             }
         }
     )
-    inputs.shadow.color = Attribute(color3f,
+    inputs.shadow.color = AttributeSpec(color3f,
+        value=(0, 0, 0),
         doc="""The color of shadows cast by the light.  This is a
         non-physical control.  The default is to cast black shadows.
         """,
@@ -43,7 +45,8 @@ class ShadowAPI(APISchemaBase):
             }
         }
     )
-    inputs.shadow.distance = Attribute(float,
+    inputs.shadow.distance = AttributeSpec(float,
+        value=-1.0,
         doc="""The maximum distance shadows are cast. The distance is
         measured as the distance between the point on the surface and the
         occluder.
@@ -58,7 +61,8 @@ class ShadowAPI(APISchemaBase):
             }
         }
     )
-    inputs.shadow.falloff = Attribute(float,
+    inputs.shadow.falloff = AttributeSpec(float,
+        value=-1.0,
         doc="""The size of the shadow falloff zone within the shadow max
         distance, which can be used to hide the hard cut-off for shadows seen
         stretching past the max distance. The falloff zone is the area that
@@ -76,7 +80,8 @@ class ShadowAPI(APISchemaBase):
             }
         }
     )
-    inputs.shadow.falloffGamma = Attribute(float,
+    inputs.shadow.falloffGamma = AttributeSpec(float,
+        value=1.0,
         doc="""A gamma (i.e., exponential) control over shadow strength
         with linear distance within the falloff zone. This controls the rate
         of the falloff.

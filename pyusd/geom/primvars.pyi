@@ -1,14 +1,12 @@
 from typing import List
 
-from ..attribute import Attribute
-from ..gf import color3f, texCoord2f
+from ..attribute_spec import AttributeSpec
+from ..gf import color3f
 
-class PrimVars(Attribute):
-
-    def __init__(self)->None: ...
+class Primvars(AttributeSpec):
 
     @property
-    def displayColor(self)->Attribute[List[color3f]]:
+    def displayColor(self)->AttributeSpec[List[color3f]]:
         """It is useful to have an "official" colorSet that can be used
         as a display or modeling color, even in the absence of any specified
         shader for a gprim.  DisplayColor serves this role; because it is a
@@ -16,21 +14,14 @@ class PrimVars(Attribute):
         that consumes a \\em displayColor parameter."""
 
     @displayColor.setter
-    def displayColor(self, value: List[color3f])->None: ...
+    def displayColor(self, value:List[color3f])->None: ...
 
     @property
-    def displayOpacity(self)->Attribute[List[float]]:
+    def displayOpacity(self)->AttributeSpec[List[float]]:
         """Companion to \\em displayColor that specifies opacity, broken
         out as an independent attribute rather than an rgba color, both so that
         each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
 
     @displayOpacity.setter
-    def displayOpacity(self, value: List[float])->None: ...
-
-
-    @property
-    def st(self)->Attribute[List[texCoord2f]]: ...
-
-    @st.setter
-    def st(self, value: List[texCoord2f])->None: ...
+    def displayOpacity(self, value:List[float])->None: ...

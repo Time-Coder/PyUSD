@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, Dict, Type, cast
 from .attribute_parser import AttributeParser
 from .metadata_parser import MetadataParser
 from .prim_spec import PrimSpec
-from .property import Property
+from .property_spec import PropertySpec
 from .relationship_parse import RelationshipParser
 from .sdf import Specifier
 from .usda_parser import UsdaParser
@@ -140,7 +140,7 @@ class PrimParser:
             MetadataParser.set_authored(prim.metadata, key, value)
 
     @staticmethod
-    def create_loaded_prop(prim:PrimSpec, prop:Property)->Property:
+    def create_loaded_prop(prim:PrimSpec, prop:PropertySpec)->PropertySpec:
         names = prop.name.split(":")
         prop._name = names[-1]
         if len(names) == 1:
@@ -149,7 +149,7 @@ class PrimParser:
         current = prim
         for name in names[:-1]:
             if name not in current._props:
-                current.create_prop(Property(name, custom=True, is_leaf=False))
+                current.create_prop(PropertySpec(name, custom=True, is_leaf=False))
             current = current._props[name]
 
         return current.create_prop(prop)

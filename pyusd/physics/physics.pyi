@@ -1,10 +1,10 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import Axis
 from ..dtypes import string, token
 from ..gf import float3, point3f, quatf, vector3f
-from ..relationship import Relationship
+from ..relationship_spec import RelationshipSpec
 
-class Physics(Attribute):
+class Physics(AttributeSpec):
 
     class Approximation(token):
         None_ = "none"
@@ -20,7 +20,7 @@ class Physics(Attribute):
 
 
     @property
-    def gravityDirection(self)->Attribute[vector3f]:
+    def gravityDirection(self)->AttributeSpec[vector3f]:
         """Gravity direction vector in simulation world space. Will be
         normalized before use. A zero vector is a request to use the negative
         upAxis. Unitless."""
@@ -29,7 +29,7 @@ class Physics(Attribute):
     def gravityDirection(self, value:vector3f)->None: ...
 
     @property
-    def gravityMagnitude(self)->Attribute[float]:
+    def gravityMagnitude(self)->AttributeSpec[float]:
         """Gravity acceleration magnitude in simulation world space.
         A negative value is a request to use a value equivalent to earth
         gravity regardless of the metersPerUnit scaling used by this scene.
@@ -39,14 +39,14 @@ class Physics(Attribute):
     def gravityMagnitude(self, value:float)->None: ...
 
     @property
-    def rigidBodyEnabled(self)->Attribute[bool]:
+    def rigidBodyEnabled(self)->AttributeSpec[bool]:
         """Determines if this PhysicsRigidBodyAPI is enabled."""
 
     @rigidBodyEnabled.setter
     def rigidBodyEnabled(self, value:bool)->None: ...
 
     @property
-    def kinematicEnabled(self)->Attribute[bool]:
+    def kinematicEnabled(self)->AttributeSpec[bool]:
         """Determines whether the body is kinematic or not. A kinematic
         body is a body that is moved through animated poses or through
         user defined poses. The simulation derives velocities for the
@@ -57,14 +57,14 @@ class Physics(Attribute):
     def kinematicEnabled(self, value:bool)->None: ...
 
     @property
-    def startsAsleep(self)->Attribute[bool]:
+    def startsAsleep(self)->AttributeSpec[bool]:
         """Determines if the body is asleep when the simulation starts."""
 
     @startsAsleep.setter
     def startsAsleep(self, value:bool)->None: ...
 
     @property
-    def velocity(self)->Attribute[vector3f]:
+    def velocity(self)->AttributeSpec[vector3f]:
         """Linear velocity in the same space as the node's xform.
         Units: distance/second."""
 
@@ -72,7 +72,7 @@ class Physics(Attribute):
     def velocity(self, value:vector3f)->None: ...
 
     @property
-    def angularVelocity(self)->Attribute[vector3f]:
+    def angularVelocity(self)->AttributeSpec[vector3f]:
         """Angular velocity in the same space as the node's xform.
         Units: degrees/second."""
 
@@ -80,16 +80,16 @@ class Physics(Attribute):
     def angularVelocity(self, value:vector3f)->None: ...
 
     @property
-    def simulationOwner(self)->Relationship:
+    def simulationOwner(self)->RelationshipSpec:
         """Single PhysicsScene that will simulate this body. By
         default this is the first PhysicsScene found in the stage using
         UsdStage::Traverse()."""
 
     @simulationOwner.setter
-    def simulationOwner(self, value:Relationship)->None: ...
+    def simulationOwner(self, value:RelationshipSpec)->None: ...
 
     @property
-    def mass(self)->Attribute[float]:
+    def mass(self)->AttributeSpec[float]:
         """If non-zero, directly specifies the mass of the object.
         Note that any child prim can also have a mass when they apply massAPI.
         In this case, the precedence rule is 'parent mass overrides the
@@ -104,7 +104,7 @@ class Physics(Attribute):
     def mass(self, value:float)->None: ...
 
     @property
-    def density(self)->Attribute[float]:
+    def density(self)->AttributeSpec[float]:
         """If non-zero, specifies the density of the object.
         In the context of rigid body physics, density indirectly results in
         setting mass via (mass = density x volume of the object). How the
@@ -122,14 +122,14 @@ class Physics(Attribute):
     def density(self, value:float)->None: ...
 
     @property
-    def centerOfMass(self)->Attribute[point3f]:
+    def centerOfMass(self)->AttributeSpec[point3f]:
         """Center of mass in the prim's local space. Units: distance."""
 
     @centerOfMass.setter
     def centerOfMass(self, value:point3f)->None: ...
 
     @property
-    def diagonalInertia(self)->Attribute[float3]:
+    def diagonalInertia(self)->AttributeSpec[float3]:
         """If non-zero, specifies diagonalized inertia tensor along the
         principal axes. Note if diagonalInertial is (0.0, 0.0, 0.0) it is
         ignored. Units: mass*distance*distance."""
@@ -138,7 +138,7 @@ class Physics(Attribute):
     def diagonalInertia(self, value:float3)->None: ...
 
     @property
-    def principalAxes(self)->Attribute[quatf]:
+    def principalAxes(self)->AttributeSpec[quatf]:
         """Orientation of the inertia tensor's principal axes in the
         prim's local space."""
 
@@ -146,14 +146,14 @@ class Physics(Attribute):
     def principalAxes(self, value:quatf)->None: ...
 
     @property
-    def collisionEnabled(self)->Attribute[bool]:
+    def collisionEnabled(self)->AttributeSpec[bool]:
         """Determines if the PhysicsCollisionAPI is enabled."""
 
     @collisionEnabled.setter
     def collisionEnabled(self, value:bool)->None: ...
 
     @property
-    def approximation(self)->Attribute[Approximation]:
+    def approximation(self)->AttributeSpec[Approximation]:
         """Determines the mesh's collision approximation:
     "none" - The mesh geometry is used directly as a collider without any
     approximation.
@@ -172,28 +172,28 @@ class Physics(Attribute):
     def approximation(self, value:Approximation)->None: ...
 
     @property
-    def dynamicFriction(self)->Attribute[float]:
+    def dynamicFriction(self)->AttributeSpec[float]:
         """Dynamic friction coefficient. Unitless."""
 
     @dynamicFriction.setter
     def dynamicFriction(self, value:float)->None: ...
 
     @property
-    def staticFriction(self)->Attribute[float]:
+    def staticFriction(self)->AttributeSpec[float]:
         """Static friction coefficient. Unitless."""
 
     @staticFriction.setter
     def staticFriction(self, value:float)->None: ...
 
     @property
-    def restitution(self)->Attribute[float]:
+    def restitution(self)->AttributeSpec[float]:
         """Restitution coefficient. Unitless."""
 
     @restitution.setter
     def restitution(self, value:float)->None: ...
 
     @property
-    def mergeGroup(self)->Attribute[string]:
+    def mergeGroup(self)->AttributeSpec[string]:
         """If non-empty, any collision groups in a stage with a matching
         mergeGroup should be considered to refer to the same collection. Matching
         collision groups should behave as if there were a single group containing
@@ -203,7 +203,7 @@ class Physics(Attribute):
     def mergeGroup(self, value:string)->None: ...
 
     @property
-    def invertFilteredGroups(self)->Attribute[bool]:
+    def invertFilteredGroups(self)->AttributeSpec[bool]:
         """Normally, the filter will disable collisions against the selected
         filter groups. However, if this option is set, the filter will disable
         collisions against all colliders except for those in the selected filter
@@ -213,64 +213,64 @@ class Physics(Attribute):
     def invertFilteredGroups(self, value:bool)->None: ...
 
     @property
-    def filteredGroups(self)->Relationship:
+    def filteredGroups(self)->RelationshipSpec:
         """References a list of PhysicsCollisionGroups with which
         collisions should be ignored."""
 
     @filteredGroups.setter
-    def filteredGroups(self, value:Relationship)->None: ...
+    def filteredGroups(self, value:RelationshipSpec)->None: ...
 
     @property
-    def filteredPairs(self)->Relationship:
+    def filteredPairs(self)->RelationshipSpec:
         """Relationship to objects that should be filtered."""
 
     @filteredPairs.setter
-    def filteredPairs(self, value:Relationship)->None: ...
+    def filteredPairs(self, value:RelationshipSpec)->None: ...
 
     @property
-    def localPos0(self)->Attribute[point3f]:
+    def localPos0(self)->AttributeSpec[point3f]:
         """Relative position of the joint frame to body0's frame."""
 
     @localPos0.setter
     def localPos0(self, value:point3f)->None: ...
 
     @property
-    def localRot0(self)->Attribute[quatf]:
+    def localRot0(self)->AttributeSpec[quatf]:
         """Relative orientation of the joint frame to body0's frame."""
 
     @localRot0.setter
     def localRot0(self, value:quatf)->None: ...
 
     @property
-    def localPos1(self)->Attribute[point3f]:
+    def localPos1(self)->AttributeSpec[point3f]:
         """Relative position of the joint frame to body1's frame."""
 
     @localPos1.setter
     def localPos1(self, value:point3f)->None: ...
 
     @property
-    def localRot1(self)->Attribute[quatf]:
+    def localRot1(self)->AttributeSpec[quatf]:
         """Relative orientation of the joint frame to body1's frame."""
 
     @localRot1.setter
     def localRot1(self, value:quatf)->None: ...
 
     @property
-    def jointEnabled(self)->Attribute[bool]:
+    def jointEnabled(self)->AttributeSpec[bool]:
         """Determines if the joint is enabled."""
 
     @jointEnabled.setter
     def jointEnabled(self, value:bool)->None: ...
 
     @property
-    def excludeFromArticulation(self)->Attribute[bool]:
+    def excludeFromArticulation(self)->AttributeSpec[bool]:
         """Determines if the joint can be included in an Articulation."""
 
     @excludeFromArticulation.setter
     def excludeFromArticulation(self, value:bool)->None: ...
 
     @property
-    def breakForce(self)->Attribute[float]:
+    def breakForce(self)->AttributeSpec[float]:
         """Joint break force. If set, joint is to break when this force
         limit is reached. (Used for linear DOFs.)
         Units: mass * distance / second / second"""
@@ -279,7 +279,7 @@ class Physics(Attribute):
     def breakForce(self, value:float)->None: ...
 
     @property
-    def breakTorque(self)->Attribute[float]:
+    def breakTorque(self)->AttributeSpec[float]:
         """Joint break torque. If set, joint is to break when this torque
         limit is reached. (Used for angular DOFs.)
         Units: mass * distance * distance / second / second"""
@@ -288,28 +288,28 @@ class Physics(Attribute):
     def breakTorque(self, value:float)->None: ...
 
     @property
-    def body0(self)->Relationship:
+    def body0(self)->RelationshipSpec:
         """Relationship to any UsdGeomXformable."""
 
     @body0.setter
-    def body0(self, value:Relationship)->None: ...
+    def body0(self, value:RelationshipSpec)->None: ...
 
     @property
-    def body1(self)->Relationship:
+    def body1(self)->RelationshipSpec:
         """Relationship to any UsdGeomXformable."""
 
     @body1.setter
-    def body1(self, value:Relationship)->None: ...
+    def body1(self, value:RelationshipSpec)->None: ...
 
     @property
-    def axis(self)->Attribute[Axis]:
+    def axis(self)->AttributeSpec[Axis]:
         """Joint axis."""
 
     @axis.setter
     def axis(self, value:Axis)->None: ...
 
     @property
-    def lowerLimit(self)->Attribute[float]:
+    def lowerLimit(self)->AttributeSpec[float]:
         """Lower limit. Units: degrees. -inf means not limited in
         negative direction."""
 
@@ -317,7 +317,7 @@ class Physics(Attribute):
     def lowerLimit(self, value:float)->None: ...
 
     @property
-    def upperLimit(self)->Attribute[float]:
+    def upperLimit(self)->AttributeSpec[float]:
         """Upper limit. Units: degrees. inf means not limited in
         positive direction."""
 
@@ -325,7 +325,7 @@ class Physics(Attribute):
     def upperLimit(self, value:float)->None: ...
 
     @property
-    def coneAngle0Limit(self)->Attribute[float]:
+    def coneAngle0Limit(self)->AttributeSpec[float]:
         """Cone limit from the primary joint axis in the local0 frame
         toward the next axis. (Next axis of X is Y, and of Z is X.) A
         negative value means not limited. Units: degrees."""
@@ -334,7 +334,7 @@ class Physics(Attribute):
     def coneAngle0Limit(self, value:float)->None: ...
 
     @property
-    def coneAngle1Limit(self)->Attribute[float]:
+    def coneAngle1Limit(self)->AttributeSpec[float]:
         """Cone limit from the primary joint axis in the local0 frame
         toward the second to next axis. A negative value means not limited.
         Units: degrees."""
@@ -343,7 +343,7 @@ class Physics(Attribute):
     def coneAngle1Limit(self, value:float)->None: ...
 
     @property
-    def minDistance(self)->Attribute[float]:
+    def minDistance(self)->AttributeSpec[float]:
         """Minimum distance. If attribute is negative, the joint is not
         limited. Units: distance."""
 
@@ -351,7 +351,7 @@ class Physics(Attribute):
     def minDistance(self, value:float)->None: ...
 
     @property
-    def maxDistance(self)->Attribute[float]:
+    def maxDistance(self)->AttributeSpec[float]:
         """Maximum distance. If attribute is negative, the joint is not
         limited. Units: distance."""
 
@@ -359,7 +359,7 @@ class Physics(Attribute):
     def maxDistance(self, value:float)->None: ...
 
     @property
-    def low(self)->Attribute[float]:
+    def low(self)->AttributeSpec[float]:
         """Lower limit. Units: degrees or distance depending on trans or
         rot axis applied to. -inf means not limited in negative direction."""
 
@@ -367,7 +367,7 @@ class Physics(Attribute):
     def low(self, value:float)->None: ...
 
     @property
-    def high(self)->Attribute[float]:
+    def high(self)->AttributeSpec[float]:
         """Upper limit. Units: degrees or distance depending on trans or
         rot axis applied to. inf means not limited in positive direction."""
 
@@ -375,7 +375,7 @@ class Physics(Attribute):
     def high(self, value:float)->None: ...
 
     @property
-    def maxForce(self)->Attribute[float]:
+    def maxForce(self)->AttributeSpec[float]:
         """Maximum force that can be applied to drive. Units:
                 if linear drive: mass*DIST_UNITS/second/second
                 if angular drive: mass*DIST_UNITS*DIST_UNITS/second/second
@@ -386,7 +386,7 @@ class Physics(Attribute):
     def maxForce(self, value:float)->None: ...
 
     @property
-    def targetPosition(self)->Attribute[float]:
+    def targetPosition(self)->AttributeSpec[float]:
         """Target value for position. Units:
         if linear drive: distance
         if angular drive: degrees."""
@@ -395,7 +395,7 @@ class Physics(Attribute):
     def targetPosition(self, value:float)->None: ...
 
     @property
-    def targetVelocity(self)->Attribute[float]:
+    def targetVelocity(self)->AttributeSpec[float]:
         """Target value for velocity. Units:
         if linear drive: distance/second
         if angular drive: degrees/second."""
@@ -404,7 +404,7 @@ class Physics(Attribute):
     def targetVelocity(self, value:float)->None: ...
 
     @property
-    def damping(self)->Attribute[float]:
+    def damping(self)->AttributeSpec[float]:
         """Damping of the drive. Units:
         if linear drive: mass/second
         If angular drive: mass*DIST_UNITS*DIST_UNITS/second/degrees."""
@@ -413,7 +413,7 @@ class Physics(Attribute):
     def damping(self, value:float)->None: ...
 
     @property
-    def stiffness(self)->Attribute[float]:
+    def stiffness(self)->AttributeSpec[float]:
         """Stiffness of the drive. Units:
         if linear drive: mass/second/second
         if angular drive: mass*DIST_UNITS*DIST_UNITS/degrees/second/second."""

@@ -1,8 +1,8 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..dtypes import token
-from ..relationship import Relationship
+from ..relationship_spec import RelationshipSpec
 
-class Light(Attribute):
+class Light(AttributeSpec):
 
     class MaterialSyncMode(token):
         MaterialGlowTintsLight = "materialGlowTintsLight"
@@ -11,7 +11,7 @@ class Light(Attribute):
 
 
     @property
-    def shaderId(self)->Attribute[token]:
+    def shaderId(self)->AttributeSpec[token]:
         """Default ID for the light's shader.
         This defines the shader ID for this light when a render context specific
         shader ID is not available.
@@ -31,7 +31,7 @@ class Light(Attribute):
     def shaderId(self, value:token)->None: ...
 
     @property
-    def materialSyncMode(self)->Attribute[MaterialSyncMode]:
+    def materialSyncMode(self)->AttributeSpec[MaterialSyncMode]:
         """
         For a LightAPI applied to geometry that has a bound Material,
         which is entirely or partly emissive, this specifies the relationship
@@ -65,8 +65,8 @@ class Light(Attribute):
     def materialSyncMode(self, value:MaterialSyncMode)->None: ...
 
     @property
-    def filters(self)->Relationship:
+    def filters(self)->RelationshipSpec:
         """Relationship to the light filters that apply to this light."""
 
     @filters.setter
-    def filters(self, value:Relationship)->None: ...
+    def filters(self, value:RelationshipSpec)->None: ...

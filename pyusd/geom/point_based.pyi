@@ -1,17 +1,16 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..gf import normal3f, point3f, vector3f
 from .gprim import Gprim
 
 class PointBased(Gprim):
     """Base class for all UsdGeomGprims that possess points,
-    providing common attributes such as normals and velocities."""
-
-    def __init__(self, name:str="")->None: ...
+    providing common attributes such as normals and velocities.
+    """
 
     @property
-    def points(self)->Attribute[List[point3f]]:
+    def points(self)->AttributeSpec[List[point3f]]:
         """The primary geometry attribute for all PointBased
         primitives, describes points in (local) space."""
 
@@ -19,7 +18,7 @@ class PointBased(Gprim):
     def points(self, value:List[point3f])->None: ...
 
     @property
-    def velocities(self)->Attribute[List[vector3f]]:
+    def velocities(self)->AttributeSpec[List[vector3f]]:
         """If provided, 'velocities' should be used by renderers to
 
         compute positions between samples for the 'points' attribute, rather
@@ -37,7 +36,7 @@ class PointBased(Gprim):
     def velocities(self, value:List[vector3f])->None: ...
 
     @property
-    def accelerations(self)->Attribute[List[vector3f]]:
+    def accelerations(self)->AttributeSpec[List[vector3f]]:
         """If provided, 'accelerations' should be used with
         velocities to compute positions between samples for the 'points'
         attribute rather than interpolating between neighboring 'points'
@@ -49,7 +48,7 @@ class PointBased(Gprim):
     def accelerations(self, value:List[vector3f])->None: ...
 
     @property
-    def normals(self)->Attribute[List[normal3f]]:
+    def normals(self)->AttributeSpec[List[normal3f]]:
         """Provide an object-space orientation for individual points,
         which, depending on subclass, may define a surface, curve, or free
         points.  Note that 'normals' should not be authored on any Mesh that

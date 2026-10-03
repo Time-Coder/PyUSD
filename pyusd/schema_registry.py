@@ -18,7 +18,7 @@ import pkgutil
 from typing import Dict, List, Optional
 
 from .common import SchemaKind
-from .property import Property
+from .property_spec import PropertySpec
 
 _PACKAGE = "pyusd"
 
@@ -33,7 +33,7 @@ class SchemaType:
         name: str,
         cls: Optional[type],
         bases: List[str],
-        declared_props: Dict[str, Property],
+        declared_props: Dict[str, PropertySpec],
     ) -> None:
         self.name = name
         self.cls = cls
@@ -44,7 +44,7 @@ class SchemaType:
     def inherits(self) -> List[str]:
         return [f"</{base}>" for base in self.bases]
 
-    def declared_prop(self, prop_name: str) -> Optional[Property]:
+    def declared_prop(self, prop_name: str) -> Optional[PropertySpec]:
         """Resolve a possibly namespaced declaration, e.g. ``xformOp:translate``."""
         parts = prop_name.split(":")
         current = self.declared_props.get(parts[0])
@@ -61,7 +61,7 @@ class SchemaType:
     def declared_leaf_names(self) -> List[str]:
         """Names of declared leaf properties, namespaces expanded to ``ns:leaf``.
 
-        Only a plain ``Attribute`` is expanded. That is a namespace group whose
+        Only a plain ``AttributeSpec`` is expanded. That is a namespace group whose
         children are genuine declared attributes, such as ``primvars`` or
         ``exposure``. ``Xformable`` also declares a non-leaf ``xformOp``, but that
         entry is an ``XformOp`` instance -- a schema over one op attribute, not a
@@ -77,16 +77,16 @@ class SchemaType:
         *and* the ``exposure:`` namespace, and the generated class models the legacy
         attribute as the head of the group, so its own name has to be reported too.
         """
-        from .attribute import Attribute
+        from .attribute_spec import AttributeSpec
         from .dtypes import namespace
 
         names: List[str] = []
 
-        def walk(props: Dict[str, Property], prefix: str) -> None:
+        def walk(props: Dict[str, PropertySpec], prefix: str) -> None:
             for name, prop in props.items():
                 full = name if not prefix else f"{prefix}:{name}"
                 if not prop.is_leaf and prop._props:
-                    if type(prop) is not Attribute:
+                    if type(prop) is not AttributeSpec:
                         continue
                     if getattr(prop, "_type", None) is not namespace:
                         names.append(full)
@@ -128,15 +128,15 @@ class SchemaType:
         return bases
 
     @staticmethod
-    def _collect_declared_props(cls: type) -> Dict[str, Property]:
+    def _collect_declared_props(cls: type) -> Dict[str, PropertySpec]:
         """Gather property declarations from a schema class, base classes first."""
-        declared: Dict[str, Property] = {}
+        declared: Dict[str, PropertySpec] = {}
         for klass in reversed(cls.__mro__):
             if klass is object:
                 continue
 
             for name, value in vars(klass).items():
-                if not isinstance(value, Property):
+                if not isinstance(value, PropertySpec):
                     continue
 
                 declared[name] = value
@@ -147,8 +147,8 @@ class SchemaType:
     def _strip_declarations(cls: type) -> None:
         """Turn a schema class into a pure type marker.
 
-        Property declarations used to sit on the class itself, which meant every
-        instance shared one mutable Attribute and a class attribute would shadow
+        PropertySpec declarations used to sit on the class itself, which meant every
+        instance shared one mutable AttributeSpec and a class attribute would shadow
         per-instance access once the class also served as a stage view. The registry
         now holds the only copy, so the attributes are removed once collected.
 
@@ -161,7 +161,7 @@ class SchemaType:
                 continue
 
             for name, value in list(vars(klass).items()):
-                if not isinstance(value, Property):
+                if not isinstance(value, PropertySpec):
                     continue
 
                 with contextlib.suppress(AttributeError, TypeError):
@@ -240,7 +240,7 @@ def schema_type(type_name: str) -> Optional[SchemaType]:
     return _TYPES.get(type_name)
 
 
-def declared_prop(type_name: str, prop_name: str) -> Optional[Property]:
+def declared_prop(type_name: str, prop_name: str) -> Optional[PropertySpec]:
     entry = schema_type(type_name)
     if entry is None:
         return None

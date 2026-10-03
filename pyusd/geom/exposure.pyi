@@ -1,10 +1,9 @@
+from ..attribute_spec import AttributeSpec
 
-from ..attribute import Attribute
-
-class Exposure(Attribute):
+class Exposure(AttributeSpec):
 
     @property
-    def iso(self)->Attribute[float]:
+    def iso(self)->AttributeSpec[float]:
         """The speed rating of the sensor or film when calculating exposure.
                  Higher numbers give a brighter image, lower numbers darker."""
 
@@ -12,7 +11,7 @@ class Exposure(Attribute):
     def iso(self, value:float)->None: ...
 
     @property
-    def time(self)->Attribute[float]:
+    def time(self)->AttributeSpec[float]:
         """Time in seconds that the sensor is exposed to light when calculating exposure.
                  Longer exposure times create a brighter image, shorter times darker.
                  Note that shutter:open and shutter:close model essentially the
@@ -24,7 +23,7 @@ class Exposure(Attribute):
     def time(self, value:float)->None: ...
 
     @property
-    def fStop(self)->Attribute[float]:
+    def fStop(self)->AttributeSpec[float]:
         """f-stop of the aperture when calculating exposure. Smaller numbers
                  create a brighter image, larger numbers darker.
                  Note that the `fStop` attribute also models the diameter of the camera
@@ -37,7 +36,7 @@ class Exposure(Attribute):
     def fStop(self, value:float)->None: ...
 
     @property
-    def responsivity(self)->Attribute[float]:
+    def responsivity(self)->AttributeSpec[float]:
         """Scalar multiplier representing overall responsivity of the
                  sensor system to light when calculating exposure. Intended to be
                  used as a per camera/lens system measured scaling value."""

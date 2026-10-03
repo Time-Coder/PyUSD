@@ -1,6 +1,6 @@
 from ..api_schema_base import APISchemaBase
 from ..common import SchemaKind
-from ..relationship import Relationship
+from ..relationship_spec import RelationshipSpec
 
 
 class CoordSysAPI(APISchemaBase):
@@ -41,7 +41,7 @@ class CoordSysAPI(APISchemaBase):
         }
     }
 
-    binding = Relationship(
+    binding = RelationshipSpec(
         doc="Prim binding expressing the appropriate coordinate systems.",
         metadata={
             "displayName": "Bound Coordinate System"

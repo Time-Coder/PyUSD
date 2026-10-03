@@ -1,7 +1,7 @@
 from typing import List
 
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..gf import float3, half3
 
@@ -37,13 +37,15 @@ class ParticleFieldScaleAttributeAPI(APISchemaBase):
         }
     }
 
-    scales = Attribute(List[float3],
+    scales: AttributeSpec[List[float3]] = AttributeSpec(List[float3],
+        value=[],
         doc="""Affine linear scale factor applied to the kernel that is
         instantiated at each particle.
         """
     )
 
-    scalesh = Attribute(List[half3],
+    scalesh: AttributeSpec[List[half3]] = AttributeSpec(List[half3],
+        value=[],
         doc="""Affine linear scale factor applied to the kernel that is
         instantiated at each particle. If the float precision version is
         defined it should be preferred.

@@ -1,4 +1,4 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..dtypes import token
 from .curves import Curves
 
@@ -204,29 +204,36 @@ class BasisCurves(Curves):
     \\note How did this prim type get its name?  This prim is a portmanteau of
     two different statements in the original RenderMan specification:
     'Basis' and 'Curves'.
-"""
-    def __init__(self, name:str="")->None: ...
+
+    """
+
+
+    class Type(token):
+        Linear = "linear"
+        Cubic = "cubic"
+
+    class Basis(token):
+        Bezier = "bezier"
+        Bspline = "bspline"
+        CatmullRom = "catmullRom"
+
+    class Wrap(token):
+        Nonperiodic = "nonperiodic"
+        Periodic = "periodic"
+        Pinned = "pinned"
 
     @property
-    def type(self)->Attribute[token]:
-        """Linear curves interpolate linearly between two vertices.
-        Cubic curves use a basis matrix with four vertices to interpolate a segment."""
-
-    @type.setter
-    def type(self, value:token)->None: ...
-
-    @property
-    def basis(self)->Attribute[token]:
+    def basis(self)->AttributeSpec[Basis]:
         """The basis specifies the vstep and matrix used for cubic
         interpolation.  \\note The 'hermite' and 'power' tokens have been
         removed. We've provided UsdGeomHermiteCurves
         as an alternative for the 'hermite' basis."""
 
     @basis.setter
-    def basis(self, value:token)->None: ...
+    def basis(self, value:Basis)->None: ...
 
     @property
-    def wrap(self)->Attribute[token]:
+    def wrap(self)->AttributeSpec[Wrap]:
         """If wrap is set to periodic, the curve when rendered will
         repeat the initial vertices (dependent on the vstep) to close the
         curve. If wrap is set to 'pinned', phantom points may be created
@@ -234,4 +241,4 @@ class BasisCurves(Curves):
         """
 
     @wrap.setter
-    def wrap(self, value:token)->None: ...
+    def wrap(self, value:Wrap)->None: ...

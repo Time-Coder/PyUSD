@@ -1,5 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import asset, namespace, string, token
 from ..gf import color3f, float2
@@ -19,8 +19,8 @@ class NodeGraphNodeAPI(APISchemaBase):
         Minimized = "minimized"
 
 
-    ui: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    ui.nodegraph.node.pos = Attribute(float2,
+    ui: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    ui.nodegraph.node.pos = AttributeSpec(float2,
         uniform=True,
         doc="""
         Declared relative position to the parent in a node graph.
@@ -43,7 +43,7 @@ class NodeGraphNodeAPI(APISchemaBase):
             }
         }
     )
-    ui.nodegraph.node.stackingOrder = Attribute(int,
+    ui.nodegraph.node.stackingOrder = AttributeSpec(int,
         uniform=True,
         doc="""
         This optional value is a useful hint when an application cares about
@@ -63,7 +63,7 @@ class NodeGraphNodeAPI(APISchemaBase):
             }
         }
     )
-    ui.nodegraph.node.displayColor = Attribute(color3f,
+    ui.nodegraph.node.displayColor = AttributeSpec(color3f,
         uniform=True,
         doc="""
         This hint defines what tint the node should have in the node graph.
@@ -75,7 +75,7 @@ class NodeGraphNodeAPI(APISchemaBase):
             }
         }
     )
-    ui.nodegraph.node.icon = Attribute(asset,
+    ui.nodegraph.node.icon = AttributeSpec(asset,
         uniform=True,
         doc="""
         This points to an image that should be displayed on the node.  It is
@@ -90,7 +90,7 @@ class NodeGraphNodeAPI(APISchemaBase):
             }
         }
     )
-    ui.nodegraph.node.expansionState = Attribute(ExpansionState,
+    ui.nodegraph.node.expansionState = AttributeSpec(ExpansionState,
         uniform=True,
         doc="""
         The current expansionState of the node in the ui.
@@ -105,7 +105,7 @@ class NodeGraphNodeAPI(APISchemaBase):
             }
         }
     )
-    ui.nodegraph.node.size = Attribute(float2,
+    ui.nodegraph.node.size = AttributeSpec(float2,
         uniform=True,
         doc="""
         Optional size hint for a node in a node graph.
@@ -122,7 +122,7 @@ class NodeGraphNodeAPI(APISchemaBase):
             }
         }
     )
-    ui.nodegraph.node.docURI = Attribute(string,
+    ui.nodegraph.node.docURI = AttributeSpec(string,
         uniform=True,
         doc="""
         A URI pointing to additional detailed documentation for this

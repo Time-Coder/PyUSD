@@ -3,20 +3,20 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .dtypes import namespace
-from .property import Property
+from .property_spec import PropertySpec
 from .usda_serializer import UsdaSerializer
 
 if TYPE_CHECKING:
-    from .attribute import Attribute
+    from .attribute_spec import AttributeSpec
 
 
 class AttributeSerializer:
 
     @staticmethod
-    def to_str(attr: Attribute, indents:int=0, full:bool=False) -> str:
+    def to_str(attr: AttributeSpec, indents:int=0, full:bool=False) -> str:
         result_list = []
         full_name = attr.full_name
-        if (full or attr.value_state != Property.ValueState.Fallback) and attr._type != namespace:
+        if (full or attr.value_state != PropertySpec.ValueState.Fallback) and attr._type != namespace:
             tabs = "    " * indents
             prefix = ""
             if attr._custom:
@@ -26,8 +26,8 @@ class AttributeSerializer:
 
             line = f"{tabs}{prefix}{attr.type_name} {full_name}"
             if (
-                (attr.value_state == Property.ValueState.Fallback and attr._value is not None) or
-                attr.value_state in [Property.ValueState.Authored, Property.ValueState.Cleared]
+                (attr.value_state == PropertySpec.ValueState.Fallback and attr._value is not None) or
+                attr.value_state in [PropertySpec.ValueState.Authored, PropertySpec.ValueState.Cleared]
             ):
                 line += f" = {attr.value_str(indents)}"
 

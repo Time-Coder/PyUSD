@@ -8,6 +8,7 @@ class Typed(Prim):
     concrete, instantiable "IsA" schemas.
 
     UsdTyped implements a typeName-based query for its override of
-    UsdSchemaBase::_IsCompatible().  It provides no other behavior."""
+    UsdSchemaBase::_IsCompatible().  It provides no other behavior.
+    """
 
     schema_kind: SchemaKind = SchemaKind.AbstractTyped

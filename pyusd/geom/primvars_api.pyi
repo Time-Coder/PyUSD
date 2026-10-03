@@ -27,4 +27,3 @@ class PrimvarsAPI(APISchemaBase):
      must first cache the results of FindIncrementallyInheritablePrimvars() for
      each non-leaf prim on the stage.
     """
-

@@ -1,4 +1,4 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import token
 from .curves import Curves
@@ -206,6 +206,7 @@ class BasisCurves(Curves):
     \\note How did this prim type get its name?  This prim is a portmanteau of
     two different statements in the original RenderMan specification:
     'Basis' and 'Curves'.
+
     """
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
@@ -216,7 +217,7 @@ class BasisCurves(Curves):
 
     class Basis(token):
         Bezier = "bezier"
-        BSpline = "bspline"
+        Bspline = "bspline"
         CatmullRom = "catmullRom"
 
     class Wrap(token):
@@ -224,19 +225,29 @@ class BasisCurves(Curves):
         Periodic = "periodic"
         Pinned = "pinned"
 
-    type: Attribute[Type] = Attribute(Type, value=Type.Cubic, uniform=True,
+
+    type: AttributeSpec[Type] = AttributeSpec(Type,
+        uniform=True,
         doc="""Linear curves interpolate linearly between two vertices.
-        Cubic curves use a basis matrix with four vertices to interpolate a segment."""
+        Cubic curves use a basis matrix with four vertices to interpolate a segment.
+        """
     )
-    basis: Attribute[Basis] = Attribute(Basis, value=Basis.Bezier, uniform=True,
+
+    basis: AttributeSpec[Basis] = AttributeSpec(Basis,
+        uniform=True,
         doc="""The basis specifies the vstep and matrix used for cubic
         interpolation.  \\note The 'hermite' and 'power' tokens have been
         removed. We've provided UsdGeomHermiteCurves
-        as an alternative for the 'hermite' basis."""
+        as an alternative for the 'hermite' basis.
+        """
     )
-    wrap: Attribute[Wrap] = Attribute(Wrap, value=Wrap.Nonperiodic, uniform=True,
-        doc = """If wrap is set to periodic, the curve when rendered will
+
+    wrap: AttributeSpec[Wrap] = AttributeSpec(Wrap,
+        uniform=True,
+        doc="""If wrap is set to periodic, the curve when rendered will
         repeat the initial vertices (dependent on the vstep) to close the
         curve. If wrap is set to 'pinned', phantom points may be created
-        to ensure that the curve interpolation starts at P[0] and ends at P[n-1]."""
+        to ensure that the curve interpolation starts at P[0] and ends at P[n-1].
+
+        """
     )

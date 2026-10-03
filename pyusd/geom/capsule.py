@@ -1,6 +1,6 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import Axis, SchemaKind
 from ..dtypes import double
 from ..gf import float3
@@ -13,7 +13,8 @@ class Capsule(Gprim):
     \\em axis.
     The spherical cap heights (sagitta) of the two endcaps are a function of
     the relative radii of the endcaps, such that cylinder tangent and sphere
-    tangent are coincident and maintain C1 continuity."""
+    tangent are coincident and maintain C1 continuity.
+    """
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
@@ -25,23 +26,28 @@ class Capsule(Gprim):
         }
     }
 
-    height: Attribute[double] = Attribute(double, value=1.0, doc=
-        """The length of the capsule's spine along the specified
+    height: AttributeSpec[double] = AttributeSpec(double,
+        doc="""The length of the capsule's spine along the specified
         \\em axis excluding the size of the two half spheres, i.e.
         the length of the cylinder portion of the capsule.
         If you author \\em height you must also author \\em extent.
-        \\sa GetExtentAttr()"""
+        \\sa GetExtentAttr()
+        """
     )
-    radius: Attribute[double] = Attribute(double, value=0.5, doc=
-        """The radius of the capsule.  If you
+
+    radius: AttributeSpec[double] = AttributeSpec(double,
+        doc="""The radius of the capsule.  If you
         author \\em radius you must also author \\em extent.
 
-        \\sa GetExtentAttr()"""
+        \\sa GetExtentAttr()
+        """
     )
-    axis: Attribute[Axis] = Attribute(Axis, value=Axis.Z, uniform=True,
-        doc = "The axis along which the spine of the capsule is aligned"
-    )
-    extent: Attribute[List[float3]] = Attribute(List[float3], value=[(-0.5, -0.5, -1.0), (0.5, 0.5, 1.0)], doc=
-        """Extent is re-defined on Capsule only to provide a fallback
-        value. \\sa UsdGeomGprim::GetExtentAttr()."""
+
+    axis: AttributeSpec[Axis] = AttributeSpec(Axis, uniform=True, doc="The axis along which the spine of the capsule is aligned")
+
+    extent: AttributeSpec[List[float3]] = AttributeSpec(List[float3],
+        value=[],
+        doc="""Extent is re-defined on Capsule only to provide a fallback
+        value. \\sa UsdGeomGprim::GetExtentAttr().
+        """
     )

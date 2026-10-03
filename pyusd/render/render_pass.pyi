@@ -1,8 +1,8 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..dtypes import asset, string, token
-from ..relationship import Relationship
+from ..relationship_spec import RelationshipSpec
 from ..typed import Typed
 from .collection import Collection
 
@@ -91,7 +91,7 @@ class RenderPass(Typed):
     def collection(self) -> Collection: ...
 
     @property
-    def passType(self)->Attribute[token]:
+    def passType(self)->AttributeSpec[token]:
         """A string used to categorize differently structured
         or executed types of passes within a customized pipeline.
 
@@ -105,7 +105,7 @@ class RenderPass(Typed):
     def passType(self, value:token)->None: ...
 
     @property
-    def command(self)->Attribute[List[string]]:
+    def command(self)->AttributeSpec[List[string]]:
         """The command to run in order to generate
         renders for this pass.  The job submission code can use
         this to properly send tasks to the job scheduling software
@@ -127,7 +127,7 @@ class RenderPass(Typed):
     def command(self, value:List[string])->None: ...
 
     @property
-    def fileName(self)->Attribute[asset]:
+    def fileName(self)->AttributeSpec[asset]:
         """The asset that contains the rendering prims or other
         information needed to render this pass.
         """
@@ -136,7 +136,7 @@ class RenderPass(Typed):
     def fileName(self, value:asset)->None: ...
 
     @property
-    def renderSource(self)->Relationship:
+    def renderSource(self)->RelationshipSpec:
         """The source prim to render from.  If _fileName_ is not present,
         the source is assumed to be a RenderSettings prim present in the current
         Usd stage. If fileName is present, the source should be found in the
@@ -150,10 +150,10 @@ class RenderPass(Typed):
         """
 
     @renderSource.setter
-    def renderSource(self, value:Relationship)->None: ...
+    def renderSource(self, value:RelationshipSpec)->None: ...
 
     @property
-    def inputPasses(self)->Relationship:
+    def inputPasses(self)->RelationshipSpec:
         """The set of other Passes that this Pass depends on
         in order to be constructed properly.  For example, a Pass A
         may generate a texture, which is then used as an input to
@@ -176,4 +176,4 @@ class RenderPass(Typed):
         """
 
     @inputPasses.setter
-    def inputPasses(self, value:Relationship)->None: ...
+    def inputPasses(self, value:RelationshipSpec)->None: ...

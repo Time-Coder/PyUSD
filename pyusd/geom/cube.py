@@ -1,6 +1,6 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import double
 from ..gf import float3
@@ -11,7 +11,8 @@ class Cube(Gprim):
     """Defines a primitive rectilinear cube centered at the origin.
 
     The fallback values for Cube, Sphere, Cone, and Cylinder are set so that
-    they all pack into the same volume/bounds."""
+    they all pack into the same volume/bounds.
+    """
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
@@ -23,14 +24,17 @@ class Cube(Gprim):
         }
     }
 
-    size: Attribute[double] = Attribute(double, "size", value=2.0, doc=
-        """Indicates the length of each edge of the cube.  If you
+    size: AttributeSpec[double] = AttributeSpec(double,
+        doc="""Indicates the length of each edge of the cube.  If you
         author \\em size you must also author \\em extent.
 
-        \\sa GetExtentAttr()"""
+        \\sa GetExtentAttr()
+        """
     )
 
-    extent: Attribute[List[float3]] = Attribute(List[float3], value=[(-1.0, -1.0, -1.0), (1.0, 1.0, 1.0)], doc=
-        """Extent is re-defined on Cube only to provide a fallback value.
-        \\sa UsdGeomGprim::GetExtentAttr()."""
+    extent: AttributeSpec[List[float3]] = AttributeSpec(List[float3],
+        value=[],
+        doc="""Extent is re-defined on Cube only to provide a fallback value.
+        \\sa UsdGeomGprim::GetExtentAttr().
+        """
     )

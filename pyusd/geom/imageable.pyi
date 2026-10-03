@@ -1,9 +1,7 @@
-
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..dtypes import token
-from ..relationship import Relationship
+from ..relationship_spec import RelationshipSpec
 from ..typed import Typed
-from .visibility_api import VisibilityAPI
 
 class Imageable(Typed):
     """Base class for all prims that may require rendering or
@@ -15,12 +13,22 @@ class Imageable(Typed):
     \\deprecated Imageable also provides API for accessing primvars, which
     has been moved to the UsdGeomPrimvarsAPI schema, because primvars can now
     be applied on non-Imageable prim types.  This API is planned
-    to be removed, UsdGeomPrimvarsAPI should be used directly instead."""
+    to be removed, UsdGeomPrimvarsAPI should be used directly instead.
+    """
 
-    def __init__(self, name:str="")->None: ...
+
+    class Visibility(token):
+        Inherited = "inherited"
+        Invisible = "invisible"
+
+    class Purpose(token):
+        Default = "default"
+        Render = "render"
+        Proxy = "proxy"
+        Guide = "guide"
 
     @property
-    def visibility(self)->Attribute[token]:
+    def visibility(self)->AttributeSpec[Visibility]:
         """Visibility is meant to be the simplest form of "pruning"
         visibility that is supported by most DCC apps.  Visibility is
         animatable, allowing a sub-tree of geometry to be present for some
@@ -29,10 +37,10 @@ class Imageable(Typed):
         available for inspection, for positioning, for defining volumes, etc."""
 
     @visibility.setter
-    def visibility(self, value:token)->None: ...
+    def visibility(self, value:Visibility)->None: ...
 
     @property
-    def purpose(self)->Attribute[token]:
+    def purpose(self)->AttributeSpec[Purpose]:
         """Purpose is a classification of geometry into categories that
         can each be independently included or excluded from traversals of prims
         on a stage, such as rendering or bounding-box computation traversals.
@@ -41,10 +49,10 @@ class Imageable(Typed):
         \\em purpose is computed and used."""
 
     @purpose.setter
-    def purpose(self, value:token)->None: ...
+    def purpose(self, value:Purpose)->None: ...
 
     @property
-    def proxyPrim(self)->Relationship:
+    def proxyPrim(self)->RelationshipSpec:
         """The \\em proxyPrim relationship allows us to link a
         prim whose \\em purpose is "render" to its (single target)
         purpose="proxy" prim.  This is entirely optional, but can be
@@ -67,7 +75,4 @@ class Imageable(Typed):
         prims whose purpose is "render"."""
 
     @proxyPrim.setter
-    def proxyPrim(self, value:Relationship)->None: ...
-
-    @property
-    def visibility_api(self)->VisibilityAPI: ...
+    def proxyPrim(self, value:RelationshipSpec)->None: ...

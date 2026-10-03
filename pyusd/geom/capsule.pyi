@@ -1,5 +1,9 @@
-from ..attribute import Attribute
-from ..dtypes import double, token
+from typing import List
+
+from ..attribute_spec import AttributeSpec
+from ..common import Axis
+from ..dtypes import double
+from ..gf import float3
 from .gprim import Gprim
 
 class Capsule(Gprim):
@@ -8,12 +12,11 @@ class Capsule(Gprim):
     \\em axis.
     The spherical cap heights (sagitta) of the two endcaps are a function of
     the relative radii of the endcaps, such that cylinder tangent and sphere
-    tangent are coincident and maintain C1 continuity."""
-
-    def __init__(self, name:str="")->None: ...
+    tangent are coincident and maintain C1 continuity.
+    """
 
     @property
-    def height(self)->Attribute[double]:
+    def height(self)->AttributeSpec[double]:
         """The length of the capsule's spine along the specified
         \\em axis excluding the size of the two half spheres, i.e.
         the length of the cylinder portion of the capsule.
@@ -21,21 +24,29 @@ class Capsule(Gprim):
         \\sa GetExtentAttr()"""
 
     @height.setter
-    def height(self, value:float)->None: ...
+    def height(self, value:double)->None: ...
 
     @property
-    def radius(self)->Attribute[double]:
+    def radius(self)->AttributeSpec[double]:
         """The radius of the capsule.  If you
         author \\em radius you must also author \\em extent.
 
         \\sa GetExtentAttr()"""
 
     @radius.setter
-    def radius(self, value:float)->None: ...
+    def radius(self, value:double)->None: ...
 
     @property
-    def axis(self)->Attribute[token]:
+    def axis(self)->AttributeSpec[Axis]:
         """The axis along which the spine of the capsule is aligned"""
 
     @axis.setter
-    def axis(self, value:token)->None: ...
+    def axis(self, value:Axis)->None: ...
+
+    @property
+    def extent(self)->AttributeSpec[List[float3]]:
+        """Extent is re-defined on Capsule only to provide a fallback
+        value. \\sa UsdGeomGprim::GetExtentAttr()."""
+
+    @extent.setter
+    def extent(self, value:List[float3])->None: ...

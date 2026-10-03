@@ -1,6 +1,6 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..gf import int3, int4
 from .point_based import PointBased
@@ -15,19 +15,21 @@ class TetMesh(PointBased):
     that need to do surface calculations, such as renderers or consumers using
     physics attachments. Both tetrahedra and surface face definitions use
     indices into the TetMesh's <b>points</b> attribute, inherited from
-    UsdGeomPointBased."""
+    UsdGeomPointBased.
+    """
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     meta = {
         "customData": {
-            "extraIncludes": """
-#include "pxr/usd/usd/timeCode.h" """
+            "extraIncludes": '''
+    #include "pxr/usd/usd/timeCode.h" '''
         }
     }
 
-    tetVertexIndices: Attribute[List[int4]] = Attribute(List[int4], "tetVertexIndices", doc=
-        """Flat list of the index (into the <b>points</b> attribute) of
+    tetVertexIndices: AttributeSpec[List[int4]] = AttributeSpec(List[int4],
+        value=[],
+        doc="""Flat list of the index (into the <b>points</b> attribute) of
         each vertex of each tetrahedron in the mesh. Each int4 corresponds to the
         indices of a single tetrahedron. Users should set the <b>orientation</b>
         attribute of UsdGeomPrim accordingly. That is if the <b>orientation</b>
@@ -49,13 +51,16 @@ class TetMesh(PointBased):
 
         Setting the <b>orientation</b> attribute to align with the
         ordering of the int4 for the tetrahedrons is the responsibility of the
-        user."""
+        user.
+        """
     )
 
-    surfaceFaceVertexIndices: Attribute[List[int3]] = Attribute(List[int3], "surfaceFaceVertexIndices", doc=
-        """<b>surfaceFaceVertexIndices</b> defines the triangle
+    surfaceFaceVertexIndices: AttributeSpec[List[int3]] = AttributeSpec(List[int3],
+        value=[],
+        doc="""<b>surfaceFaceVertexIndices</b> defines the triangle
         surface faces indices wrt. <b>points</b> of the tetmesh surface. Again
         the <b>orientation</b> attribute inherited from UsdGeomPrim should be
         set accordingly. The <b>orientation</b> for faces of tetrahedra and
-        surface faces must match."""
+        surface faces must match.
+        """
     )

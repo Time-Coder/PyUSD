@@ -1,5 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace
 
@@ -24,8 +24,9 @@ class PhysicsLimitAPI(APISchemaBase):
         }
     }
 
-    physics: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    physics.low = Attribute(float,
+    physics: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    physics.low = AttributeSpec(float,
+        value=float('-inf'),
         doc="""Lower limit. Units: degrees or distance depending on trans or
         rot axis applied to. -inf means not limited in negative direction.
         """,
@@ -36,7 +37,8 @@ class PhysicsLimitAPI(APISchemaBase):
             "displayName": "Low Limit"
         }
     )
-    physics.high = Attribute(float,
+    physics.high = AttributeSpec(float,
+        value=float('inf'),
         doc="""Upper limit. Units: degrees or distance depending on trans or
         rot axis applied to. inf means not limited in positive direction.
         """,

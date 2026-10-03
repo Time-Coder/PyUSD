@@ -1,4 +1,4 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import Axis, SchemaKind
 from ..dtypes import namespace
 from .physics_joint import PhysicsJoint
@@ -17,9 +17,10 @@ class PhysicsPrismaticJoint(PhysicsJoint):
         }
     }
 
-    physics: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    physics.axis = Attribute(Axis,
+    physics: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    physics.axis = AttributeSpec(Axis,
         uniform=True,
+        value="X",
         doc="Joint axis.",
         metadata={
             "customData": {
@@ -28,7 +29,8 @@ class PhysicsPrismaticJoint(PhysicsJoint):
             "displayName": "Axis"
         }
     )
-    physics.lowerLimit = Attribute(float,
+    physics.lowerLimit = AttributeSpec(float,
+        value=float('-inf'),
         doc="""Lower limit. Units: distance. -inf means not limited in
         negative direction.
         """,
@@ -39,7 +41,8 @@ class PhysicsPrismaticJoint(PhysicsJoint):
             "displayName": "Lower Limit"
         }
     )
-    physics.upperLimit = Attribute(float,
+    physics.upperLimit = AttributeSpec(float,
+        value=float('inf'),
         doc="""Upper limit. Units: distance. inf means not limited in
         positive direction.
         """,

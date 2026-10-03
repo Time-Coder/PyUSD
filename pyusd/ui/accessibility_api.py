@@ -1,5 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import string, token
 
@@ -66,7 +66,7 @@ class AccessibilityAPI(APISchemaBase):
         High = "high"
 
 
-    label = Attribute(string,
+    label: AttributeSpec[string] = AttributeSpec(string,
         doc="""A short label to concisely describe the prim.
         It is not recommended to time vary the label unless the concise
         description changes substantially.
@@ -76,7 +76,7 @@ class AccessibilityAPI(APISchemaBase):
         """
     )
 
-    description = Attribute(string,
+    description: AttributeSpec[string] = AttributeSpec(string,
         doc="""An extended description of the prim to provide more details.
         If a label attribute is not authored in a given instance name,
         the description attribute should not be used in it its place. A
@@ -89,7 +89,7 @@ class AccessibilityAPI(APISchemaBase):
         """
     )
 
-    priority = Attribute(Priority,
+    priority: AttributeSpec[Priority] = AttributeSpec(Priority,
         doc="""A hint to the accessibility runtime of how to prioritize this
         instance's label and description, relative to others.
 

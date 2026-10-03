@@ -10,13 +10,13 @@ from __future__ import annotations
 import os
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union, cast
 
-from .attribute import Attribute
+from .attribute_spec import AttributeSpec
 from .composition import CompositionEngine, LayerCache
 from .layer import Layer
 from .prim import Prim, PrimType
 from .prim_spec import PrimSpec
-from .property import Property
-from .relationship import Relationship
+from .property_spec import PropertySpec
+from .relationship_spec import RelationshipSpec
 from .sdf import Specifier
 from .stage_metadata import StageMetadata
 from .stage_property import StageProperty
@@ -251,23 +251,23 @@ class Stage:
 
         return prim
 
-    def _set_property(self, prim_path: str, prop_name: str, value: Any) -> Property:
+    def _set_property(self, prim_path: str, prop_name: str, value: Any) -> PropertySpec:
         prim_path = normalize_prim_path(prim_path)
         prop_name = normalize_property_name(prop_name)
         template = self._engine.resolve_property(prim_path, prop_name)
         edit_prim = self._ensure_edit_prim(prim_path)
 
-        if isinstance(value, Property):
+        if isinstance(value, PropertySpec):
             prop = value.clone()
             prop._name = prop_name.split(":")[-1]
             self._install_property(edit_prim, prop_name, prop)
             self.invalidate()
             return prop
 
-        if isinstance(template, Relationship) or StageProperty._is_relationship_value(value):
+        if isinstance(template, RelationshipSpec) or StageProperty._is_relationship_value(value):
             rel = self._ensure_edit_relationship(edit_prim, prop_name, template)
             rel._targets = StageProperty._coerce_relationship_targets(value)
-            rel._value_state = Property.ValueState.Authored
+            rel._value_state = PropertySpec.ValueState.Authored
             self.invalidate()
             return rel
 
@@ -291,7 +291,7 @@ class Stage:
     ) -> StageProperty:
         edit_prim = self._ensure_edit_prim(prim_path)
         prop_name = normalize_property_name(prop_name)
-        attr = Attribute(
+        attr = AttributeSpec(
             value_type,
             name=prop_name.split(":")[-1],
             value=None,
@@ -302,7 +302,7 @@ class Stage:
             custom=custom,
             fix_type=fix_type,
         )
-        attr._value_state = Property.ValueState.NotAuthored
+        attr._value_state = PropertySpec.ValueState.NotAuthored
         self._install_property(edit_prim, prop_name, attr)
         if value is not None:
             attr.set(value)
@@ -321,17 +321,17 @@ class Stage:
     ) -> StageProperty:
         edit_prim = self._ensure_edit_prim(prim_path)
         prop_name = normalize_property_name(prop_name)
-        rel = Relationship(
+        rel = RelationshipSpec(
             name=prop_name.split(":")[-1],
             doc=doc,
             metadata=metadata,
             custom=custom,
             is_leaf=is_leaf,
         )
-        rel._value_state = Property.ValueState.NotAuthored
+        rel._value_state = PropertySpec.ValueState.NotAuthored
         if targets is not None:
             rel._targets = StageProperty._coerce_relationship_targets(targets)
-            rel._value_state = Property.ValueState.Authored
+            rel._value_state = PropertySpec.ValueState.Authored
         self._install_property(edit_prim, prop_name, rel)
         self.invalidate()
         return StageProperty(self, prim_path, prop_name)
@@ -352,13 +352,13 @@ class Stage:
 
         self.invalidate()
 
-    def _install_property(self, prim: PrimSpec, prop_name: str, prop: Property) -> Property:
+    def _install_property(self, prim: PrimSpec, prop_name: str, prop: PropertySpec) -> PropertySpec:
         names = normalize_property_name(prop_name).split(":")
-        current: Union[PrimSpec, Property] = prim
+        current: Union[PrimSpec, PropertySpec] = prim
         for name in names[:-1]:
             props = current._props
             if name not in props:
-                namespace_prop = Property(name, custom=True, is_leaf=False)
+                namespace_prop = PropertySpec(name, custom=True, is_leaf=False)
                 current.create_prop(namespace_prop)
             current = props[name]
 
@@ -370,8 +370,8 @@ class Stage:
         self,
         prim: PrimSpec,
         prop_name: str,
-        template: Optional[Property],
-    ) -> Property:
+        template: Optional[PropertySpec],
+    ) -> PropertySpec:
         prop_name = normalize_property_name(prop_name)
         existing = self._local_prop_at(prim, prop_name)
         if existing is not None:
@@ -380,7 +380,7 @@ class Stage:
         if template is not None:
             prop = self._clone_for_edit(template)
         else:
-            prop = Property(prop_name.split(":")[-1], custom=True, is_leaf=False)
+            prop = PropertySpec(prop_name.split(":")[-1], custom=True, is_leaf=False)
 
         return self._install_property(prim, prop_name, prop)
 
@@ -388,21 +388,21 @@ class Stage:
         self,
         prim: PrimSpec,
         prop_name: str,
-        template: Optional[Property],
+        template: Optional[PropertySpec],
         value: Any,
-    ) -> Attribute:
+    ) -> AttributeSpec:
         existing = self._local_prop_at(prim, prop_name)
-        if isinstance(existing, Attribute):
+        if isinstance(existing, AttributeSpec):
             return existing
 
-        if isinstance(template, Attribute):
+        if isinstance(template, AttributeSpec):
             attr = self._clone_for_edit(template)
-            if not isinstance(attr, Attribute):
-                raise TypeError("template clone did not produce an Attribute")
+            if not isinstance(attr, AttributeSpec):
+                raise TypeError("template clone did not produce an AttributeSpec")
         else:
             value_type = str if value is None else infer_type(value)
-            attr = Attribute(value_type, prop_name.split(":")[-1], custom=True, fix_type=False)
-            attr._value_state = Property.ValueState.NotAuthored
+            attr = AttributeSpec(value_type, prop_name.split(":")[-1], custom=True, fix_type=False)
+            attr._value_state = PropertySpec.ValueState.NotAuthored
 
         self._install_property(prim, prop_name, attr)
         return attr
@@ -411,19 +411,19 @@ class Stage:
         self,
         prim: PrimSpec,
         prop_name: str,
-        template: Optional[Property],
-    ) -> Relationship:
+        template: Optional[PropertySpec],
+    ) -> RelationshipSpec:
         existing = self._local_prop_at(prim, prop_name)
-        if isinstance(existing, Relationship):
+        if isinstance(existing, RelationshipSpec):
             return existing
 
-        if isinstance(template, Relationship):
+        if isinstance(template, RelationshipSpec):
             rel = self._clone_for_edit(template)
-            if not isinstance(rel, Relationship):
-                raise TypeError("template clone did not produce a Relationship")
+            if not isinstance(rel, RelationshipSpec):
+                raise TypeError("template clone did not produce a RelationshipSpec")
         else:
-            rel = Relationship(prop_name.split(":")[-1], custom=True)
-            rel._value_state = Property.ValueState.NotAuthored
+            rel = RelationshipSpec(prop_name.split(":")[-1], custom=True)
+            rel._value_state = PropertySpec.ValueState.NotAuthored
 
         self._install_property(prim, prop_name, rel)
         return rel
@@ -443,23 +443,23 @@ class Stage:
         return prim
 
     @staticmethod
-    def _clone_for_edit(prop: Property) -> Property:
+    def _clone_for_edit(prop: PropertySpec) -> PropertySpec:
         """A detached copy of a resolved property, ready to be authored over."""
         result = prop.clone()
         result._parent = None
-        if isinstance(result, Attribute):
+        if isinstance(result, AttributeSpec):
             result._time_samples = {}
-            result._value_state = Property.ValueState.NotAuthored
-        elif isinstance(result, Relationship):
+            result._value_state = PropertySpec.ValueState.NotAuthored
+        elif isinstance(result, RelationshipSpec):
             result._targets = []
-            result._value_state = Property.ValueState.NotAuthored
+            result._value_state = PropertySpec.ValueState.NotAuthored
         else:
-            result._value_state = Property.ValueState.NotAuthored
+            result._value_state = PropertySpec.ValueState.NotAuthored
 
         return result
 
     @staticmethod
-    def _local_prop_at(prim: PrimSpec, prop_name: str) -> Optional[Property]:
+    def _local_prop_at(prim: PrimSpec, prop_name: str) -> Optional[PropertySpec]:
         """The property already authored on this spec, without consulting composition."""
         names = normalize_property_name(prop_name).split(":")
         current: Any = prim

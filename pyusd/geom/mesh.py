@@ -1,6 +1,6 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import token
 from .point_based import PointBased
@@ -76,14 +76,15 @@ class Mesh(PointBased):
 
     The normals generated for smooth subdivision schemes, e.g. Catmull-Clark
     and Loop, will likewise be smooth, but others, e.g. Bilinear, may be
-    discontinuous between faces and/or within non-planar irregular faces."""
+    discontinuous between faces and/or within non-planar irregular faces.
+    """
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
     meta = {
         "customData": {
-            "extraIncludes": """
-#include "pxr/usd/usd/timeCode.h" """
+            "extraIncludes": '''
+    #include "pxr/usd/usd/timeCode.h" '''
         }
     }
 
@@ -93,12 +94,12 @@ class Mesh(PointBased):
         Bilinear = "bilinear"
         None_ = "none"
 
-    class BoundaryInterpolation(token):
+    class InterpolateBoundary(token):
         None_ = "none"
         EdgeOnly = "edgeOnly"
         EdgeAndCorner = "edgeAndCorner"
 
-    class FaceVaryingInterpolation(token):
+    class FaceVaryingLinearInterpolation(token):
         None_ = "none"
         CornersOnly = "cornersOnly"
         CornersPlus1 = "cornersPlus1"
@@ -106,25 +107,31 @@ class Mesh(PointBased):
         Boundaries = "boundaries"
         All = "all"
 
-    class TriangleSubdivision(token):
+    class TriangleSubdivisionRule(token):
         CatmullClark = "catmullClark"
         Smooth = "smooth"
 
-    faceVertexIndices: Attribute[List[int]] = Attribute(List[int], doc=
-        """Flat list of the index (into the _points_ attribute) of each
+
+    faceVertexIndices: AttributeSpec[List[int]] = AttributeSpec(List[int],
+        value=[],
+        doc="""Flat list of the index (into the _points_ attribute) of each
         vertex of each face in the mesh.  If this attribute has more than
-        one timeSample, the mesh is considered to be topologically varying."""
+        one timeSample, the mesh is considered to be topologically varying.
+        """
     )
 
-    faceVertexCounts: Attribute[List[int]] = Attribute(List[int], doc=
-        """Provides the number of vertices in each face of the mesh,
+    faceVertexCounts: AttributeSpec[List[int]] = AttributeSpec(List[int],
+        value=[],
+        doc="""Provides the number of vertices in each face of the mesh,
         which is also the number of consecutive indices in _faceVertexIndices_
         that define the face.  The length of this attribute is the number of
         faces in the mesh.  If this attribute has more than
-        one timeSample, the mesh is considered to be topologically varying."""
+        one timeSample, the mesh is considered to be topologically varying.
+        """
     )
 
-    subdivisionScheme: Attribute[SubdivisionScheme] = Attribute(SubdivisionScheme, value=SubdivisionScheme.CatmullClark, uniform=True,
+    subdivisionScheme: AttributeSpec[SubdivisionScheme] = AttributeSpec(SubdivisionScheme,
+        uniform=True,
         doc="""The subdivision scheme to be applied to the surface.
         Valid values are:
 
@@ -142,10 +149,11 @@ class Mesh(PointBased):
         depending on renderer and render mode.  Use of "bilinear" will produce
         a similar shape to a polygonal mesh and may offer additional guarantees
         of watertightness and additional subdivision features (e.g. holes) but
-        may also not respect authored normals."""
+        may also not respect authored normals.
+        """
     )
 
-    interpolateBoundary: Attribute[BoundaryInterpolation] = Attribute(BoundaryInterpolation, value=BoundaryInterpolation.EdgeAndCorner,
+    interpolateBoundary: AttributeSpec[InterpolateBoundary] = AttributeSpec(InterpolateBoundary,
         doc="""Specifies how subdivision is applied for faces adjacent to
         boundary edges and boundary points. Valid values correspond to choices
         available in OpenSubdiv:
@@ -159,10 +167,11 @@ class Mesh(PointBased):
 
         These are illustrated and described in more detail in the OpenSubdiv
         documentation:
-        https://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html#boundary-interpolation-rules"""
+        https://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html#boundary-interpolation-rules
+        """
     )
 
-    faceVaryingLinearInterpolation: Attribute[FaceVaryingInterpolation] = Attribute(FaceVaryingInterpolation, value=FaceVaryingInterpolation.CornersPlus1,
+    faceVaryingLinearInterpolation: AttributeSpec[FaceVaryingLinearInterpolation] = AttributeSpec(FaceVaryingLinearInterpolation,
         doc="""Specifies how elements of a primvar of interpolation type
         "faceVarying" are interpolated for subdivision surfaces. Interpolation
         can be as smooth as a "vertex" primvar or constrained to be linear at
@@ -184,54 +193,67 @@ class Mesh(PointBased):
 
         These are illustrated and described in more detail in the OpenSubdiv
         documentation:
-        https://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html#face-varying-interpolation-rules"""
+        https://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html#face-varying-interpolation-rules
+        """
     )
 
-    triangleSubdivisionRule: Attribute[TriangleSubdivision] = Attribute(TriangleSubdivision, value=TriangleSubdivision.CatmullClark,
+    triangleSubdivisionRule: AttributeSpec[TriangleSubdivisionRule] = AttributeSpec(TriangleSubdivisionRule,
         doc="""Specifies an option to the subdivision rules for the
         Catmull-Clark scheme to try and improve undesirable artifacts when
         subdividing triangles.  Valid values are "catmullClark" for the
         standard rules (the default) and "smooth" for the improvement.
 
-        See https://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html#triangle-subdivision-rule"""
+        See https://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html#triangle-subdivision-rule
+        """
     )
 
-    holeIndices: Attribute[List[int]] = Attribute(List[int], value=[], doc=
-        """The indices of all faces that should be treated as holes,
+    holeIndices: AttributeSpec[List[int]] = AttributeSpec(List[int],
+        value=[],
+        doc="""The indices of all faces that should be treated as holes,
         i.e. made invisible. This is traditionally a feature of subdivision
-        surfaces and not generally applied to polygonal meshes."""
+        surfaces and not generally applied to polygonal meshes.
+        """
     )
 
-    cornerIndices: Attribute[List[int]] = Attribute(List[int], value=[], doc=
-        """The indices of points for which a corresponding sharpness
+    cornerIndices: AttributeSpec[List[int]] = AttributeSpec(List[int],
+        value=[],
+        doc="""The indices of points for which a corresponding sharpness
         value is specified in _cornerSharpnesses_ (so the size of this array
-        must match that of _cornerSharpnesses_)."""
+        must match that of _cornerSharpnesses_).
+        """
     )
 
-    cornerSharpnesses: Attribute[List[float]] = Attribute(List[float], value=[], doc=
-        """The sharpness values associated with a corresponding set of
+    cornerSharpnesses: AttributeSpec[List[float]] = AttributeSpec(List[float],
+        value=[],
+        doc="""The sharpness values associated with a corresponding set of
         points specified in _cornerIndices_ (so the size of this array must
         match that of _cornerIndices_). Use the constant `SHARPNESS_INFINITE`
-        for a perfectly sharp corner."""
+        for a perfectly sharp corner.
+        """
     )
 
-    creaseIndices: Attribute[List[int]] = Attribute(List[int], value=[], doc=
-        """The indices of points grouped into sets of successive pairs
+    creaseIndices: AttributeSpec[List[int]] = AttributeSpec(List[int],
+        value=[],
+        doc="""The indices of points grouped into sets of successive pairs
         that identify edges to be creased. The size of this array must be
-        equal to the sum of all elements of the _creaseLengths_ attribute."""
+        equal to the sum of all elements of the _creaseLengths_ attribute.
+        """
     )
 
-    creaseLengths: Attribute[List[int]] = Attribute(List[int], value=[], doc=
-        """The length of this array specifies the number of creases
+    creaseLengths: AttributeSpec[List[int]] = AttributeSpec(List[int],
+        value=[],
+        doc="""The length of this array specifies the number of creases
         (sets of adjacent sharpened edges) on the mesh. Each element gives
         the number of points of each crease, whose indices are successively
         laid out in the _creaseIndices_ attribute. Since each crease must
         be at least one edge long, each element of this array must be at
-        least two."""
+        least two.
+        """
     )
 
-    creaseSharpnesses: Attribute[List[float]] = Attribute(List[float], value=[], doc=
-        """The per-crease or per-edge sharpness values for all creases.
+    creaseSharpnesses: AttributeSpec[List[float]] = AttributeSpec(List[float],
+        value=[],
+        doc="""The per-crease or per-edge sharpness values for all creases.
         Since _creaseLengths_ encodes the number of points in each crease,
         the number of elements in this array will be either len(creaseLengths)
         or the sum over all X of (creaseLengths[X] - 1). Note that while
@@ -239,5 +261,6 @@ class Mesh(PointBased):
         or a value per-edge, USD will encode either a single sharpness
         per crease on a mesh, or sharpnesses for all edges making up
         the creases on a mesh.  Use the constant `SHARPNESS_INFINITE` for a
-        perfectly sharp crease."""
+        perfectly sharp crease.
+        """
     )

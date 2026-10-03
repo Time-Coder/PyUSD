@@ -1,4 +1,4 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..dtypes import asset, double, timecode, token
 from ..geom.xformable import Xformable
 
@@ -49,7 +49,7 @@ class SpatialAudio(Xformable):
         LoopFromStage = "loopFromStage"
 
     @property
-    def filePath(self)->Attribute[asset]:
+    def filePath(self)->AttributeSpec[asset]:
         """Path to the audio file.
         In general, the formats allowed for audio files is no more constrained
         by USD than is image-type. As with images, however, usdz has stricter
@@ -63,7 +63,7 @@ class SpatialAudio(Xformable):
     def filePath(self, value:asset)->None: ...
 
     @property
-    def auralMode(self)->Attribute[AuralMode]:
+    def auralMode(self)->AttributeSpec[AuralMode]:
         """Determines how audio should be played.
         Valid values are:
         - spatial: Play the audio in 3D space if the device can support spatial
@@ -80,7 +80,7 @@ class SpatialAudio(Xformable):
     def auralMode(self, value:AuralMode)->None: ...
 
     @property
-    def playbackMode(self)->Attribute[PlaybackMode]:
+    def playbackMode(self)->AttributeSpec[PlaybackMode]:
         """Along with \\a startTime and \\a endTime, determines when the
         audio playback should start and stop during the stage's animation
         playback and whether the audio should loop during its duration.
@@ -104,7 +104,7 @@ class SpatialAudio(Xformable):
     def playbackMode(self, value:PlaybackMode)->None: ...
 
     @property
-    def startTime(self)->Attribute[timecode]:
+    def startTime(self)->AttributeSpec[timecode]:
         """Expressed in the timeCodesPerSecond of the containing stage,
         \\a startTime specifies when the audio stream will start playing during
         animation playback. This value is ignored when \\a playbackMode is set
@@ -119,7 +119,7 @@ class SpatialAudio(Xformable):
     def startTime(self, value:timecode)->None: ...
 
     @property
-    def endTime(self)->Attribute[timecode]:
+    def endTime(self)->AttributeSpec[timecode]:
         """Expressed in the timeCodesPerSecond of the containing stage,
         \\a endTime specifies when the audio stream will cease playing during
         animation playback if the length of the referenced audio clip is
@@ -137,7 +137,7 @@ class SpatialAudio(Xformable):
     def endTime(self, value:timecode)->None: ...
 
     @property
-    def mediaOffset(self)->Attribute[double]:
+    def mediaOffset(self)->AttributeSpec[double]:
         """Expressed in seconds, \\a mediaOffset specifies the offset from
         the referenced audio file's beginning at which we should begin playback
         when stage playback reaches the time that prim's audio should start.
@@ -150,7 +150,7 @@ class SpatialAudio(Xformable):
     def mediaOffset(self, value:double)->None: ...
 
     @property
-    def gain(self)->Attribute[double]:
+    def gain(self)->AttributeSpec[double]:
         """Multiplier on the incoming audio signal. A value of 0 "mutes"
         the signal. Negative values will be clamped to 0.
         """

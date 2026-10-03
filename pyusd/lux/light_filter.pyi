@@ -1,4 +1,4 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..dtypes import token
 from ..geom.xformable import Xformable
 from .collection import Collection
@@ -28,7 +28,7 @@ class LightFilter(Xformable):
     def collection(self) -> Collection: ...
 
     @property
-    def shaderId(self)->Attribute[token]:
+    def shaderId(self)->AttributeSpec[token]:
         """Default ID for the light filter's shader.
         This defines the shader ID for this light filter when a render context
         specific shader ID is not available.

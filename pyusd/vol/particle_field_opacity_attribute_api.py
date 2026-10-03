@@ -1,7 +1,7 @@
 from typing import List
 
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import half
 
@@ -39,9 +39,10 @@ class ParticleFieldOpacityAttributeAPI(APISchemaBase):
         }
     }
 
-    opacities = Attribute(List[float], doc="Opacity for each particle.")
+    opacities: AttributeSpec[List[float]] = AttributeSpec(List[float], value=[], doc="Opacity for each particle.")
 
-    opacitiesh = Attribute(List[half],
+    opacitiesh: AttributeSpec[List[half]] = AttributeSpec(List[half],
+        value=[],
         doc="""Opacity for each particle. If the float precision version is
         available it should be preferred.
         """

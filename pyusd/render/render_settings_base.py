@@ -1,8 +1,8 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import token
 from ..gf import float4, int2
-from ..relationship import Relationship
+from ..relationship_spec import RelationshipSpec
 from ..typed import Typed
 
 
@@ -28,21 +28,21 @@ class RenderSettingsBase(Typed):
         AdjustPixelAspectRatio = "adjustPixelAspectRatio"
 
 
-    resolution = Attribute(int2,
+    resolution: AttributeSpec[int2] = AttributeSpec(int2,
         uniform=True,
         doc="""The image pixel resolution, corresponding to the
         camera's screen window.
         """
     )
 
-    pixelAspectRatio = Attribute(float,
+    pixelAspectRatio: AttributeSpec[float] = AttributeSpec(float,
         uniform=True,
         doc="""The aspect ratio (width/height) of image pixels..
         The default ratio 1.0 indicates square pixels.
         """
     )
 
-    aspectRatioConformPolicy = Attribute(AspectRatioConformPolicy,
+    aspectRatioConformPolicy: AttributeSpec[AspectRatioConformPolicy] = AttributeSpec(AspectRatioConformPolicy,
         uniform=True,
         doc="""
         Indicates the policy to use to resolve an aspect
@@ -72,7 +72,7 @@ class RenderSettingsBase(Typed):
         """
     )
 
-    dataWindowNDC = Attribute(float4,
+    dataWindowNDC: AttributeSpec[float4] = AttributeSpec(float4,
         uniform=True,
         doc="""dataWindowNDC specifies the axis-aligned rectangular
         region in the adjusted aperture window within which the renderer
@@ -107,7 +107,7 @@ class RenderSettingsBase(Typed):
         """
     )
 
-    instantaneousShutter = Attribute(bool,
+    instantaneousShutter: AttributeSpec[bool] = AttributeSpec(bool,
         uniform=True,
         doc="""Deprecated - use disableMotionBlur instead. Override
         the targeted _camera_'s _shutterClose_ to be equal to the
@@ -117,7 +117,7 @@ class RenderSettingsBase(Typed):
         """
     )
 
-    disableMotionBlur = Attribute(bool,
+    disableMotionBlur: AttributeSpec[bool] = AttributeSpec(bool,
         uniform=True,
         doc="""Disable all motion blur by setting the shutter interval
         of the targeted camera to [0,0] - that is, take only one sample,
@@ -125,14 +125,14 @@ class RenderSettingsBase(Typed):
         """
     )
 
-    disableDepthOfField = Attribute(bool,
+    disableDepthOfField: AttributeSpec[bool] = AttributeSpec(bool,
         uniform=True,
         doc="""Disable all depth of field by setting F-stop of the targeted
         camera to infinity.
         """
     )
 
-    camera = Relationship(
+    camera = RelationshipSpec(
         doc="""The _camera_ relationship specifies the primary
         camera to use in a render.  It must target a UsdGeomCamera.
         """

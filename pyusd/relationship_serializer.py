@@ -2,26 +2,26 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .property import Property
+from .property_spec import PropertySpec
 from .usda_serializer import UsdaSerializer
 
 if TYPE_CHECKING:
-    from .relationship import Relationship
+    from .relationship_spec import RelationshipSpec
 
 
 class RelationshipSerializer:
 
     @staticmethod
-    def to_str(rel:Relationship, indents:int=0, full:bool=False)->str:
+    def to_str(rel:RelationshipSpec, indents:int=0, full:bool=False)->str:
         result_list = []
-        if full or rel._value_state != Property.ValueState.Fallback:
+        if full or rel._value_state != PropertySpec.ValueState.Fallback:
             tabs = "    " * indents
             prefix = ""
             if rel._custom:
                 prefix += "custom "
 
             line = f"{tabs}{prefix}rel {rel.full_name}"
-            if rel.value_state in [Property.ValueState.Authored, Property.ValueState.Cleared]:
+            if rel.value_state in [PropertySpec.ValueState.Authored, PropertySpec.ValueState.Cleared]:
                 line += f" = {UsdaSerializer.value_str(rel._targets, indents, True, need_quote=False)}"
 
             metadata_str = rel._metadata.to_str(indents, full=full)

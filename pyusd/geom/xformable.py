@@ -1,6 +1,6 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import token
 from .imageable import Imageable
@@ -206,20 +206,23 @@ class Xformable(Imageable):
     rotation and translation
     \\snippet examples_usdGeom.cpp CreateAnimatedTransform
 
-"""
+
+    """
 
     schema_kind: SchemaKind = SchemaKind.AbstractTyped
 
     meta = {
         "customData": {
-            "extraIncludes": """
-#include "pxr/usd/usdGeom/xformOp.h"
-#include <vector> """
+            "extraIncludes": '''
+    #include "pxr/usd/usdGeom/xformOp.h"
+    #include <vector> '''
         }
     }
 
-    xformOpOrder: Attribute[List[token]] = Attribute(List[token], "xformOpOrder", value=[], uniform=True, doc=
-        """Encodes the sequence of transformation operations in the
+    xformOpOrder: AttributeSpec[List[token]] = AttributeSpec(List[token],
+        uniform=True,
+        value=[],
+        doc="""Encodes the sequence of transformation operations in the
         order in which they should be pushed onto a transform stack while
         visiting a UsdStage's prims in a graph traversal that will effect
         the desired positioning for this prim and its descendant prims.
@@ -227,6 +230,8 @@ class Xformable(Imageable):
         You should rarely, if ever, need to manipulate this attribute directly.
         It is managed by the AddXformOp(), SetResetXformStack(), and
         SetXformOpOrder(), and consulted by GetOrderedXformOps() and
-        GetLocalTransformation()."""
+        GetLocalTransformation().
+        """
     )
+
     xformOp: XformOp = XformOp()

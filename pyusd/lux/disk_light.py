@@ -1,4 +1,4 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace, token
 from .boundable_light_base import BoundableLightBase
@@ -19,9 +19,10 @@ class DiskLight(BoundableLightBase):
         }
     }
 
-    light: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    light.shaderId = Attribute(token,
+    light: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    light.shaderId = AttributeSpec(token,
         uniform=True,
+        value="DiskLight",
         metadata={
             "customData": {
                 "apiSchemaOverride": True
@@ -29,8 +30,9 @@ class DiskLight(BoundableLightBase):
         }
     )
 
-    inputs: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    inputs.radius = Attribute(float,
+    inputs: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    inputs.radius = AttributeSpec(float,
+        value=0.5,
         doc="Radius of the disk.",
         metadata={
             "displayGroup": "Geometry",

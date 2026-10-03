@@ -1,6 +1,6 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..dtypes import token
 from ..geom.boundable import Boundable
 from ..gf import matrix4d
@@ -14,7 +14,7 @@ class Skeleton(Boundable):
     """
 
     @property
-    def joints(self)->Attribute[List[token]]:
+    def joints(self)->AttributeSpec[List[token]]:
         """An array of path tokens identifying the set of joints that make
         up the skeleton, and their order. Each token in the array must be valid
         when parsed as an SdfPath. The parent-child relationships of the
@@ -26,7 +26,7 @@ class Skeleton(Boundable):
     def joints(self, value:List[token])->None: ...
 
     @property
-    def jointNames(self)->Attribute[List[token]]:
+    def jointNames(self)->AttributeSpec[List[token]]:
         """If authored, provides a unique name per joint. This may be
         optionally set to provide better names when translating to DCC apps
         that require unique joint names."""
@@ -35,7 +35,7 @@ class Skeleton(Boundable):
     def jointNames(self, value:List[token])->None: ...
 
     @property
-    def bindTransforms(self)->Attribute[List[matrix4d]]:
+    def bindTransforms(self)->AttributeSpec[List[matrix4d]]:
         """Specifies the bind-pose transforms of each joint in
         **world space**, in the ordering imposed by *joints*."""
 
@@ -43,7 +43,7 @@ class Skeleton(Boundable):
     def bindTransforms(self, value:List[matrix4d])->None: ...
 
     @property
-    def restTransforms(self)->Attribute[List[matrix4d]]:
+    def restTransforms(self)->AttributeSpec[List[matrix4d]]:
         """Specifies the rest-pose transforms of each joint in
         **local space**, in the ordering imposed by *joints*. This provides
         fallback values for joint transforms when a Skeleton either has no

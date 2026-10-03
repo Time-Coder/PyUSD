@@ -1,6 +1,6 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace, token
 from ..gf import color3f
@@ -12,41 +12,46 @@ class Gprim(Boundable):
 
     Gprim encodes basic graphical properties such as \\em doubleSided and
     \\em orientation, and provides primvars for "display color" and "display
-    opacity" that travel with geometry to be used as shader overrides.  """
+    opacity" that travel with geometry to be used as shader overrides.
+    """
 
     schema_kind: SchemaKind = SchemaKind.AbstractTyped
 
-    class WindingOrder(token):
+    class Orientation(token):
         RightHanded = "rightHanded"
         LeftHanded = "leftHanded"
 
-    primvars: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    primvars.displayColor = Attribute(List[color3f], is_leaf=True,
+
+    primvars: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    primvars.displayColor = AttributeSpec(List[color3f],
+        doc="""It is useful to have an "official" colorSet that can be used
+        as a display or modeling color, even in the absence of any specified
+        shader for a gprim.  DisplayColor serves this role; because it is a
+        UsdGeomPrimvar, it can also be used as a gprim override for any shader
+        that consumes a \\em displayColor parameter.
+        """,
         metadata={
             "customData": {
                 "apiName": "displayColor"
             }
-        },
-        doc= """It is useful to have an "official" colorSet that can be used
-        as a display or modeling color, even in the absence of any specified
-        shader for a gprim.  DisplayColor serves this role; because it is a
-        UsdGeomPrimvar, it can also be used as a gprim override for any shader
-        that consumes a \\em displayColor parameter."""
+        }
     )
-    primvars.displayOpacity = Attribute(List[float], is_leaf=True,
+    primvars.displayOpacity = AttributeSpec(List[float],
+        doc="""Companion to \\em displayColor that specifies opacity, broken
+        out as an independent attribute rather than an rgba color, both so that
+        each can be independently overridden, and because shaders rarely consume
+        rgba parameters.
+        """,
         metadata={
             "customData": {
                 "apiName": "displayOpacity"
             }
-        },
-        doc = """Companion to \\em displayColor that specifies opacity, broken
-        out as an independent attribute rather than an rgba color, both so that
-        each can be independently overridden, and because shaders rarely consume
-        rgba parameters."""
+        }
     )
 
-    doubleSided: Attribute[bool] = Attribute(bool, value=False, uniform=True, doc=
-        """Although some renderers treat all parametric or polygonal
+    doubleSided: AttributeSpec[bool] = AttributeSpec(bool,
+        uniform=True,
+        doc="""Although some renderers treat all parametric or polygonal
         surfaces as if they were effectively laminae with outward-facing
         normals on both sides, some renderers derive significant optimizations
         by considering these surfaces to have only a single outward side,
@@ -62,13 +67,16 @@ class Gprim(Boundable):
         backface culling for the gprim, and attempt (not all renderers are able
         to do so, but the USD reference GL renderer always will) to provide
         forward-facing normals on each side of the surface for lighting
-        calculations."""
+        calculations.
+        """
     )
 
-    orientation: Attribute[WindingOrder] = Attribute(WindingOrder, value=WindingOrder.RightHanded, uniform=True,
-        doc = """Orientation specifies whether the gprim's surface normal
+    orientation: AttributeSpec[Orientation] = AttributeSpec(Orientation,
+        uniform=True,
+        doc="""Orientation specifies whether the gprim's surface normal
         should be computed using the right hand rule, or the left hand rule.
         Please see \\ref UsdGeom_WindingOrder for a deeper explanation and
         generalization of orientation to composed scenes with transformation
-        hierarchies."""
+        hierarchies.
+        """
     )

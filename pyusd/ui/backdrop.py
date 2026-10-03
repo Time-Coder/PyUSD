@@ -1,4 +1,4 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace, token
 from ..typed import Typed
@@ -29,8 +29,8 @@ class Backdrop(Typed):
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
-    ui: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    ui.description = Attribute(token,
+    ui: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    ui.description = AttributeSpec(token,
         uniform=True,
         doc="""The text label that is displayed on the backdrop in the node
         graph. This help-description explains what the nodes in a backdrop do.

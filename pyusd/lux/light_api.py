@@ -1,9 +1,9 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace, token
 from ..gf import color3f
-from ..relationship import Relationship
+from ..relationship_spec import RelationshipSpec
 
 
 class LightAPI(APISchemaBase):
@@ -97,17 +97,19 @@ class LightAPI(APISchemaBase):
         NoMaterialResponse = "noMaterialResponse"
 
 
-    collection: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    collection.lightLink.includeRoot = Attribute(bool,
+    collection: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    collection.lightLink.includeRoot = AttributeSpec(bool,
         uniform=True,
+        value=1,
         metadata={
             "customData": {
                 "apiSchemaOverride": True
             }
         }
     )
-    collection.shadowLink.includeRoot = Attribute(bool,
+    collection.shadowLink.includeRoot = AttributeSpec(bool,
         uniform=True,
+        value=1,
         metadata={
             "customData": {
                 "apiSchemaOverride": True
@@ -115,9 +117,10 @@ class LightAPI(APISchemaBase):
         }
     )
 
-    light: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    light.shaderId = Attribute(token,
+    light: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    light.shaderId = AttributeSpec(token,
         uniform=True,
+        value="",
         doc="""Default ID for the light's shader.
         This defines the shader ID for this light when a render context specific
         shader ID is not available.
@@ -140,8 +143,9 @@ class LightAPI(APISchemaBase):
             }
         }
     )
-    light.materialSyncMode = Attribute(MaterialSyncMode,
+    light.materialSyncMode = AttributeSpec(MaterialSyncMode,
         uniform=True,
+        value="noMaterialResponse",
         doc="""
         For a LightAPI applied to geometry that has a bound Material,
         which is entirely or partly emissive, this specifies the relationship
@@ -180,8 +184,9 @@ class LightAPI(APISchemaBase):
         }
     )
 
-    inputs: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    inputs.intensity = Attribute(float,
+    inputs: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    inputs.intensity = AttributeSpec(float,
+        value=1,
         doc="""Scales the brightness of the light linearly.
 
         Expresses the "base", unmultiplied luminance emitted (L) of the light,
@@ -207,7 +212,8 @@ class LightAPI(APISchemaBase):
             }
         }
     )
-    inputs.exposure = Attribute(float,
+    inputs.exposure = AttributeSpec(float,
+        value=0,
         doc="""Scales the brightness of the light exponentially as a power
         of 2 (similar to an F-stop control over exposure).  The result
         is multiplied against the intensity:
@@ -232,7 +238,8 @@ class LightAPI(APISchemaBase):
             }
         }
     )
-    inputs.diffuse = Attribute(float,
+    inputs.diffuse = AttributeSpec(float,
+        value=1.0,
         doc="""A multiplier for the effect of this light on the diffuse
         response of materials.  This is a non-physical control.
         """,
@@ -244,7 +251,8 @@ class LightAPI(APISchemaBase):
             }
         }
     )
-    inputs.specular = Attribute(float,
+    inputs.specular = AttributeSpec(float,
+        value=1.0,
         doc="""A multiplier for the effect of this light on the specular
         response of materials.  This is a non-physical control.
         """,
@@ -256,7 +264,8 @@ class LightAPI(APISchemaBase):
             }
         }
     )
-    inputs.normalize = Attribute(bool,
+    inputs.normalize = AttributeSpec(bool,
+        value=False,
         doc="""Normalizes the emission such that the power of the light
         remains constant while altering the size of the light, by dividing the
         luminance by the world-space surface area of the light.
@@ -378,7 +387,8 @@ class LightAPI(APISchemaBase):
             }
         }
     )
-    inputs.color = Attribute(color3f,
+    inputs.color = AttributeSpec(color3f,
+        value=(1, 1, 1),
         doc="""The color of emitted light, in the rendering color space.
 
         This color is just multiplied with the emission:
@@ -403,7 +413,8 @@ class LightAPI(APISchemaBase):
             }
         }
     )
-    inputs.enableColorTemperature = Attribute(bool,
+    inputs.enableColorTemperature = AttributeSpec(bool,
+        value=False,
         doc="Enables using colorTemperature.",
         metadata={
             "displayGroup": "Basic",
@@ -413,7 +424,8 @@ class LightAPI(APISchemaBase):
             }
         }
     )
-    inputs.colorTemperature = Attribute(float,
+    inputs.colorTemperature = AttributeSpec(float,
+        value=6500,
         doc="""Color temperature, in degrees Kelvin, representing the
         white point.  The default is a common white point, D65.  Lower
         values are warmer and higher values are cooler.  The valid range
@@ -441,7 +453,7 @@ class LightAPI(APISchemaBase):
             }
         }
     )
-    light.filters = Relationship(
+    light.filters = RelationshipSpec(
         doc="Relationship to the light filters that apply to this light.",
         metadata={
             "customData": {

@@ -1,5 +1,5 @@
 from .api_schema_base import APISchemaBase
-from .attribute import Attribute
+from .attribute_spec import AttributeSpec
 from .common import SchemaKind
 from .dtypes import namespace, token
 
@@ -49,23 +49,27 @@ class ColorSpaceAPI(APISchemaBase):
     application should perform conversions infrequently and cache results
     wherever possible.
 
+
     """
 
-    schema_kind = SchemaKind.SingleApplyAPI
+    schema_kind: SchemaKind = SchemaKind.SingleApplyAPI
 
     meta = {
         "customData": {
             "apiSchemaType": "singleApply",
-            "extraIncludes": """
-#include "pxr/base/gf/colorSpace.h"
-#include "pxr/base/tf/bigRWMutex.h"
-"""
+            "extraIncludes": '''
+    #include "pxr/base/gf/colorSpace.h"
+    #include "pxr/base/tf/bigRWMutex.h"
+    '''
         }
     }
 
-    colorSpace: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    colorSpace.create_prop(Attribute(token, "name", uniform=True, doc=
-        """The color space that applies to attributes with
+    colorSpace: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    colorSpace.create_prop(AttributeSpec(token,
+        name="name",
+        uniform=True,
+        doc="""The color space that applies to attributes with
         unauthored color spaces on this prim and its descendents.
+
         """
     ))

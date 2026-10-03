@@ -1,64 +1,10 @@
 from typing import List
 
-from ..attribute import Attribute
-from ..gf import double2, double3
+from ..attribute_spec import AttributeSpec
+from ..dtypes import double, token
+from ..gf import double2
 from .point_based import PointBased
-
-class TrimCurve(Attribute):
-
-    @property
-    def counts(self)->Attribute[List[int]]:
-        """Each element specifies how many curves are present in each
-        "loop" of the trimCurve, and the length of the array determines how
-        many loops the trimCurve contains.  The sum of all elements is the
-        total nuber of curves in the trim, to which we will refer as
-        \\em nCurves in describing the other trim attributes."""
-
-    @counts.setter
-    def counts(self, value:List[int])->None: ...
-
-    @property
-    def orders(self)->Attribute[List[int]]:
-        """Flat list of orders for each of the \\em nCurves curves."""
-
-    @orders.setter
-    def orders(self, value:List[int])->None: ...
-
-    @property
-    def vertexCounts(self)->Attribute[List[int]]:
-        """Flat list of number of vertices for each of the
-         \\em nCurves curves."""
-
-    @vertexCounts.setter
-    def vertexCounts(self, value:List[int])->None: ...
-
-    @property
-    def knots(self)->Attribute[List[float]]:
-        """Flat list of parametric values for each of the
-        \\em nCurves curves.  There will be as many knots as the sum over
-        all elements of \\em vertexCounts plus the sum over all elements of
-        \\em orders."""
-
-    @knots.setter
-    def knots(self, value:List[float])->None: ...
-
-    @property
-    def ranges(self)->Attribute[List[double2]]:
-        """Flat list of minimum and maximum parametric values
-        (as defined by \\em knots) for each of the \\em nCurves curves."""
-
-    @ranges.setter
-    def ranges(self, value:List[double2])->None: ...
-
-    @property
-    def points(self)->Attribute[List[double3]]:
-        """Flat list of homogeneous 2D points (u, v, w) that comprise
-        the \\em nCurves curves.  The number of points should be equal to the
-        um over all elements of \\em vertexCounts."""
-
-    @points.setter
-    def points(self, value:List[double3])->None: ...
-
+from .trim_curve import TrimCurve
 
 class NurbsPatch(PointBased):
     """Encodes a rational or polynomial non-uniform B-spline
@@ -108,87 +54,95 @@ class NurbsPatch(PointBased):
     Neither of these limitations are shared by subdivision surfaces; therefore,
     although they do not subscribe to trim-curve-based shaping, subdivs are
     often considered a more flexible modeling primitive.
+
     """
 
-    def __init__(self, name:str="")->None: ...
+
+    class UForm(token):
+        Open = "open"
+        Closed = "closed"
+        Periodic = "periodic"
+
+    class VForm(token):
+        Open = "open"
+        Closed = "closed"
+        Periodic = "periodic"
 
     @property
-    def uVertexCount(self)->Attribute[int]:
+    def trimCurve(self) -> TrimCurve: ...
+
+    @property
+    def uVertexCount(self)->AttributeSpec[int]:
         """Number of vertices in the U direction.  Should be at least as
         large as uOrder."""
-
 
     @uVertexCount.setter
     def uVertexCount(self, value:int)->None: ...
 
     @property
-    def vVertexCount(self)->Attribute[int]:
+    def vVertexCount(self)->AttributeSpec[int]:
         """Number of vertices in the V direction.  Should be at least as
         large as vOrder."""
-
 
     @vVertexCount.setter
     def vVertexCount(self, value:int)->None: ...
 
     @property
-    def uOrder(self)->Attribute[int]:
+    def uOrder(self)->AttributeSpec[int]:
         """Order in the U direction.  Order must be positive and is
         equal to the degree of the polynomial basis to be evaluated, plus 1."""
-
 
     @uOrder.setter
     def uOrder(self, value:int)->None: ...
 
     @property
-    def vOrder(self)->Attribute[int]:
+    def vOrder(self)->AttributeSpec[int]:
         """Order in the V direction.  Order must be positive and is
         equal to the degree of the polynomial basis to be evaluated, plus 1."""
-
 
     @vOrder.setter
     def vOrder(self, value:int)->None: ...
 
     @property
-    def uKnots(self)->Attribute[List[float]]:
+    def uKnots(self)->AttributeSpec[List[double]]:
         """Knot vector for U direction providing U parameterization.
         The length of this array must be ( uVertexCount + uOrder ), and its
         entries must take on monotonically increasing values."""
 
-
     @uKnots.setter
-    def uKnots(self, value:List[float])->None: ...
+    def uKnots(self, value:List[double])->None: ...
 
     @property
-    def vKnots(self)->Attribute[List[float]]:
+    def vKnots(self)->AttributeSpec[List[double]]:
         """Knot vector for V direction providing U parameterization.
         The length of this array must be ( vVertexCount + vOrder ), and its
         entries must take on monotonically increasing values."""
 
     @vKnots.setter
-    def vKnots(self, value:List[float])->None: ...
+    def vKnots(self, value:List[double])->None: ...
 
     @property
-    def uForm(self)->Attribute[str]:
+    def uForm(self)->AttributeSpec[UForm]:
         """Interpret the control grid and knot vectors as representing
         an open, geometrically closed, or geometrically closed and C2 continuous
         surface along the U dimension.
         \\sa \\ref UsdGeom_NurbsPatch_Form "NurbsPatch Form" """
 
     @uForm.setter
-    def uForm(self, value:str)->None: ...
+    def uForm(self, value:UForm)->None: ...
 
     @property
-    def vForm(self)->Attribute[str]:
+    def vForm(self)->AttributeSpec[VForm]:
         """Interpret the control grid and knot vectors as representing
         an open, geometrically closed, or geometrically closed and C2 continuous
         surface along the V dimension.
         \\sa \\ref UsdGeom_NurbsPatch_Form "NurbsPatch Form" """
 
     @vForm.setter
-    def vForm(self, value:str)->None: ...
+    def vForm(self, value:VForm)->None: ...
 
     @property
-    def uRange(self)->Attribute[double2]:
+    def uRange(self)->AttributeSpec[double2]:
         """Provides the minimum and maximum parametric values (as defined
         by uKnots) over which the surface is actually defined.  The minimum
         must be less than the maximum, and greater than or equal to the
@@ -199,7 +153,7 @@ class NurbsPatch(PointBased):
     def uRange(self, value:double2)->None: ...
 
     @property
-    def vRange(self)->Attribute[double2]:
+    def vRange(self)->AttributeSpec[double2]:
         """Provides the minimum and maximum parametric values (as defined
         by vKnots) over which the surface is actually defined.  The minimum
         must be less than the maximum, and greater than or equal to the
@@ -210,7 +164,7 @@ class NurbsPatch(PointBased):
     def vRange(self, value:double2)->None: ...
 
     @property
-    def pointWeights(self)->Attribute[List[float]]:
+    def pointWeights(self)->AttributeSpec[List[double]]:
         """Optionally provides "w" components for each control point,
         thus must be the same length as the points attribute.  If authored,
         the patch will be rational.  If unauthored, the patch will be
@@ -219,8 +173,4 @@ class NurbsPatch(PointBased):
         \\em points are not pre-weighted."""
 
     @pointWeights.setter
-    def pointWeights(self, value:List[float])->None: ...
-
-    @property
-    def trimCurve(self)->TrimCurve:
-        """Namespace containing trim curve data for the patch."""
+    def pointWeights(self, value:List[double])->None: ...

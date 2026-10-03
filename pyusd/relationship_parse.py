@@ -1,15 +1,15 @@
 from tree_sitter import Node
 
 from .metadata_parser import MetadataParser
-from .property import Property
-from .relationship import Relationship
+from .property_spec import PropertySpec
+from .relationship_spec import RelationshipSpec
 from .usda_parser import UsdaParser
 
 
 class RelationshipParser:
 
     @staticmethod
-    def parse(node:Node)->Relationship:
+    def parse(node:Node)->RelationshipSpec:
         name = ""
         metadata = {}
         custom = False
@@ -26,12 +26,12 @@ class RelationshipParser:
                 value = UsdaParser.load_value(child)
                 targets = value if isinstance(value, list) else [value]
 
-        prop = Relationship(name=name, metadata=metadata, custom=custom)
+        prop = RelationshipSpec(name=name, metadata=metadata, custom=custom)
         if targets:
             prop._targets = targets
-            prop._value_state = Property.ValueState.Authored
+            prop._value_state = PropertySpec.ValueState.Authored
         else:
-            prop._value_state = Property.ValueState.NotAuthored
+            prop._value_state = PropertySpec.ValueState.NotAuthored
 
         for key, value in metadata.items():
             MetadataParser.set_authored(prop._metadata, key, value)

@@ -1,4 +1,4 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import string, token
 from ..typed import Typed
@@ -35,16 +35,16 @@ class RenderVar(Typed):
         Intrinsic = "intrinsic"
 
 
-    dataType = Attribute(token, uniform=True, doc="The type of this channel, as a USD attribute type.")
+    dataType: AttributeSpec[token] = AttributeSpec(token, uniform=True, doc="The type of this channel, as a USD attribute type.")
 
-    sourceName = Attribute(string,
+    sourceName: AttributeSpec[string] = AttributeSpec(string,
         uniform=True,
         doc="""The renderer should look for an output of this name
         as the computed value for the RenderVar.
         """
     )
 
-    sourceType = Attribute(SourceType,
+    sourceType: AttributeSpec[SourceType] = AttributeSpec(SourceType,
         uniform=True,
         doc="""
         Indicates the type of the source.

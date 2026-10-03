@@ -17,4 +17,3 @@ class MotionAPI(APISchemaBase):
 
     @property
     def motion(self) -> Motion: ...
-

@@ -1,5 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..dtypes import token
 
 class VisibilityAPI(APISchemaBase):
@@ -54,7 +54,7 @@ class VisibilityAPI(APISchemaBase):
         Visible = "visible"
 
     @property
-    def guideVisibility(self)->Attribute[GuideVisibility]:
+    def guideVisibility(self)->AttributeSpec[GuideVisibility]:
         """
         This attribute controls visibility for geometry with purpose "guide".
 
@@ -78,7 +78,7 @@ class VisibilityAPI(APISchemaBase):
     def guideVisibility(self, value:GuideVisibility)->None: ...
 
     @property
-    def proxyVisibility(self)->Attribute[ProxyVisibility]:
+    def proxyVisibility(self)->AttributeSpec[ProxyVisibility]:
         """
         This attribute controls visibility for geometry with purpose "proxy".
 
@@ -105,7 +105,7 @@ class VisibilityAPI(APISchemaBase):
     def proxyVisibility(self, value:ProxyVisibility)->None: ...
 
     @property
-    def renderVisibility(self)->Attribute[RenderVisibility]:
+    def renderVisibility(self)->AttributeSpec[RenderVisibility]:
         """
         This attribute controls visibility for geometry with purpose
         "render".

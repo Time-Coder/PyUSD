@@ -1,5 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace, token
 
@@ -134,8 +134,8 @@ class LightListAPI(APISchemaBase):
         Ignore = "ignore"
 
 
-    lightList: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    lightList.cacheBehavior = Attribute(CacheBehavior,
+    lightList: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    lightList.cacheBehavior = AttributeSpec(CacheBehavior,
         doc="""
         Controls how the lightList should be interpreted.
         Valid values are:

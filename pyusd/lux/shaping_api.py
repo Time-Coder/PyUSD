@@ -1,5 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import asset, namespace
 from ..gf import color3f
@@ -18,8 +18,9 @@ class ShapingAPI(APISchemaBase):
         }
     }
 
-    inputs: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    inputs.shaping.focus = Attribute(float,
+    inputs: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    inputs.shaping.focus = AttributeSpec(float,
+        value=0,
         doc="""A control to shape the spread of light.  Higher focus
         values pull light towards the center and narrow the spread.
 
@@ -51,7 +52,8 @@ class ShapingAPI(APISchemaBase):
             }
         }
     )
-    inputs.shaping.focusTint = Attribute(color3f,
+    inputs.shaping.focusTint = AttributeSpec(color3f,
+        value=(0, 0, 0),
         doc="""Off-axis color tint.  This tints the emission in the
         falloff region.  The default tint is black.
 
@@ -84,7 +86,8 @@ class ShapingAPI(APISchemaBase):
             }
         }
     )
-    inputs.shaping.cone.angle = Attribute(float,
+    inputs.shaping.cone.angle = AttributeSpec(float,
+        value=90,
         doc="""Angular limit off the primary axis to restrict the light
         spread, in degrees.
 
@@ -117,7 +120,8 @@ class ShapingAPI(APISchemaBase):
             }
         }
     )
-    inputs.shaping.cone.softness = Attribute(float,
+    inputs.shaping.cone.softness = AttributeSpec(float,
+        value=0,
         doc="""Controls the cutoff softness for cone angle.
 
         At the default of coneSoftness = 0, the luminance is unaltered if
@@ -153,7 +157,7 @@ class ShapingAPI(APISchemaBase):
             }
         }
     )
-    inputs.shaping.ies.file = Attribute(asset,
+    inputs.shaping.ies.file = AttributeSpec(asset,
         doc="""An IES (Illumination Engineering Society) light
         profile describing the angular distribution of light.
 
@@ -196,7 +200,8 @@ class ShapingAPI(APISchemaBase):
             }
         }
     )
-    inputs.shaping.ies.angleScale = Attribute(float,
+    inputs.shaping.ies.angleScale = AttributeSpec(float,
+        value=0,
         doc="""Rescales the angular distribution of the IES profile.
 
         Applies a scaling factor to the latitudinal theta/vertical polar
@@ -276,7 +281,8 @@ class ShapingAPI(APISchemaBase):
             }
         }
     )
-    inputs.shaping.ies.normalize = Attribute(bool,
+    inputs.shaping.ies.normalize = AttributeSpec(bool,
+        value=False,
         doc="""Normalizes the IES profile so that it affects the shaping
         of the light while preserving the overall energy output.
 

@@ -1,8 +1,8 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace
-from ..relationship import Relationship
+from ..relationship_spec import RelationshipSpec
 
 
 class PhysicsCollisionAPI(APISchemaBase):
@@ -22,8 +22,9 @@ class PhysicsCollisionAPI(APISchemaBase):
         }
     }
 
-    physics: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    physics.collisionEnabled = Attribute(bool,
+    physics: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    physics.collisionEnabled = AttributeSpec(bool,
+        value=True,
         doc="Determines if the PhysicsCollisionAPI is enabled.",
         metadata={
             "customData": {
@@ -32,7 +33,7 @@ class PhysicsCollisionAPI(APISchemaBase):
             "displayName": "Collision Enabled"
         }
     )
-    physics.simulationOwner = Relationship(
+    physics.simulationOwner = RelationshipSpec(
         doc="""Single PhysicsScene that will simulate this collider.
         By default this object belongs to the first PhysicsScene.
         Note that if a RigidBodyAPI in the hierarchy above has a different

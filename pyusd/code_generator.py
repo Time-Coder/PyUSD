@@ -146,6 +146,11 @@ class CodeGenerator:
 
         # 第二步：为每个命名空间生成 .pyi 文件
         for ns_prefix, members in namespace_members.items():
+            if not members:
+                # An empty namespace class is not valid Python -- a class body has to
+                # hold something -- and there is nothing to declare either, so the
+                # file is not written at all.
+                continue
             ns_class_name = self._snake_to_pascal(ns_prefix)
             ns_file_name = self._camel_to_snake(ns_prefix) + '.pyi'
             ns_file_path = os.path.join(self.schema_dir, ns_file_name)
@@ -156,6 +161,9 @@ class CodeGenerator:
 
             # 生成命名空间类的 .pyi 文件
             ns_content = self._generate_namespace_pyi(ns_prefix, ns_class_name, members)
+            if not ns_content:
+                print(f"Skipped namespace {ns_prefix}: nothing declarable")
+                continue
             self._write_generated(ns_file_path, ns_content)
             print(f"Generated namespace: {ns_file_path}")
             self._generated_ns_files.add(ns_prefix)
@@ -646,7 +654,7 @@ class CodeGenerator:
         # 添加关系
         for rel in class_info['relationships']:
             rel_name = rel.get('full_name', rel['name'])
-            lines.append(f"    +{rel_name}: Relationship")
+            lines.append(f"    +{rel_name}: RelationshipSpec")
 
         lines.append("}")
 
@@ -733,6 +741,17 @@ class CodeGenerator:
         # 写入 .pyi 文件
         file_name = self._camel_to_snake(class_name) + '.pyi'
         file_path = os.path.join(self.schema_dir, file_name)
+
+        # A stub for a hand-written module is the hazard the class file guard exists
+        # for, and worse: a module shipping both a .py and a .pyi hands ty two unrelated
+        # classes, so every annotation that mentions one of them fails. The test is the
+        # one already used on the .py path -- a stub cannot use "has a real body",
+        # because 52 generated stubs carry property getters whose body is a docstring.
+        module_path = os.path.join(
+            self.schema_dir, self._camel_to_snake(class_name) + '.py')
+        if self._holds_hand_written_code(module_path):
+            print(f"Skipped {file_path}: hand-written module, no stub generated.")
+            return
 
         self._write_generated(file_path, content)
 
@@ -1354,9 +1373,9 @@ class CodeGenerator:
         lines = []
 
         # 收集需要的导入
-        imports = [f"from {up}attribute import Attribute"]
+        imports = [f"from {up}attribute_spec import AttributeSpec"]
         if any('type' not in member for member in members):
-            imports.append(f"from {up}relationship import Relationship")
+            imports.append(f"from {up}relationship_spec import RelationshipSpec")
         needed_types = set()
 
         for member in members:
@@ -1392,7 +1411,7 @@ class CodeGenerator:
         lines.append("\n".join(imports))
         lines.append("")
         lines.append("")
-        lines.append(f"class {ns_class_name}(Attribute):")
+        lines.append(f"class {ns_class_name}(AttributeSpec):")
 
         if token_classes:
             lines.append("")
@@ -1401,11 +1420,21 @@ class CodeGenerator:
         lines.append("")
 
         # 生成子属性和关系的签名
+        declared = 0
         for member in members:
             if 'type' in member:  # 是属性
-                lines.extend(self._generate_pyi_attribute_signature('', member, is_sub_attr=True))
+                signature = self._generate_pyi_attribute_signature('', member, is_sub_attr=True)
             else:  # 是关系
-                lines.extend(self._generate_pyi_relationship_signature(ns_prefix, member))
+                signature = self._generate_pyi_relationship_signature(ns_prefix, member)
+            if signature:
+                declared += len(signature)
+            lines.extend(signature)
+
+        if declared == 0:
+            # Every member was skipped -- a reserved name is dropped, and
+            # colorSpace:name is exactly that. A stub with nothing in it is not worth
+            # writing, and an empty class body is not valid Python anyway.
+            return ""
 
         return "\n".join(lines)
 
@@ -1467,9 +1496,9 @@ class CodeGenerator:
         # 添加常用导入
         if class_info['attributes'] or class_info['relationships']:
             if class_info['attributes']:
-                imports.append(f"from {up}attribute import Attribute")
+                imports.append(f"from {up}attribute_spec import AttributeSpec")
             if class_info['relationships']:
-                imports.append(f"from {up}relationship import Relationship")
+                imports.append(f"from {up}relationship_spec import RelationshipSpec")
 
             # 收集所有需要的类型
             needed_types = set()
@@ -1554,9 +1583,9 @@ class CodeGenerator:
 
         # 添加常用导入
         if class_info['attributes'] or class_info['relationships']:
-            imports.append(f"from {up}attribute import Attribute")
+            imports.append(f"from {up}attribute_spec import AttributeSpec")
             if class_info['relationships']:
-                imports.append(f"from {up}relationship import Relationship")
+                imports.append(f"from {up}relationship_spec import RelationshipSpec")
 
             # 检查是否需要 List（只有当有数组类型属性时才需要）
             has_array = any(attr['type'].endswith('[]') for attr in class_info['attributes'])
@@ -1681,10 +1710,10 @@ class CodeGenerator:
             if head is not None:
                 head_type = self._usd_type_to_python_type(head['type'])
                 lines.append(
-                    f"    {ns_prefix}: Attribute[{head_type}] = Attribute({head_type}, "
+                    f"    {ns_prefix}: AttributeSpec[{head_type}] = AttributeSpec({head_type}, "
                     f"is_leaf=False)")
             else:
-                lines.append(f"    {ns_prefix}: Attribute[namespace] = Attribute(namespace, is_leaf=False)")
+                lines.append(f"    {ns_prefix}: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)")
 
             for attr in attrs:
                 lines.append(self._generate_namespaced_attribute_definition(ns_prefix, attr))
@@ -1729,10 +1758,10 @@ class CodeGenerator:
         # 生成命名空间关系
         for ns_prefix, rels in namespaced_rels.items():
             # 检查是否已经生成了该命名空间的属性声明
-            has_ns_attr = any(f"{ns_prefix}: Attribute[namespace]" in line for line in lines)
+            has_ns_attr = any(f"{ns_prefix}: AttributeSpec[namespace]" in line for line in lines)
             if not has_ns_attr:
                 lines.append("")
-                lines.append(f"    {ns_prefix}: Attribute[namespace] = Attribute(namespace, is_leaf=False)")
+                lines.append(f"    {ns_prefix}: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)")
 
             for rel in rels:
                 lines.append(self._generate_namespaced_relationship_definition(ns_prefix, rel))
@@ -1864,7 +1893,7 @@ class CodeGenerator:
             class_name = self._snake_to_pascal(attr['name'])
             py_type = class_name
 
-        # 检查是否与 Attribute/Property 类的属性名冲突
+        # 检查是否与 AttributeSpec/PropertySpec 类的属性名冲突
         reserved_attrs = {
             'type', 'name', 'value', 'uniform', 'metadata', 'parent_prim',
             'parent_prop', 'is_leaf', 'full_name', 'path', 'value_state',
@@ -1883,7 +1912,7 @@ class CodeGenerator:
 
         # 生成 @property getter
         lines.append("    @property")
-        lines.append(f"    def {attr_name}(self)->Attribute[{py_type}]:")
+        lines.append(f"    def {attr_name}(self)->AttributeSpec[{py_type}]:")
         if doc_lines:
             lines.extend(doc_lines)
         else:
@@ -1916,7 +1945,7 @@ class CodeGenerator:
 
         # 生成 @property getter
         lines.append("    @property")
-        lines.append(f"    def {rel_name}(self)->Relationship:")
+        lines.append(f"    def {rel_name}(self)->RelationshipSpec:")
         if doc_lines:
             lines.extend(doc_lines)
         else:
@@ -1925,7 +1954,7 @@ class CodeGenerator:
 
         # 生成 setter
         lines.append(f"    @{rel_name}.setter")
-        lines.append(f"    def {rel_name}(self, value:Relationship)->None: ...")
+        lines.append(f"    def {rel_name}(self, value:RelationshipSpec)->None: ...")
         lines.append("")
 
         return lines
@@ -1970,7 +1999,7 @@ class CodeGenerator:
         else:
             sub_attr_name = attr['name']
 
-        # 检查是否与 Attribute/Property 类的属性名冲突
+        # 检查是否与 AttributeSpec/PropertySpec 类的属性名冲突
         reserved_attrs = {
             'type', 'name', 'value', 'uniform', 'metadata', 'parent_prim',
             'parent_prop', 'is_leaf', 'full_name', 'path', 'value_state',
@@ -1996,7 +2025,7 @@ class CodeGenerator:
             params_list.insert(0, f'name="{sub_attr_name}"')
             params = ', '.join(params_list)
             if '\n' in params or len(params) > 80:
-                result = f"    {ns_prefix}.create_prop(Attribute({py_type}"
+                result = f"    {ns_prefix}.create_prop(AttributeSpec({py_type}"
                 result += ",\n"
                 for i, param in enumerate(params_list):
                     result += f"        {param}"
@@ -2007,11 +2036,11 @@ class CodeGenerator:
                 result += "    ))"
                 return result
             else:
-                return f"    {ns_prefix}.create_prop(Attribute({py_type}, {params}))"
+                return f"    {ns_prefix}.create_prop(AttributeSpec({py_type}, {params}))"
         else:
             params = ', '.join(params_list)
             if '\n' in params or len(params) > 80:
-                result = f"    {ns_prefix}.{sub_attr_name.replace(':', '.')} = Attribute({py_type}"
+                result = f"    {ns_prefix}.{sub_attr_name.replace(':', '.')} = AttributeSpec({py_type}"
                 if params_list:
                     result += ",\n"
                     for i, param in enumerate(params_list):
@@ -2023,7 +2052,7 @@ class CodeGenerator:
                 result += "    )"
                 return result
             else:
-                return f"    {ns_prefix}.{sub_attr_name.replace(':', '.')} = Attribute({py_type}{', ' + params if params else ''})"
+                return f"    {ns_prefix}.{sub_attr_name.replace(':', '.')} = AttributeSpec({py_type}{', ' + params if params else ''})"
 
     def _generate_attribute_definition(self, attr: Dict[str, Any]) -> str:
         """生成属性定义"""
@@ -2037,7 +2066,7 @@ class CodeGenerator:
         attr_name = attr['name']
 
         # A leaf attribute is always a plain annotated assignment, even when its name
-        # collides with a member of Attribute (name, value, type, uniform, ...). The
+        # collides with a member of AttributeSpec (name, value, type, uniform, ...). The
         # reserved-name branch used to emit ``{attr_name}.create_prop(...)`` here, but
         # create_prop is an instance method that registers a child on an existing
         # property object: a leaf name is not such an object, so the generated module
@@ -2064,7 +2093,7 @@ class CodeGenerator:
 
         params = ', '.join(params_list)
         if '\n' in params or len(params) > 80:
-            result = f"    {attr_name}: Attribute[{py_type}] = Attribute({py_type}"
+            result = f"    {attr_name}: AttributeSpec[{py_type}] = AttributeSpec({py_type}"
             if params_list:
                 result += ",\n"
                 for i, param in enumerate(params_list):
@@ -2076,7 +2105,7 @@ class CodeGenerator:
             result += "    )"
             return result
 
-        return (f"    {attr_name}: Attribute[{py_type}] = Attribute({py_type}"
+        return (f"    {attr_name}: AttributeSpec[{py_type}] = AttributeSpec({py_type}"
                 f"{', ' + params if params else ''})")
 
     def _generate_relationship_definition(self, rel: Dict[str, Any]) -> str:
@@ -2093,7 +2122,7 @@ class CodeGenerator:
 
         params = ', '.join(params_list)
         if '\n' in params or len(params) > 80:
-            result = f"    {rel['name']} = Relationship("
+            result = f"    {rel['name']} = RelationshipSpec("
             if params_list:
                 result += "\n"
                 for i, param in enumerate(params_list):
@@ -2105,7 +2134,7 @@ class CodeGenerator:
             result += "    )"
             return result
         else:
-            return f"    {rel['name']} = Relationship({params})"
+            return f"    {rel['name']} = RelationshipSpec({params})"
 
     def _generate_namespaced_relationship_definition(self, ns_prefix: str, rel: Dict[str, Any]) -> str:
         """生成命名空间关系定义"""
@@ -2129,7 +2158,7 @@ class CodeGenerator:
 
         params = ', '.join(params_list)
         if '\n' in params or len(params) > 80:
-            result = f"    {ns_prefix}.{rel_name} = Relationship("
+            result = f"    {ns_prefix}.{rel_name} = RelationshipSpec("
             if params_list:
                 result += "\n"
                 for i, param in enumerate(params_list):
@@ -2141,7 +2170,7 @@ class CodeGenerator:
             result += "    )"
             return result
         else:
-            return f"    {ns_prefix}.{rel_name} = Relationship({params})"
+            return f"    {ns_prefix}.{rel_name} = RelationshipSpec({params})"
 
     def generate_init_file(self) -> None:
         """生成 __init__.py 文件"""

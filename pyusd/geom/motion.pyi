@@ -1,10 +1,9 @@
+from ..attribute_spec import AttributeSpec
 
-from ..attribute import Attribute
-
-class Motion(Attribute):
+class Motion(AttributeSpec):
 
     @property
-    def blurScale(self)->Attribute[float]:
+    def blurScale(self)->AttributeSpec[float]:
         """BlurScale is an __inherited__ float attribute that stipulates
         the rendered motion blur (as typically specified via UsdGeomCamera's
         _shutter:open_ and _shutter:close_ properties) should be scaled for
@@ -29,7 +28,7 @@ class Motion(Attribute):
     def blurScale(self, value:float)->None: ...
 
     @property
-    def velocityScale(self)->Attribute[float]:
+    def velocityScale(self)->AttributeSpec[float]:
         """\\deprecated
 
         VelocityScale is an **inherited** float attribute that
@@ -47,7 +46,7 @@ class Motion(Attribute):
     def velocityScale(self, value:float)->None: ...
 
     @property
-    def nonlinearSampleCount(self)->Attribute[int]:
+    def nonlinearSampleCount(self)->AttributeSpec[int]:
         """Determines the number of position or transformation samples
         created when motion is described by attributes contributing non-linear
         terms.

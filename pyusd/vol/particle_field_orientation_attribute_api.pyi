@@ -1,7 +1,7 @@
 from typing import List
 
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..gf import quatf, quath
 
 class ParticleFieldOrientationAttributeAPI(APISchemaBase):
@@ -23,14 +23,14 @@ class ParticleFieldOrientationAttributeAPI(APISchemaBase):
     """
 
     @property
-    def orientations(self)->Attribute[List[quatf]]:
+    def orientations(self)->AttributeSpec[List[quatf]]:
         """Quaternion orientation for each particle."""
 
     @orientations.setter
     def orientations(self, value:List[quatf])->None: ...
 
     @property
-    def orientationsh(self)->Attribute[List[quath]]:
+    def orientationsh(self)->AttributeSpec[List[quath]]:
         """Quaternion orientation for each particle. If the float
                 precision version is defined it should be preferred."""
 

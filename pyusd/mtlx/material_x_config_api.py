@@ -1,5 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace, string
 
@@ -23,8 +23,9 @@ class MaterialXConfigAPI(APISchemaBase):
         }
     }
 
-    config: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    config.mtlx.version = Attribute(string,
+    config: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    config.mtlx.version = AttributeSpec(string,
+        value="1.38",
         doc="""MaterialX library version that the data has been authored
         against. Defaults to 1.38 to allow correct verisoning of old files.
         """

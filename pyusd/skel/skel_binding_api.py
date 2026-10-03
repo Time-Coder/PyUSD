@@ -1,11 +1,11 @@
 from typing import List
 
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace, token
 from ..gf import matrix4d
-from ..relationship import Relationship
+from ..relationship_spec import RelationshipSpec
 
 
 class SkelBindingAPI(APISchemaBase):
@@ -35,9 +35,10 @@ class SkelBindingAPI(APISchemaBase):
         DualQuaternion = "dualQuaternion"
 
 
-    primvars: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    primvars.skel.skinningMethod = Attribute(SkinningMethod,
+    primvars: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    primvars.skel.skinningMethod = AttributeSpec(SkinningMethod,
         uniform=True,
+        value="classicLinear",
         doc="The skinningMethod specifies the skinning method for the prim.",
         metadata={
             "customData": {
@@ -45,7 +46,7 @@ class SkelBindingAPI(APISchemaBase):
             }
         }
     )
-    primvars.skel.geomBindTransform = Attribute(matrix4d,
+    primvars.skel.geomBindTransform = AttributeSpec(matrix4d,
         doc="""Encodes the bind-time world space transforms of the prim.
         If the transform is identical for a group of gprims that share a common
         ancestor, the transform may be authored on the ancestor, to "inherit"
@@ -58,7 +59,7 @@ class SkelBindingAPI(APISchemaBase):
             }
         }
     )
-    primvars.skel.jointIndices = Attribute(List[int],
+    primvars.skel.jointIndices = AttributeSpec(List[int],
         doc="""Indices into the *joints* attribute of the closest
         (in namespace) bound Skeleton that affect each point of a PointBased
         gprim. The primvar can have either *constant* or *vertex* interpolation.
@@ -74,7 +75,7 @@ class SkelBindingAPI(APISchemaBase):
             }
         }
     )
-    primvars.skel.jointWeights = Attribute(List[float],
+    primvars.skel.jointWeights = AttributeSpec(List[float],
         doc="""Weights for the joints that affect each point of a PointBased
         gprim. The primvar can have either *constant* or *vertex* interpolation.
         This primvar's *elementSize* will determine how many joints influences
@@ -89,8 +90,8 @@ class SkelBindingAPI(APISchemaBase):
         }
     )
 
-    skel: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    skel.joints = Attribute(List[token],
+    skel: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    skel.joints = AttributeSpec(List[token],
         uniform=True,
         doc="""An (optional) array of tokens defining the list of
         joints to which jointIndices apply. If not defined, jointIndices applies
@@ -104,7 +105,7 @@ class SkelBindingAPI(APISchemaBase):
             }
         }
     )
-    skel.blendShapes = Attribute(List[token],
+    skel.blendShapes = AttributeSpec(List[token],
         uniform=True,
         doc="""An array of tokens defining the order onto which blend shape
         weights from an animation source map onto the *skel:blendShapeTargets*
@@ -119,7 +120,7 @@ class SkelBindingAPI(APISchemaBase):
             }
         }
     )
-    skel.animationSource = Relationship(
+    skel.animationSource = RelationshipSpec(
         doc="""Animation source to be bound to Skeleton primitives at or
         beneath the location at which this property is defined.
 
@@ -130,7 +131,7 @@ class SkelBindingAPI(APISchemaBase):
             }
         }
     )
-    skel.skeleton = Relationship(
+    skel.skeleton = RelationshipSpec(
         doc="""Skeleton to be bound to this prim and its descendents that
         possess a mapping and weighting to the joints of the identified
         Skeleton.
@@ -141,7 +142,7 @@ class SkelBindingAPI(APISchemaBase):
             }
         }
     )
-    skel.blendShapeTargets = Relationship(
+    skel.blendShapeTargets = RelationshipSpec(
         doc="""Ordered list of all target blend shapes. This property is not
         inherited hierarchically, and is expected to be authored directly on
         the skinnable primitive to which the the blend shapes apply.

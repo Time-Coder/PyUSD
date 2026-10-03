@@ -1,4 +1,4 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..dtypes import string, token
 from ..typed import Typed
 
@@ -26,14 +26,14 @@ class RenderVar(Typed):
         Intrinsic = "intrinsic"
 
     @property
-    def dataType(self)->Attribute[token]:
+    def dataType(self)->AttributeSpec[token]:
         """The type of this channel, as a USD attribute type."""
 
     @dataType.setter
     def dataType(self, value:token)->None: ...
 
     @property
-    def sourceName(self)->Attribute[string]:
+    def sourceName(self)->AttributeSpec[string]:
         """The renderer should look for an output of this name
         as the computed value for the RenderVar."""
 
@@ -41,7 +41,7 @@ class RenderVar(Typed):
     def sourceName(self, value:string)->None: ...
 
     @property
-    def sourceType(self)->Attribute[SourceType]:
+    def sourceType(self)->AttributeSpec[SourceType]:
         """
         Indicates the type of the source.
 

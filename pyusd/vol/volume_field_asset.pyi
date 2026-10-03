@@ -1,4 +1,4 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..dtypes import asset, token
 from .field_base import FieldBase
 
@@ -14,7 +14,7 @@ class VolumeFieldAsset(FieldBase):
         Color = "Color"
 
     @property
-    def filePath(self)->Attribute[asset]:
+    def filePath(self)->AttributeSpec[asset]:
         """An asset path attribute that points to a file on disk.
                  For each supported file format, a separate FieldAsset
                  subclass is required.
@@ -28,7 +28,7 @@ class VolumeFieldAsset(FieldBase):
     def filePath(self, value:asset)->None: ...
 
     @property
-    def fieldName(self)->Attribute[token]:
+    def fieldName(self)->AttributeSpec[token]:
         """Name of an individual field within the file specified by
                  the filePath attribute."""
 
@@ -36,7 +36,7 @@ class VolumeFieldAsset(FieldBase):
     def fieldName(self, value:token)->None: ...
 
     @property
-    def fieldIndex(self)->Attribute[int]:
+    def fieldIndex(self)->AttributeSpec[int]:
         """A file can contain multiple fields with the same
                  name. This optional attribute is an index used to
                  disambiguate between these multiple fields with the same
@@ -46,7 +46,7 @@ class VolumeFieldAsset(FieldBase):
     def fieldIndex(self, value:int)->None: ...
 
     @property
-    def fieldDataType(self)->Attribute[token]:
+    def fieldDataType(self)->AttributeSpec[token]:
         """Token which is used to indicate the data type of an
                  individual field. Authors use this to tell consumers more
                  about the field without opening the file on disk. The list of
@@ -57,7 +57,7 @@ class VolumeFieldAsset(FieldBase):
     def fieldDataType(self, value:token)->None: ...
 
     @property
-    def vectorDataRoleHint(self)->Attribute[VectorDataRoleHint]:
+    def vectorDataRoleHint(self)->AttributeSpec[VectorDataRoleHint]:
         """Optional token which is used to indicate the role of a vector
                  valued field. This can drive the data type in which fields
                  are made available in a renderer or whether the vector values

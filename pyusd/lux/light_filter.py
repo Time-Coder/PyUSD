@@ -1,4 +1,4 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace, token
 from ..geom.xformable import Xformable
@@ -40,9 +40,10 @@ class LightFilter(Xformable):
         "prepend apiSchemas": ["CollectionAPI:filterLink"]
     }
 
-    collection: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    collection.filterLink.includeRoot = Attribute(bool,
+    collection: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    collection.filterLink.includeRoot = AttributeSpec(bool,
         uniform=True,
+        value=1,
         metadata={
             "customData": {
                 "apiSchemaOverride": True
@@ -50,9 +51,10 @@ class LightFilter(Xformable):
         }
     )
 
-    lightFilter: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    lightFilter.shaderId = Attribute(token,
+    lightFilter: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    lightFilter.shaderId = AttributeSpec(token,
         uniform=True,
+        value="",
         doc="""Default ID for the light filter's shader.
         This defines the shader ID for this light filter when a render context
         specific shader ID is not available.

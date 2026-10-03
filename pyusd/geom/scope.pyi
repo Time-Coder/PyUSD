@@ -1,9 +1,8 @@
-from ..typed import Typed
+from .imageable import Imageable
 
-class Scope(Typed):
+class Scope(Imageable):
     """Scope is the simplest grouping primitive, and does not carry the
     baggage of transformability.  Note that transforms should inherit down
     through a Scope successfully - it is just a guaranteed no-op from a
     transformability perspective.
     """
-

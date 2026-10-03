@@ -1,9 +1,9 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import asset, namespace, string, token
-from ..relationship import Relationship
+from ..relationship_spec import RelationshipSpec
 from ..typed import Typed
 
 
@@ -99,17 +99,19 @@ class RenderPass(Typed):
         "prepend apiSchemas": ["CollectionAPI:renderVisibility", "CollectionAPI:cameraVisibility", "CollectionAPI:prune", "CollectionAPI:matte"]
     }
 
-    collection: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    collection.renderVisibility.includeRoot = Attribute(bool,
+    collection: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    collection.renderVisibility.includeRoot = AttributeSpec(bool,
         uniform=True,
+        value=1,
         metadata={
             "customData": {
                 "apiSchemaOverride": True
             }
         }
     )
-    collection.cameraVisibility.includeRoot = Attribute(bool,
+    collection.cameraVisibility.includeRoot = AttributeSpec(bool,
         uniform=True,
+        value=1,
         metadata={
             "customData": {
                 "apiSchemaOverride": True
@@ -117,7 +119,7 @@ class RenderPass(Typed):
         }
     )
 
-    passType = Attribute(token,
+    passType: AttributeSpec[token] = AttributeSpec(token,
         uniform=True,
         doc="""A string used to categorize differently structured
         or executed types of passes within a customized pipeline.
@@ -130,8 +132,9 @@ class RenderPass(Typed):
         """
     )
 
-    command = Attribute(List[string],
+    command: AttributeSpec[List[string]] = AttributeSpec(List[string],
         uniform=True,
+        value=[],
         doc="""The command to run in order to generate
         renders for this pass.  The job submission code can use
         this to properly send tasks to the job scheduling software
@@ -151,7 +154,7 @@ class RenderPass(Typed):
         """
     )
 
-    fileName = Attribute(asset,
+    fileName: AttributeSpec[asset] = AttributeSpec(asset,
         uniform=True,
         doc="""The asset that contains the rendering prims or other
         information needed to render this pass.
@@ -159,7 +162,7 @@ class RenderPass(Typed):
         """
     )
 
-    renderSource = Relationship(
+    renderSource = RelationshipSpec(
         doc="""The source prim to render from.  If _fileName_ is not present,
         the source is assumed to be a RenderSettings prim present in the current
         Usd stage. If fileName is present, the source should be found in the
@@ -174,7 +177,7 @@ class RenderPass(Typed):
         """
     )
 
-    inputPasses = Relationship(
+    inputPasses = RelationshipSpec(
         doc="""The set of other Passes that this Pass depends on
         in order to be constructed properly.  For example, a Pass A
         may generate a texture, which is then used as an input to

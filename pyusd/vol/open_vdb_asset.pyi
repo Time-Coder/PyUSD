@@ -1,4 +1,4 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..dtypes import token
 from .field_asset import FieldAsset
 
@@ -37,7 +37,7 @@ class OpenVDBAsset(FieldAsset):
         Unknown = "unknown"
 
     @property
-    def fieldDataType(self)->Attribute[FieldDataType]:
+    def fieldDataType(self)->AttributeSpec[FieldDataType]:
         """Token which is used to indicate the data type of an
                  individual field. Authors use this to tell consumers more
                  about the field without opening the file on disk. The list of
@@ -48,7 +48,7 @@ class OpenVDBAsset(FieldAsset):
     def fieldDataType(self, value:FieldDataType)->None: ...
 
     @property
-    def fieldClass(self)->Attribute[FieldClass]:
+    def fieldClass(self)->AttributeSpec[FieldClass]:
         """Optional token which can be used to indicate the class of
                  an individual grid. This is a mapping to openvdb::GridClass
                  where the values are GRID_LEVEL_SET, GRID_FOG_VOLUME,

@@ -1,6 +1,6 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..dtypes import token
 from ..gf import float3, half3, quatf
 from ..typed import Typed
@@ -15,7 +15,7 @@ class SkelAnimation(Typed):
     """
 
     @property
-    def joints(self)->Attribute[List[token]]:
+    def joints(self)->AttributeSpec[List[token]]:
         """Array of tokens identifying which joints this animation's
         data applies to. The tokens for joints correspond to the tokens of
         Skeleton primitives. The order of the joints as listed here may
@@ -25,7 +25,7 @@ class SkelAnimation(Typed):
     def joints(self, value:List[token])->None: ...
 
     @property
-    def translations(self)->Attribute[List[float3]]:
+    def translations(self)->AttributeSpec[List[float3]]:
         """Joint-local translations of all affected joints. Array length
         should match the size of the *joints* attribute."""
 
@@ -33,7 +33,7 @@ class SkelAnimation(Typed):
     def translations(self, value:List[float3])->None: ...
 
     @property
-    def rotations(self)->Attribute[List[quatf]]:
+    def rotations(self)->AttributeSpec[List[quatf]]:
         """Joint-local unit quaternion rotations of all affected joints,
         in 32-bit precision. Array length should match the size of the
         *joints* attribute."""
@@ -42,7 +42,7 @@ class SkelAnimation(Typed):
     def rotations(self, value:List[quatf])->None: ...
 
     @property
-    def scales(self)->Attribute[List[half3]]:
+    def scales(self)->AttributeSpec[List[half3]]:
         """Joint-local scales of all affected joints, in
         16 bit precision. Array length should match the size of the *joints*
         attribute."""
@@ -51,7 +51,7 @@ class SkelAnimation(Typed):
     def scales(self, value:List[half3])->None: ...
 
     @property
-    def blendShapes(self)->Attribute[List[token]]:
+    def blendShapes(self)->AttributeSpec[List[token]]:
         """Array of tokens identifying which blend shapes this
          animation's data applies to. The tokens for blendShapes correspond to
          the tokens set in the *skel:blendShapes* binding property of the
@@ -62,7 +62,7 @@ class SkelAnimation(Typed):
     def blendShapes(self, value:List[token])->None: ...
 
     @property
-    def blendShapeWeights(self)->Attribute[List[float]]:
+    def blendShapeWeights(self)->AttributeSpec[List[float]]:
         """Array of weight values for each blend shape. Each weight value
         is associated with the corresponding blend shape identified within the
         *blendShapes* token array, and therefore must have the same length as

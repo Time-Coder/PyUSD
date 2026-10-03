@@ -1,5 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace
 from ..gf import float3, point3f, quatf
@@ -19,8 +19,9 @@ class PhysicsMassAPI(APISchemaBase):
         }
     }
 
-    physics: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    physics.mass = Attribute(float,
+    physics: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    physics.mass = AttributeSpec(float,
+        value=0.0,
         doc="""If non-zero, directly specifies the mass of the object.
         Note that any child prim can also have a mass when they apply massAPI.
         In this case, the precedence rule is 'parent mass overrides the
@@ -38,7 +39,8 @@ class PhysicsMassAPI(APISchemaBase):
             "displayName": "Mass"
         }
     )
-    physics.density = Attribute(float,
+    physics.density = AttributeSpec(float,
+        value=0.0,
         doc="""If non-zero, specifies the density of the object.
         In the context of rigid body physics, density indirectly results in
         setting mass via (mass = density x volume of the object). How the
@@ -59,7 +61,8 @@ class PhysicsMassAPI(APISchemaBase):
             "displayName": "Density"
         }
     )
-    physics.centerOfMass = Attribute(point3f,
+    physics.centerOfMass = AttributeSpec(point3f,
+        value=(float('-inf'), float('-inf'), float('-inf')),
         doc="Center of mass in the prim's local space. Units: distance.",
         metadata={
             "customData": {
@@ -68,7 +71,8 @@ class PhysicsMassAPI(APISchemaBase):
             "displayName": "Center of Mass"
         }
     )
-    physics.diagonalInertia = Attribute(float3,
+    physics.diagonalInertia = AttributeSpec(float3,
+        value=(0.0, 0.0, 0.0),
         doc="""If non-zero, specifies diagonalized inertia tensor along the
         principal axes. Note if diagonalInertial is (0.0, 0.0, 0.0) it is
         ignored. Units: mass*distance*distance.
@@ -80,7 +84,8 @@ class PhysicsMassAPI(APISchemaBase):
             "displayName": "Diagonal Inertia"
         }
     )
-    physics.principalAxes = Attribute(quatf,
+    physics.principalAxes = AttributeSpec(quatf,
+        value=(0, 0, 0, 0),
         doc="""Orientation of the inertia tensor's principal axes in the
         prim's local space.
         """,

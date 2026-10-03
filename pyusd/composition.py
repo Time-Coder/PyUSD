@@ -8,7 +8,7 @@ from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 from .layer import Layer, LayerImpl
 from .prim_spec import PrimSpec
-from .property import Property
+from .property_spec import PropertySpec
 from .sdf import Specifier
 from .utils import (
     ancestors,
@@ -285,20 +285,20 @@ class CompositionEngine:
 
         return self.prim_index(path, root_layer).type_name
 
-    def resolve_property(self, path: str, prop_name: str, root_layer: Optional[Layer] = None) -> Optional[Property]:
+    def resolve_property(self, path: str, prop_name: str, root_layer: Optional[Layer] = None) -> Optional[PropertySpec]:
         path = normalize_prim_path(path)
         prop_name = normalize_property_name(prop_name)
-        fallback: Optional[Property] = None
+        fallback: Optional[PropertySpec] = None
 
         for spec in self.prim_index(path, root_layer).specs:
             prop = self._prop_at(spec.prim, prop_name)
             if prop is None:
                 continue
 
-            if prop.value_state == Property.ValueState.Cleared:
+            if prop.value_state == PropertySpec.ValueState.Cleared:
                 return prop
 
-            if prop.value_state == Property.ValueState.Authored:
+            if prop.value_state == PropertySpec.ValueState.Authored:
                 return prop
 
             if fallback is None:
@@ -315,8 +315,8 @@ class CompositionEngine:
             self.resolve_type_name(path, root_layer), prop_name
         )
 
-    def property_specs(self, path: str, prop_name: str, root_layer: Optional[Layer] = None) -> List[Property]:
-        result: List[Property] = []
+    def property_specs(self, path: str, prop_name: str, root_layer: Optional[Layer] = None) -> List[PropertySpec]:
+        result: List[PropertySpec] = []
         path = normalize_prim_path(path)
         prop_name = normalize_property_name(prop_name)
         for spec in self.prim_index(path, root_layer).specs:
@@ -691,7 +691,7 @@ class CompositionEngine:
         names.append(name)
 
     @staticmethod
-    def _prop_at(prim: PrimSpec, prop_name: str) -> Optional[Property]:
+    def _prop_at(prim: PrimSpec, prop_name: str) -> Optional[PropertySpec]:
         names = normalize_property_name(prop_name).split(":")
         if not names or not names[0]:
             return None
@@ -708,7 +708,7 @@ class CompositionEngine:
 
     @staticmethod
     def _flatten_property_names(
-        props: Iterable[Property], prefix: str = ""
+        props: Iterable[PropertySpec], prefix: str = ""
     ) -> Iterable[str]:
         for prop in props:
             name = prop.name if not prefix else f"{prefix}:{prop.name}"

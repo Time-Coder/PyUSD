@@ -1,4 +1,4 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import asset, double, timecode, token
 from ..geom.xformable import Xformable
@@ -52,7 +52,7 @@ class SpatialAudio(Xformable):
         LoopFromStage = "loopFromStage"
 
 
-    filePath = Attribute(asset,
+    filePath: AttributeSpec[asset] = AttributeSpec(asset,
         uniform=True,
         doc="""Path to the audio file.
         In general, the formats allowed for audio files is no more constrained
@@ -65,7 +65,7 @@ class SpatialAudio(Xformable):
         """
     )
 
-    auralMode = Attribute(AuralMode,
+    auralMode: AttributeSpec[AuralMode] = AttributeSpec(AuralMode,
         uniform=True,
         doc="""Determines how audio should be played.
         Valid values are:
@@ -81,7 +81,7 @@ class SpatialAudio(Xformable):
         """
     )
 
-    playbackMode = Attribute(PlaybackMode,
+    playbackMode: AttributeSpec[PlaybackMode] = AttributeSpec(PlaybackMode,
         uniform=True,
         doc="""Along with \\a startTime and \\a endTime, determines when the
         audio playback should start and stop during the stage's animation
@@ -104,7 +104,7 @@ class SpatialAudio(Xformable):
         """
     )
 
-    startTime = Attribute(timecode,
+    startTime: AttributeSpec[timecode] = AttributeSpec(timecode,
         uniform=True,
         doc="""Expressed in the timeCodesPerSecond of the containing stage,
         \\a startTime specifies when the audio stream will start playing during
@@ -118,7 +118,7 @@ class SpatialAudio(Xformable):
         """
     )
 
-    endTime = Attribute(timecode,
+    endTime: AttributeSpec[timecode] = AttributeSpec(timecode,
         uniform=True,
         doc="""Expressed in the timeCodesPerSecond of the containing stage,
         \\a endTime specifies when the audio stream will cease playing during
@@ -135,7 +135,7 @@ class SpatialAudio(Xformable):
         """
     )
 
-    mediaOffset = Attribute(double,
+    mediaOffset: AttributeSpec[double] = AttributeSpec(double,
         uniform=True,
         doc="""Expressed in seconds, \\a mediaOffset specifies the offset from
         the referenced audio file's beginning at which we should begin playback
@@ -147,7 +147,7 @@ class SpatialAudio(Xformable):
         """
     )
 
-    gain = Attribute(double,
+    gain: AttributeSpec[double] = AttributeSpec(double,
         doc="""Multiplier on the incoming audio signal. A value of 0 "mutes"
         the signal. Negative values will be clamped to 0.
 

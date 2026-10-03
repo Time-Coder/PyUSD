@@ -1,5 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace, token
 
@@ -31,10 +31,11 @@ class PhysicsDriveAPI(APISchemaBase):
         Acceleration = "acceleration"
 
 
-    physics: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    physics.create_prop(Attribute(Type,
+    physics: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    physics.create_prop(AttributeSpec(Type,
         name="type",
         uniform=True,
+        value="force",
         doc="""Drive spring is for the acceleration at the joint (rather
         than the force).
         """,
@@ -45,7 +46,8 @@ class PhysicsDriveAPI(APISchemaBase):
             "displayName": "Type"
         }
     ))
-    physics.maxForce = Attribute(float,
+    physics.maxForce = AttributeSpec(float,
+        value=float('inf'),
         doc="""Maximum force that can be applied to drive. Units:
         if linear drive: mass*DIST_UNITS/second/second
         if angular drive: mass*DIST_UNITS*DIST_UNITS/second/second
@@ -59,7 +61,8 @@ class PhysicsDriveAPI(APISchemaBase):
             "displayName": "Max Force"
         }
     )
-    physics.targetPosition = Attribute(float,
+    physics.targetPosition = AttributeSpec(float,
+        value=0.0,
         doc="""Target value for position. Units:
         if linear drive: distance
         if angular drive: degrees.
@@ -71,7 +74,8 @@ class PhysicsDriveAPI(APISchemaBase):
             "displayName": "Target Position"
         }
     )
-    physics.targetVelocity = Attribute(float,
+    physics.targetVelocity = AttributeSpec(float,
+        value=0.0,
         doc="""Target value for velocity. Units:
         if linear drive: distance/second
         if angular drive: degrees/second.
@@ -83,7 +87,8 @@ class PhysicsDriveAPI(APISchemaBase):
             "displayName": "Target Velocity"
         }
     )
-    physics.damping = Attribute(float,
+    physics.damping = AttributeSpec(float,
+        value=0.0,
         doc="""Damping of the drive. Units:
         if linear drive: mass/second
         If angular drive: mass*DIST_UNITS*DIST_UNITS/second/degrees.
@@ -94,7 +99,8 @@ class PhysicsDriveAPI(APISchemaBase):
             }
         }
     )
-    physics.stiffness = Attribute(float,
+    physics.stiffness = AttributeSpec(float,
+        value=0.0,
         doc="""Stiffness of the drive. Units:
         if linear drive: mass/second/second
         if angular drive: mass*DIST_UNITS*DIST_UNITS/degrees/second/second.

@@ -1,6 +1,6 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..gf import vector3f
 from ..typed import Typed
@@ -25,22 +25,25 @@ class BlendShape(Typed):
         }
     }
 
-    offsets = Attribute(List[vector3f],
+    offsets: AttributeSpec[List[vector3f]] = AttributeSpec(List[vector3f],
         uniform=True,
+        value=[],
         doc="""**Required property**. Position offsets which, when added to the
         base pose, provides the target shape.
         """
     )
 
-    normalOffsets = Attribute(List[vector3f],
+    normalOffsets: AttributeSpec[List[vector3f]] = AttributeSpec(List[vector3f],
         uniform=True,
+        value=[],
         doc="""**Required property**. Normal offsets which, when added to the
         base pose, provides the normals of the target shape.
         """
     )
 
-    pointIndices = Attribute(List[int],
+    pointIndices: AttributeSpec[List[int]] = AttributeSpec(List[int],
         uniform=True,
+        value=[],
         doc="""**Optional property**. Indices into the original mesh that
         correspond to the values in *offsets* and of any inbetween shapes. If
         authored, the number of elements must be equal to the number of elements

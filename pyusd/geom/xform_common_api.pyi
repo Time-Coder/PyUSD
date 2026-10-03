@@ -32,4 +32,3 @@ class XformCommonAPI(APISchemaBase):
     SetRotate(), SetScale() and SetPivot() methods are provided by this API
     to allow such sparse authoring.
     """
-

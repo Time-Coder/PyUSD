@@ -1,7 +1,7 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..dtypes import token
 
-class LightList(Attribute):
+class LightList(AttributeSpec):
 
     class CacheBehavior(token):
         ConsumeAndHalt = "consumeAndHalt"
@@ -10,7 +10,7 @@ class LightList(Attribute):
 
 
     @property
-    def cacheBehavior(self)->Attribute[CacheBehavior]:
+    def cacheBehavior(self)->AttributeSpec[CacheBehavior]:
         """
         Controls how the lightList should be interpreted.
         Valid values are:

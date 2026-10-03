@@ -1,6 +1,6 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import double, namespace, token
 from ..gf import double2, double3
@@ -55,113 +55,139 @@ class NurbsPatch(PointBased):
     Neither of these limitations are shared by subdivision surfaces; therefore,
     although they do not subscribe to trim-curve-based shaping, subdivs are
     often considered a more flexible modeling primitive.
+
     """
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
-    class Form(token):
+    class UForm(token):
         Open = "open"
         Closed = "closed"
         Periodic = "periodic"
 
-    uVertexCount: Attribute[int] = Attribute(int, "uVertexCount", doc=
-        """Number of vertices in the U direction.  Should be at least as
-        large as uOrder."""
+    class VForm(token):
+        Open = "open"
+        Closed = "closed"
+        Periodic = "periodic"
+
+
+    trimCurve: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    trimCurve.counts = AttributeSpec(List[int],
+        doc="""Each element specifies how many curves are present in each
+        "loop" of the trimCurve, and the length of the array determines how
+        many loops the trimCurve contains.  The sum of all elements is the
+        total nuber of curves in the trim, to which we will refer as
+        \\em nCurves in describing the other trim attributes.
+        """
+    )
+    trimCurve.orders = AttributeSpec(List[int], doc="Flat list of orders for each of the \\em nCurves curves.")
+    trimCurve.vertexCounts = AttributeSpec(List[int],
+        doc="""Flat list of number of vertices for each of the
+        \\em nCurves curves.
+        """
+    )
+    trimCurve.knots = AttributeSpec(List[double],
+        doc="""Flat list of parametric values for each of the
+        \\em nCurves curves.  There will be as many knots as the sum over
+        all elements of \\em vertexCounts plus the sum over all elements of
+        \\em orders.
+        """
+    )
+    trimCurve.ranges = AttributeSpec(List[double2],
+        doc="""Flat list of minimum and maximum parametric values
+        (as defined by \\em knots) for each of the \\em nCurves curves.
+        """
+    )
+    trimCurve.points = AttributeSpec(List[double3],
+        doc="""Flat list of homogeneous 2D points (u, v, w) that comprise
+        the \\em nCurves curves.  The number of points should be equal to the
+        um over all elements of \\em vertexCounts.
+        """
     )
 
-    vVertexCount: Attribute[int] = Attribute(int, "vVertexCount", doc=
-        """Number of vertices in the V direction.  Should be at least as
-        large as vOrder."""
+    uVertexCount: AttributeSpec[int] = AttributeSpec(int,
+        doc="""Number of vertices in the U direction.  Should be at least as
+        large as uOrder.
+        """
     )
 
-    uOrder: Attribute[int] = Attribute(int, "uOrder", doc=
-        """Order in the U direction.  Order must be positive and is
-        equal to the degree of the polynomial basis to be evaluated, plus 1."""
+    vVertexCount: AttributeSpec[int] = AttributeSpec(int,
+        doc="""Number of vertices in the V direction.  Should be at least as
+        large as vOrder.
+        """
     )
 
-    vOrder: Attribute[int] = Attribute(int, "vOrder", doc=
-        """Order in the V direction.  Order must be positive and is
-        equal to the degree of the polynomial basis to be evaluated, plus 1."""
+    uOrder: AttributeSpec[int] = AttributeSpec(int,
+        doc="""Order in the U direction.  Order must be positive and is
+        equal to the degree of the polynomial basis to be evaluated, plus 1.
+        """
     )
 
-    uKnots: Attribute[List[double]] = Attribute(List[double], "uKnots", doc=
-        """Knot vector for U direction providing U parameterization.
+    vOrder: AttributeSpec[int] = AttributeSpec(int,
+        doc="""Order in the V direction.  Order must be positive and is
+        equal to the degree of the polynomial basis to be evaluated, plus 1.
+        """
+    )
+
+    uKnots: AttributeSpec[List[double]] = AttributeSpec(List[double],
+        value=[],
+        doc="""Knot vector for U direction providing U parameterization.
         The length of this array must be ( uVertexCount + uOrder ), and its
-        entries must take on monotonically increasing values."""
+        entries must take on monotonically increasing values.
+        """
     )
 
-    vKnots: Attribute[List[double]] = Attribute(List[double], "vKnots", doc=
-        """Knot vector for V direction providing U parameterization.
+    vKnots: AttributeSpec[List[double]] = AttributeSpec(List[double],
+        value=[],
+        doc="""Knot vector for V direction providing U parameterization.
         The length of this array must be ( vVertexCount + vOrder ), and its
-        entries must take on monotonically increasing values."""
+        entries must take on monotonically increasing values.
+        """
     )
 
-    uForm: Attribute[Form] = Attribute(Form, value=Form.Open, uniform=True,
+    uForm: AttributeSpec[UForm] = AttributeSpec(UForm,
+        uniform=True,
         doc="""Interpret the control grid and knot vectors as representing
         an open, geometrically closed, or geometrically closed and C2 continuous
         surface along the U dimension.
-        \\sa \\ref UsdGeom_NurbsPatch_Form "NurbsPatch Form" """
+        \\sa \\ref UsdGeom_NurbsPatch_Form "NurbsPatch Form"
+        """
     )
 
-    vForm: Attribute[Form] = Attribute(Form, value=Form.Open, uniform=True,
+    vForm: AttributeSpec[VForm] = AttributeSpec(VForm,
+        uniform=True,
         doc="""Interpret the control grid and knot vectors as representing
         an open, geometrically closed, or geometrically closed and C2 continuous
         surface along the V dimension.
-        \\sa \\ref UsdGeom_NurbsPatch_Form "NurbsPatch Form" """
+        \\sa \\ref UsdGeom_NurbsPatch_Form "NurbsPatch Form"
+        """
     )
 
-    uRange: Attribute[double2] = Attribute(double2, doc=
-        """Provides the minimum and maximum parametric values (as defined
+    uRange: AttributeSpec[double2] = AttributeSpec(double2,
+        doc="""Provides the minimum and maximum parametric values (as defined
         by uKnots) over which the surface is actually defined.  The minimum
         must be less than the maximum, and greater than or equal to the
         value of uKnots[uOrder-1].  The maxium must be less than or equal
-        to the last element's value in uKnots."""
+        to the last element's value in uKnots.
+        """
     )
 
-    vRange: Attribute[double2] = Attribute(double2, doc=
-        """Provides the minimum and maximum parametric values (as defined
+    vRange: AttributeSpec[double2] = AttributeSpec(double2,
+        doc="""Provides the minimum and maximum parametric values (as defined
         by vKnots) over which the surface is actually defined.  The minimum
         must be less than the maximum, and greater than or equal to the
         value of vKnots[vOrder-1].  The maxium must be less than or equal
-        to the last element's value in vKnots."""
+        to the last element's value in vKnots.
+        """
     )
 
-    pointWeights: Attribute[List[double]] = Attribute(List[double], doc=
-        """Optionally provides "w" components for each control point,
+    pointWeights: AttributeSpec[List[double]] = AttributeSpec(List[double],
+        value=[],
+        doc="""Optionally provides "w" components for each control point,
         thus must be the same length as the points attribute.  If authored,
         the patch will be rational.  If unauthored, the patch will be
         polynomial, i.e. weight for all points is 1.0.
         \\note Some DCC's pre-weight the \\em points, but in this schema,
-        \\em points are not pre-weighted."""
-    )
-
-    trimCurve: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    trimCurve.counts = Attribute(List[int], "counts", doc=
-        """Each element specifies how many curves are present in each
-        "loop" of the trimCurve, and the length of the array determines how
-        many loops the trimCurve contains.  The sum of all elements is the
-        total nuber of curves in the trim, to which we will refer as
-        \\em nCurves in describing the other trim attributes."""
-    )
-    trimCurve.orders = Attribute(List[int], doc=
-        """Flat list of orders for each of the \\em nCurves curves."""
-    )
-    trimCurve.vertexCounts = Attribute(List[int], "vertexCounts", doc=
-        """Flat list of number of vertices for each of the
-        \\em nCurves curves."""
-    )
-    trimCurve.knots = Attribute(List[double], doc=
-        """Flat list of parametric values for each of the
-        \\em nCurves curves.  There will be as many knots as the sum over
-        all elements of \\em vertexCounts plus the sum over all elements of
-        \\em orders."""
-    )
-    trimCurve.ranges = Attribute(List[double2], doc=
-        """Flat list of minimum and maximum parametric values
-        (as defined by \\em knots) for each of the \\em nCurves curves."""
-    )
-    trimCurve.points = Attribute(List[double3], doc=
-        """Flat list of homogeneous 2D points (u, v, w) that comprise
-        the \\em nCurves curves.  The number of points should be equal to the
-        um over all elements of \\em vertexCounts."""
+        \\em points are not pre-weighted.
+        """
     )

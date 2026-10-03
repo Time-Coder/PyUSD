@@ -1,10 +1,10 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import int64
 from ..gf import float3, point3f, quatf, quath, vector3f
-from ..relationship import Relationship
+from ..relationship_spec import RelationshipSpec
 from .boundable import Boundable
 
 
@@ -234,6 +234,7 @@ class PointInstancer(Boundable):
     21     }
     22 }
     \\endcode
+
     """
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
@@ -244,48 +245,43 @@ class PointInstancer(Boundable):
                 "implementsComputeExtent": True
             },
             "schemaTokens": {
-                "inactiveIds": {
-                    "doc": """int64listop prim metadata that specifies
+                "inactiveIds": {"doc": '''int64listop prim metadata that specifies
                     the PointInstancer ids that should be masked (unrenderable)
-                    over all time."""
-                }
+                    over all time.'''}
             }
         }
     }
 
-    prototypes: Relationship = Relationship(doc=
-        """<b>Required property</b>. Orders and targets the prototype root
-        prims, which can be located anywhere in the scenegraph that is convenient,
-        although we promote organizing prototypes as children of the
-        PointInstancer.  The position of a prototype in this relationship defines
-        the value an instance would specify in the \\em protoIndices attribute to
-        instance that prototype. Since relationships are uniform, this property
-        cannot be animated."""
-    )
-
-    protoIndices: Attribute[List[int]] = Attribute(List[int], doc=
-        """<b>Required property</b>. Per-instance index into
+    protoIndices: AttributeSpec[List[int]] = AttributeSpec(List[int],
+        value=[],
+        doc="""<b>Required property</b>. Per-instance index into
         \\em prototypes relationship that identifies what geometry should be
         drawn for each instance.  <b>Topology attribute</b> - can be animated,
-        but at a potential performance impact for streaming."""
+        but at a potential performance impact for streaming.
+        """
     )
 
-    ids: Attribute[List[int64]] = Attribute(List[int64], doc=
-        """Ids are optional; if authored, the ids array should be the same
+    ids: AttributeSpec[List[int64]] = AttributeSpec(List[int64],
+        value=[],
+        doc="""Ids are optional; if authored, the ids array should be the same
         length as the \\em protoIndices array, specifying (at each timeSample if
         instance identities are changing) the id of each instance. The
         type is signed intentionally, so that clients can encode some
         binary state on Id'd instances without adding a separate primvar.
-        See also \\ref UsdGeomPointInstancer_varyingTopo"""
+        See also \\ref UsdGeomPointInstancer_varyingTopo
+        """
     )
 
-    positions: Attribute[List[point3f]] = Attribute(List[point3f], doc=
-        """<b>Required property</b>. Per-instance position.  See also
-        \\ref UsdGeomPointInstancer_transform ."""
+    positions: AttributeSpec[List[point3f]] = AttributeSpec(List[point3f],
+        value=[],
+        doc="""<b>Required property</b>. Per-instance position.  See also
+        \\ref UsdGeomPointInstancer_transform .
+        """
     )
 
-    orientations: Attribute[List[quath]] = Attribute(List[quath], doc=
-        """If authored, per-instance orientation of each instance about its
+    orientations: AttributeSpec[List[quath]] = AttributeSpec(List[quath],
+        value=[],
+        doc="""If authored, per-instance orientation of each instance about its
         prototype's origin, represented as a unit length quaternion, which
         allows us to encode it with sufficient precision in a compact GfQuath.
 
@@ -296,11 +292,13 @@ class PointInstancer(Boundable):
         with respect to neighboring samples)" of the two possible quaternions
         that encode the rotation.
 
-        See also \\ref UsdGeomPointInstancer_transform ."""
+        See also \\ref UsdGeomPointInstancer_transform .
+        """
     )
 
-    orientationsf: Attribute[List[quatf]] = Attribute(List[quatf], doc=
-        """If authored, per-instance orientation of each instance about its
+    orientationsf: AttributeSpec[List[quatf]] = AttributeSpec(List[quatf],
+        value=[],
+        doc="""If authored, per-instance orientation of each instance about its
         prototype's origin, represented as a unit length quaternion, encoded
         as a GfQuatf to support higher precision computations.
 
@@ -313,18 +311,22 @@ class PointInstancer(Boundable):
         default value if there are no time samples) of orientationsf is not empty
         orientationsf will be preferred over orientations if both are authored.
 
-        See also \\ref UsdGeomPointInstancer_transform ."""
+        See also \\ref UsdGeomPointInstancer_transform .
+        """
     )
 
-    scales: Attribute[List[float3]] = Attribute(List[float3], doc=
-        """If authored, per-instance scale to be applied to
+    scales: AttributeSpec[List[float3]] = AttributeSpec(List[float3],
+        value=[],
+        doc="""If authored, per-instance scale to be applied to
         each instance, before any rotation is applied.
 
-        See also \\ref UsdGeomPointInstancer_transform ."""
+        See also \\ref UsdGeomPointInstancer_transform .
+        """
     )
 
-    velocities: Attribute[List[vector3f]] = Attribute(List[vector3f], doc=
-        """If provided, per-instance 'velocities' will be used to
+    velocities: AttributeSpec[List[vector3f]] = AttributeSpec(List[vector3f],
+        value=[],
+        doc="""If provided, per-instance 'velocities' will be used to
         compute positions between samples for the 'positions' attribute,
         rather than interpolating between neighboring 'positions' samples.
         Velocities should be considered mandatory if both \\em protoIndices
@@ -334,30 +336,48 @@ class PointInstancer(Boundable):
         UsdStage::GetTimeCodesPerSecond().
 
         See also \\ref UsdGeomPointInstancer_transform,
-        \\ref UsdGeom_VelocityInterpolation ."""
+        \\ref UsdGeom_VelocityInterpolation .
+        """
     )
 
-    accelerations: Attribute[List[vector3f]] = Attribute(List[vector3f], doc=
-        """If authored, per-instance 'accelerations' will be used with
+    accelerations: AttributeSpec[List[vector3f]] = AttributeSpec(List[vector3f],
+        value=[],
+        doc="""If authored, per-instance 'accelerations' will be used with
         velocities to compute positions between samples for the 'positions'
         attribute rather than interpolating between neighboring 'positions'
         samples. Acceleration is measured in position units per second-squared.
         To convert to position units per squared UsdTimeCode, divide by the
-        square of UsdStage::GetTimeCodesPerSecond()."""
+        square of UsdStage::GetTimeCodesPerSecond().
+        """
     )
 
-    angularVelocities: Attribute[List[vector3f]] = Attribute(List[vector3f], doc=
-        """If authored, per-instance angular velocity vector to be used for
+    angularVelocities: AttributeSpec[List[vector3f]] = AttributeSpec(List[vector3f],
+        value=[],
+        doc="""If authored, per-instance angular velocity vector to be used for
         interoplating orientations.  Angular velocities should be considered
         mandatory if both \\em protoIndices and \\em orientations are animated.
         Angular velocity is measured in <b>degrees</b> per second. To convert
         to degrees per UsdTimeCode, divide by
         UsdStage::GetTimeCodesPerSecond().
 
-        See also \\ref UsdGeomPointInstancer_transform ."""
+        See also \\ref UsdGeomPointInstancer_transform .
+        """
     )
 
-    invisibleIds: Attribute[List[int64]] = Attribute(List[int64], value=[], doc=
-        """A list of id's to make invisible at the evaluation time.
-        See \\ref UsdGeomPointInstancer_invisibleIds ."""
+    invisibleIds: AttributeSpec[List[int64]] = AttributeSpec(List[int64],
+        value=[],
+        doc="""A list of id's to make invisible at the evaluation time.
+        See \\ref UsdGeomPointInstancer_invisibleIds .
+        """
+    )
+
+    prototypes = RelationshipSpec(
+        doc="""<b>Required property</b>. Orders and targets the prototype root
+        prims, which can be located anywhere in the scenegraph that is convenient,
+        although we promote organizing prototypes as children of the
+        PointInstancer.  The position of a prototype in this relationship defines
+        the value an instance would specify in the \\em protoIndices attribute to
+        instance that prototype. Since relationships are uniform, this property
+        cannot be animated.
+        """
     )

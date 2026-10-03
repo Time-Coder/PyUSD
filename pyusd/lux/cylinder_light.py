@@ -1,4 +1,4 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace, token
 from .boundable_light_base import BoundableLightBase
@@ -21,9 +21,10 @@ class CylinderLight(BoundableLightBase):
         }
     }
 
-    light: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    light.shaderId = Attribute(token,
+    light: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    light.shaderId = AttributeSpec(token,
         uniform=True,
+        value="CylinderLight",
         metadata={
             "customData": {
                 "apiSchemaOverride": True
@@ -31,8 +32,9 @@ class CylinderLight(BoundableLightBase):
         }
     )
 
-    inputs: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    inputs.length = Attribute(float,
+    inputs: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    inputs.length = AttributeSpec(float,
+        value=1,
         doc="Length of the cylinder, in the local X axis.",
         metadata={
             "displayGroup": "Geometry",
@@ -42,7 +44,8 @@ class CylinderLight(BoundableLightBase):
             }
         }
     )
-    inputs.radius = Attribute(float,
+    inputs.radius = AttributeSpec(float,
+        value=0.5,
         doc="Radius of the cylinder.",
         metadata={
             "displayGroup": "Geometry",
@@ -53,7 +56,7 @@ class CylinderLight(BoundableLightBase):
         }
     )
 
-    treatAsLine = Attribute(bool,
+    treatAsLine: AttributeSpec[bool] = AttributeSpec(bool,
         doc="""A hint that this light can be treated as a 'line'
         light (effectively, a zero-radius cylinder) by renderers that
         benefit from non-area lighting. Renderers that only support

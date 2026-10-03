@@ -1,16 +1,16 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 
-class Collection(Attribute):
+class Collection(AttributeSpec):
 
     @property
-    def includeRoot(self)->Attribute[bool]:
+    def includeRoot(self)->AttributeSpec[bool]:
         ...
 
     @includeRoot.setter
     def includeRoot(self, value:bool)->None: ...
 
     @property
-    def includeRoot(self)->Attribute[bool]:
+    def includeRoot(self)->AttributeSpec[bool]:
         ...
 
     @includeRoot.setter

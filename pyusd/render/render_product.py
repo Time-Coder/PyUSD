@@ -1,7 +1,7 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import token
-from ..relationship import Relationship
+from ..relationship_spec import RelationshipSpec
 from .render_settings_base import RenderSettingsBase
 
 
@@ -33,7 +33,7 @@ class RenderProduct(RenderSettingsBase):
         DeepRaster = "deepRaster"
 
 
-    productType = Attribute(ProductType,
+    productType: AttributeSpec[ProductType] = AttributeSpec(ProductType,
         uniform=True,
         doc="""
         The type of output to produce. Allowed values are ones most
@@ -50,7 +50,7 @@ class RenderProduct(RenderSettingsBase):
         """
     )
 
-    productName = Attribute(token,
+    productName: AttributeSpec[token] = AttributeSpec(token,
         doc="""Specifies the name that the output/display driver
         should give the product.  This is provided as-authored to the
         driver, whose responsibility it is to situate the product on a
@@ -58,7 +58,7 @@ class RenderProduct(RenderSettingsBase):
         """
     )
 
-    orderedVars = Relationship(
+    orderedVars = RelationshipSpec(
         doc="""Specifies the RenderVars that should be consumed and
         combined into the final product.  If ordering is relevant to the
         output driver, then the ordering of targets in this relationship

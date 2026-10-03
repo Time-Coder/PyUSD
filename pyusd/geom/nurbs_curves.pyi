@@ -1,6 +1,6 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..dtypes import double
 from ..gf import double2
 from .curves import Curves
@@ -30,7 +30,7 @@ class NurbsCurves(Curves):
     """
 
     @property
-    def order(self)->Attribute[List[int]]:
+    def order(self)->AttributeSpec[List[int]]:
         """Order of the curve.  Order must be positive and is
         equal to the degree of the polynomial basis to be evaluated, plus 1.
         Its value for the 'i'th curve must be less than or equal to
@@ -40,7 +40,7 @@ class NurbsCurves(Curves):
     def order(self, value:List[int])->None: ...
 
     @property
-    def knots(self)->Attribute[List[double]]:
+    def knots(self)->AttributeSpec[List[double]]:
         """Knot vector providing curve parameterization.
         The length of the slice of the array for the ith curve
         must be ( curveVertexCount[i] + order[i] ), and its
@@ -50,7 +50,7 @@ class NurbsCurves(Curves):
     def knots(self, value:List[double])->None: ...
 
     @property
-    def ranges(self)->Attribute[List[double2]]:
+    def ranges(self)->AttributeSpec[List[double2]]:
         """Provides the minimum and maximum parametric values (as defined
         by knots) over which the curve is actually defined.  The minimum must
         be less than the maximum, and greater than or equal to the value of the
@@ -62,7 +62,7 @@ class NurbsCurves(Curves):
     def ranges(self, value:List[double2])->None: ...
 
     @property
-    def pointWeights(self)->Attribute[List[double]]:
+    def pointWeights(self)->AttributeSpec[List[double]]:
         """Optionally provides "w" components for each control point,
         thus must be the same length as the points attribute.  If authored,
         the curve will be rational.  If unauthored, the curve will be

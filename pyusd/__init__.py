@@ -1,5 +1,5 @@
 from .api_schema_base import APISchemaBase
-from .attribute import Attribute
+from .attribute_spec import AttributeSpec
 from .clips_api import ClipsAPI
 from .collection_api import CollectionAPI
 from .color_space_api import ColorSpaceAPI
@@ -26,8 +26,8 @@ from .layer import Layer
 from .model_api import ModelAPI
 from .prim import Prim, PrimType
 from .prim_spec import PrimSpec
-from .property import Property
-from .relationship import Relationship
+from .property_spec import PropertySpec
+from .relationship_spec import RelationshipSpec
 from .stage import Stage
 from .stage_metadata import StageMetadata
 from .stage_property import StageProperty
@@ -42,9 +42,9 @@ __all__ = [
     # Prim.resolved_prim / Prim.authored_prim / Layer.prim_spec_at instead.
     "PrimSpec",
     "PrimType",
-    "Attribute",
-    "Property",
-    "Relationship",
+    "AttributeSpec",
+    "PropertySpec",
+    "RelationshipSpec",
     "Stage",
     "StageProperty",
     "StageMetadata",

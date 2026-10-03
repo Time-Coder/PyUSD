@@ -1,9 +1,9 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import token
-from ..relationship import Relationship
+from ..relationship_spec import RelationshipSpec
 from .render_settings_base import RenderSettingsBase
 
 
@@ -28,8 +28,9 @@ class RenderSettings(RenderSettingsBase):
         Empty = ""
 
 
-    includedPurposes = Attribute(List[token],
+    includedPurposes: AttributeSpec[List[token]] = AttributeSpec(List[token],
         uniform=True,
+        value=[],
         doc="""The list of UsdGeomImageable _purpose_ values that
         should be included in the render.  Note this cannot be
         specified per-RenderProduct because it is a statement of
@@ -37,7 +38,7 @@ class RenderSettings(RenderSettingsBase):
         """
     )
 
-    materialBindingPurposes = Attribute(MaterialBindingPurposes,
+    materialBindingPurposes: AttributeSpec[MaterialBindingPurposes] = AttributeSpec(MaterialBindingPurposes,
         uniform=True,
         doc="""Ordered list of material purposes to consider when
         resolving material bindings in the scene.  The empty string
@@ -45,7 +46,7 @@ class RenderSettings(RenderSettingsBase):
         """
     )
 
-    renderingColorSpace = Attribute(token,
+    renderingColorSpace: AttributeSpec[token] = AttributeSpec(token,
         uniform=True,
         doc="""Describes a renderer's working (linear) colorSpace where all
         the renderer/shader math is expected to happen. When no
@@ -53,7 +54,7 @@ class RenderSettings(RenderSettingsBase):
         """
     )
 
-    products = Relationship(
+    products = RelationshipSpec(
         doc="""The set of RenderProducts the render should produce.
         This relationship should target UsdRenderProduct prims.
         If no _products_ are specified, an application should produce

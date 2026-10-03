@@ -32,23 +32,21 @@ class XformCommonAPI(APISchemaBase):
     xformable may have only a translate or a rotate. It would still be
     considered as compatible with this API. Individual SetTranslate(),
     SetRotate(), SetScale() and SetPivot() methods are provided by this API
-    to allow such sparse authoring."""
+    to allow such sparse authoring.
+    """
 
-    schema_kind = SchemaKind.NonAppliedAPI
+    schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
 
     meta = {
         "customData": {
             "apiSchemaType": "nonApplied",
-            "extraIncludes": """
+            "extraIncludes": '''
     #include "pxr/usd/usdGeom/xformable.h"
-    #include "pxr/usd/usdGeom/xformOp.h" """,
+    #include "pxr/usd/usdGeom/xformOp.h" ''',
             "schemaTokens": {
-                "pivot": {
-                    "doc": """Op suffix for the standard scale-rotate pivot
+                "pivot": {"doc": '''Op suffix for the standard scale-rotate pivot
                     on a UsdGeomXformCommonAPI-compatible prim.
-                    """
-                }
+                    '''}
             }
         }
     }
-

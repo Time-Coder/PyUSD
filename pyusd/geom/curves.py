@@ -1,6 +1,6 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from .point_based import PointBased
 
@@ -24,6 +24,7 @@ class Curves(PointBased):
     internal or future shipped schemas will follow this pattern. Be
     sure to key any indexing behavior off the concrete type, not this
     abstract type.
+
     """
 
     schema_kind: SchemaKind = SchemaKind.AbstractTyped
@@ -36,19 +37,23 @@ class Curves(PointBased):
         }
     }
 
-    curveVertexCounts: Attribute[List[int]] = Attribute(List[int], "curveVertexCounts", doc=
-        """Curves-derived primitives can represent multiple distinct,
+    curveVertexCounts: AttributeSpec[List[int]] = AttributeSpec(List[int],
+        value=[],
+        doc="""Curves-derived primitives can represent multiple distinct,
         potentially disconnected curves.  The length of 'curveVertexCounts'
         gives the number of such curves, and each element describes the
-        number of vertices in the corresponding curve"""
+        number of vertices in the corresponding curve
+        """
     )
 
-    widths: Attribute[List[float]] = Attribute(List[float], "widths", doc=
-        """Provides width specification for the curves, whose application
+    widths: AttributeSpec[List[float]] = AttributeSpec(List[float],
+        value=[],
+        doc="""Provides width specification for the curves, whose application
         will depend on whether the curve is oriented (normals are defined for
         it), in which case widths are "ribbon width", or unoriented, in which
         case widths are cylinder width.  'widths' is not a generic Primvar,
         but the number of elements in this attribute will be determined by
         its 'interpolation'.  See \\ref SetWidthsInterpolation() .  If 'widths'
-        and 'primvars:widths' are both specified, the latter has precedence."""
+        and 'primvars:widths' are both specified, the latter has precedence.
+        """
     )

@@ -1,6 +1,6 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import token
 from ..typed import Typed
@@ -25,6 +25,7 @@ class GeomSubset(Typed):
 
     Materials are bound to GeomSubsets just as they are for regular
     geometry using API available in UsdShade (UsdShadeMaterial::Bind).
+
     """
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
@@ -32,13 +33,13 @@ class GeomSubset(Typed):
     meta = {
         "customData": {
             "className": "Subset",
-            "extraIncludes": """
-#include "pxr/base/tf/token.h"
-#include "pxr/usd/usdGeom/imageable.h"
-#include "pxr/usd/usdGeom/mesh.h"
-#include "pxr/usd/usdGeom/tetMesh.h"
-#include "pxr/usd/usdGeom/basisCurves.h"
-"""
+            "extraIncludes": '''
+    #include "pxr/base/tf/token.h"
+    #include "pxr/usd/usdGeom/imageable.h"
+    #include "pxr/usd/usdGeom/mesh.h"
+    #include "pxr/usd/usdGeom/tetMesh.h"
+    #include "pxr/usd/usdGeom/basisCurves.h"
+    '''
         }
     }
 
@@ -49,8 +50,10 @@ class GeomSubset(Typed):
         Segment = "segment"
         Tetrahedron = "tetrahedron"
 
-    elementType: Attribute[ElementType] = Attribute(ElementType, value=ElementType.Face, uniform=True,
-        doc = """The type of element that the indices target. "elementType" can
+
+    elementType: AttributeSpec[ElementType] = AttributeSpec(ElementType,
+        uniform=True,
+        doc="""The type of element that the indices target. "elementType" can
         have one of the following values:
         <ul><li><b>face</b>: Identifies faces on a Gprim's surface. For a
         UsdGeomMesh, each element of the _indices_ attribute would refer to
@@ -76,19 +79,23 @@ class GeomSubset(Typed):
         <li><b>tetrahedron</b>: for any UsdGeomTetMesh, each element of the
         _indices_ attribute would refer to an element of the TetMesh's
         _tetVertexIndices_ attribute.
-        </li></ul>"""
+        </li></ul>
+        """
     )
 
-    indices: Attribute[List[int]] = Attribute(List[int], value=[], doc=
-        """The set of indices identifying elements included in this
+    indices: AttributeSpec[List[int]] = AttributeSpec(List[int],
+        value=[],
+        doc="""The set of indices identifying elements included in this
         subset. The indices need not be sorted, but the same element should not
         be identfied more than once. Indices sampled at a given time are
         invalid if outside the range [0, elementCount) for the elements
-        sampled from the parent geometric prim at the same time."""
+        sampled from the parent geometric prim at the same time.
+        """
     )
 
-    familyName: Attribute[token] = Attribute(token, value="", uniform=True, doc=
-        """The name of the family of subsets that this subset belongs to.
+    familyName: AttributeSpec[token] = AttributeSpec(token,
+        uniform=True,
+        doc="""The name of the family of subsets that this subset belongs to.
         This is optional and is primarily useful when there are multiple
         families of subsets under a geometric prim. In some cases, this could
         also be used for achieving proper roundtripping of subset data between
@@ -111,5 +118,6 @@ class GeomSubset(Typed):
         </ul>
         \\note The validity of subset data is not enforced by the authoring
         APIs, however they can be checked using UsdGeomSubset::ValidateFamily().
+
         """
     )

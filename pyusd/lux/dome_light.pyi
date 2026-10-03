@@ -1,6 +1,6 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..dtypes import token
-from ..relationship import Relationship
+from ..relationship_spec import RelationshipSpec
 from .inputs import Inputs
 from .light import Light
 from .nonboundable_light_base import NonboundableLightBase
@@ -44,21 +44,21 @@ class DomeLight(NonboundableLightBase):
         CubeMapVerticalCross = "cubeMapVerticalCross"
 
     @property
-    def inputs(self) -> Inputs: ...
-
-    @property
     def light(self) -> Light: ...
 
     @property
-    def guideRadius(self)->Attribute[float]:
+    def inputs(self) -> Inputs: ...
+
+    @property
+    def guideRadius(self)->AttributeSpec[float]:
         """The radius of guide geometry to use to visualize the dome light.  The default is 1 km for scenes whose metersPerUnit is the USD default of 0.01 (i.e., 1 world unit is 1 cm)."""
 
     @guideRadius.setter
     def guideRadius(self, value:float)->None: ...
 
     @property
-    def portals(self)->Relationship:
+    def portals(self)->RelationshipSpec:
         """Optional portals to guide light sampling."""
 
     @portals.setter
-    def portals(self, value:Relationship)->None: ...
+    def portals(self, value:RelationshipSpec)->None: ...

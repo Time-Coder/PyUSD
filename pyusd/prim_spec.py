@@ -15,13 +15,13 @@ from typing import (
 
 from .api_schema_base import APISchemaBase
 from .api_wrapper import APIWrapper
-from .attribute import Attribute
+from .attribute_spec import AttributeSpec
 from .common import SchemaKind
 from .dtypes import namespace
 from .prim_metadata import PrimMetadata
 from .prim_serializer import PrimSerializer
-from .property import Property
-from .relationship import Relationship
+from .property_spec import PropertySpec
+from .relationship_spec import RelationshipSpec
 from .sdf import Specifier
 from .utils import abspath, in_annotations, infer_type
 from .variant_sets import VariantSets
@@ -40,7 +40,7 @@ class PrimSpec:
     _metadata: PrimMetadata
     _children: Dict[str, PrimSpec]
     _parent: Optional[PrimSpec]
-    _props: Dict[str, Property]
+    _props: Dict[str, PropertySpec]
     _inherits: List[Union[PrimSpec, Layer]]
     _references: List[Union[PrimSpec, Layer]]
     _payloads: List[Union[PrimSpec, Layer]]
@@ -69,7 +69,7 @@ class PrimSpec:
         self._name: str = name
         self._parent: Optional[PrimSpec] = None
         self._children: Dict[str, PrimSpec] = {}
-        self._props: Dict[str, Property] = {}
+        self._props: Dict[str, PropertySpec] = {}
         self._inherits: List[Union[PrimSpec, Layer]] = []
         self._references: List[Union[PrimSpec, Layer]] = []
         self._payloads: List[Union[PrimSpec, Layer]] = []
@@ -133,18 +133,18 @@ class PrimSpec:
         if instance_name:
             prefix = cls.meta["customData"]["propertyNamespacePrefix"]
             if prefix not in self._props:
-                prefix_prop = self.create_prop(Property(prefix, is_leaf=False))
+                prefix_prop = self.create_prop(PropertySpec(prefix, is_leaf=False))
             else:
                 prefix_prop = self._props[prefix]
 
-            start = prefix_prop.create_prop(Property(instance_name, is_leaf=False))
+            start = prefix_prop.create_prop(PropertySpec(instance_name, is_leaf=False))
 
         for name, value in cls.__dict__.items():
             if name == "meta":
                 self._metadata.update(value)
                 continue
 
-            if not isinstance(value, Property):
+            if not isinstance(value, PropertySpec):
                 continue
 
             value._name = name
@@ -156,7 +156,7 @@ class PrimSpec:
                 prop = start._props[name]
                 prop.update_children(value)
 
-    def _declared_prop(self, name:str)->Optional[Property]:
+    def _declared_prop(self, name:str)->Optional[PropertySpec]:
         """Look up a property declared by this prim's type in the schema registry.
 
         Returns None for untyped prims and for names the type does not declare.
@@ -174,10 +174,10 @@ class PrimSpec:
         prop = declared.clone()
         prop._name = name.split(":")[-1]
         prop._parent = self
-        prop._value_state = Property.ValueState.Fallback
+        prop._value_state = PropertySpec.ValueState.Fallback
         return prop
 
-    def _install_declared(self, name:str, declared:Property)->Property:
+    def _install_declared(self, name:str, declared:PropertySpec)->PropertySpec:
         """Install a lazily resolved declaration, keeping any authored value."""
         parts = name.split(":")
         current = self
@@ -185,7 +185,7 @@ class PrimSpec:
             existing = current._props.get(part)
             if existing is None:
                 existing = current.create_prop(
-                    Property(part, custom=True, is_leaf=False)
+                    PropertySpec(part, custom=True, is_leaf=False)
                 )
 
             current = existing
@@ -197,13 +197,13 @@ class PrimSpec:
 
         return current.create_prop(declared)
 
-    def create_prop(self, prop:Property)->Property:
+    def create_prop(self, prop:PropertySpec)->PropertySpec:
         self._props[prop.name] = prop
         prop._parent = self
         self._touch()
         return prop
 
-    def create_attr(self, value_type:type, name:str, value:Optional[T]=None, doc:str="", metadata:Optional[Dict[str, Any]]=None, is_leaf:bool=True, uniform:bool=False, custom:bool=False, fix_type:bool=True)->Attribute[T]:
+    def create_attr(self, value_type:type, name:str, value:Optional[T]=None, doc:str="", metadata:Optional[Dict[str, Any]]=None, is_leaf:bool=True, uniform:bool=False, custom:bool=False, fix_type:bool=True)->AttributeSpec[T]:
         ori_name = name
         names = name.split(":")
 
@@ -212,28 +212,28 @@ class PrimSpec:
             last = i == len(names) - 1
             if name not in current._props:
                 if last:
-                    attr = Attribute(value_type, name, value, doc, metadata, is_leaf, uniform, custom, fix_type)
+                    attr = AttributeSpec(value_type, name, value, doc, metadata, is_leaf, uniform, custom, fix_type)
                     if value is not None:
-                        # Attribute() leaves a supplied value in the Fallback state,
+                        # AttributeSpec() leaves a supplied value in the Fallback state,
                         # which is what schema declarations rely on. An initial
                         # value passed to create_attr is a real opinion.
-                        attr._value_state = Property.ValueState.Authored
+                        attr._value_state = PropertySpec.ValueState.Authored
 
                     current = current.create_prop(attr)
                 else:
-                    current = current.create_prop(Attribute(namespace, name, is_leaf=False))
+                    current = current.create_prop(AttributeSpec(namespace, name, is_leaf=False))
             else:
                 current = current._props[name]
-                if last and current._value_state > Property.ValueState.NotAuthored:
-                    raise RuntimeError(f"Attribute {ori_name} already exists")
+                if last and current._value_state > PropertySpec.ValueState.NotAuthored:
+                    raise RuntimeError(f"AttributeSpec {ori_name} already exists")
                 else:
-                    current._value_state = Property.ValueState.NotAuthored
+                    current._value_state = PropertySpec.ValueState.NotAuthored
 
         # names always has at least one entry, so the loop leaves current on the
         # leaf property; the intermediate namespace entries are plain Attributes.
-        return cast(Attribute[T], current)
+        return cast(AttributeSpec[T], current)
 
-    def create_rel(self, name:str, doc:str="", metadata:Optional[Dict[str, Any]]=None, custom:bool=False, is_leaf:bool=True)->Relationship:
+    def create_rel(self, name:str, doc:str="", metadata:Optional[Dict[str, Any]]=None, custom:bool=False, is_leaf:bool=True)->RelationshipSpec:
         ori_name = name
         names = name.split(":")
 
@@ -242,18 +242,18 @@ class PrimSpec:
             last = i == len(names) - 1
             if name not in current._props:
                 if last:
-                    current = current.create_prop(Relationship(name, doc, metadata, custom, is_leaf))
+                    current = current.create_prop(RelationshipSpec(name, doc, metadata, custom, is_leaf))
                 else:
-                    current = current.create_prop(Attribute(namespace, name, is_leaf=False))
+                    current = current.create_prop(AttributeSpec(namespace, name, is_leaf=False))
             else:
                 current = current._props[name]
-                if last and current._value_state > Property.ValueState.NotAuthored:
-                    raise RuntimeError(f"Relationship {ori_name} already exists")
+                if last and current._value_state > PropertySpec.ValueState.NotAuthored:
+                    raise RuntimeError(f"RelationshipSpec {ori_name} already exists")
                 else:
-                    current._value_state = Property.ValueState.NotAuthored
+                    current._value_state = PropertySpec.ValueState.NotAuthored
 
         # As in create_attr: the loop always ends on the leaf relationship.
-        return cast(Relationship, current)
+        return cast(RelationshipSpec, current)
 
     def has_prop(self, name:str)->bool:
         names = name.split(":")
@@ -271,7 +271,7 @@ class PrimSpec:
 
         return self._declared_prop(name) is not None
 
-    def prop(self, name:str)->Property:
+    def prop(self, name:str)->PropertySpec:
         names = name.split(":")
         name = names[0]
 
@@ -364,7 +364,7 @@ class PrimSpec:
         return list(self._props.keys())
 
     @property
-    def props(self)->List[Property]:
+    def props(self)->List[PropertySpec]:
         return list(self._props.values())
 
     def child(self, name:str)->PrimSpec:
@@ -612,7 +612,7 @@ class PrimSpec:
     def __str__(self)->str:
         return self.__class__.__name__ + "(<" + self.path + ">)"
 
-    def __getattr__(self, name:str)->Union[Property, APISchemaBase, APIWrapper]:
+    def __getattr__(self, name:str)->Union[PropertySpec, APISchemaBase, APIWrapper]:
         if name in self._props:
             return self._props[name]
 
@@ -661,39 +661,39 @@ class PrimSpec:
                     self._api_wrappers[name] = APIWrapper(name, api_type, self)
                 return self._api_wrappers[name]
 
-        return self.create_prop(Property(name, custom=True, is_leaf=False))
+        return self.create_prop(PropertySpec(name, custom=True, is_leaf=False))
 
     def __setattr__(self, name: str, value: Any) -> None:
         if hasattr(self.__class__, name) or in_annotations(name, self.__class__):
             super().__setattr__(name, value)
             return
 
-        from .attribute import Attribute
-        from .relationship import Relationship
+        from .attribute_spec import AttributeSpec
+        from .relationship_spec import RelationshipSpec
 
-        is_rel:bool = (isinstance(value, PrimSpec) or (isinstance(value, list) and len(value) > 0 and all(isinstance(item, PrimSpec) for item in value)) or isinstance(value, Relationship))
+        is_rel:bool = (isinstance(value, PrimSpec) or (isinstance(value, list) and len(value) > 0 and all(isinstance(item, PrimSpec) for item in value)) or isinstance(value, RelationshipSpec))
         if name in self._props:
             prop = self._props[name]
-            if isinstance(prop, Attribute) and is_rel:
+            if isinstance(prop, AttributeSpec) and is_rel:
                 if not prop._custom:
                     if isinstance(value, PrimSpec):
-                        error_message = "cannot assign Prim to Attribute"
+                        error_message = "cannot assign Prim to AttributeSpec"
                     elif isinstance(value, list):
-                        error_message = "cannot assign List[Prim] to Attribute"
-                    elif isinstance(value, Relationship):
-                        error_message = "cannot assign Relationship to Attribute"
+                        error_message = "cannot assign List[Prim] to AttributeSpec"
+                    elif isinstance(value, RelationshipSpec):
+                        error_message = "cannot assign RelationshipSpec to AttributeSpec"
 
                     raise TypeError(error_message)
 
                 del self._props[name]
 
-            if isinstance(prop, Relationship) and not is_rel:
+            if isinstance(prop, RelationshipSpec) and not is_rel:
                 if not prop._custom:
-                    raise TypeError(f"cannot assign {value.__class__} object to Relationship")
+                    raise TypeError(f"cannot assign {value.__class__} object to RelationshipSpec")
 
                 del self._props[name]
 
-        if name not in self._props and isinstance(value, Property):
+        if name not in self._props and isinstance(value, PropertySpec):
             if value._parent is None:
                 value._name = name
                 self.create_prop(value)
@@ -706,13 +706,13 @@ class PrimSpec:
 
         if name not in self._props:
             if is_rel:
-                self.create_prop(Relationship(name, custom=True, is_leaf=False))
+                self.create_prop(RelationshipSpec(name, custom=True, is_leaf=False))
             else:
-                self.create_prop(Attribute(infer_type(value), name, uniform=False, custom=True, is_leaf=False, fix_type=False))
+                self.create_prop(AttributeSpec(infer_type(value), name, uniform=False, custom=True, is_leaf=False, fix_type=False))
 
-        # One of the two branches above just installed an Attribute or a
-        # Relationship; set() comes from Data on those.
-        cast(Union[Attribute, Relationship], self._props[name]).set(value)
+        # One of the two branches above just installed an AttributeSpec or a
+        # RelationshipSpec; set() comes from Data on those.
+        cast(Union[AttributeSpec, RelationshipSpec], self._props[name]).set(value)
         self._touch()
 
     def to_str(self, indents: int = 0)->str:

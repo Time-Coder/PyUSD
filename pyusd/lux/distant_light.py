@@ -1,4 +1,4 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace, token
 from .nonboundable_light_base import NonboundableLightBase
@@ -11,9 +11,10 @@ class DistantLight(NonboundableLightBase):
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
-    light: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    light.shaderId = Attribute(token,
+    light: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    light.shaderId = AttributeSpec(token,
         uniform=True,
+        value="DistantLight",
         metadata={
             "customData": {
                 "apiSchemaOverride": True
@@ -21,8 +22,9 @@ class DistantLight(NonboundableLightBase):
         }
     )
 
-    inputs: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    inputs.angle = Attribute(float,
+    inputs: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    inputs.angle = AttributeSpec(float,
+        value=0.53,
         doc="""Angular diameter of the light in degrees.
         As an example, the Sun is approximately 0.53 degrees as seen from Earth.
         Higher values broaden the light and therefore soften shadow edges.
@@ -43,7 +45,8 @@ class DistantLight(NonboundableLightBase):
             }
         }
     )
-    inputs.intensity = Attribute(float,
+    inputs.intensity = AttributeSpec(float,
+        value=50000,
         doc="""Scales the brightness of the light linearly.
 
         Intensity is overridden on DistantLight from LightAPI so that we can

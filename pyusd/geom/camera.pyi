@@ -1,76 +1,11 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..dtypes import token
 from ..gf import float2, float4
+from .exposure import Exposure
+from .shutter import Shutter
 from .xformable import Xformable
-
-class Shutter(Attribute):
-
-    @property
-    def open(self)->Attribute[float]:
-        """Frame relative shutter open time in UsdTimeCode units (negative
-        value indicates that the shutter opens before the current
-        frame time). Used for motion blur."""
-
-    @open.setter
-    def open(self, value:float)->None: ...
-
-    @property
-    def close(self)->Attribute[float]:
-        """Frame relative shutter close time, analogous comments from
-        shutter:open apply. A value greater or equal to shutter:open
-        should be authored, otherwise there is no exposure and a
-        renderer should produce a black image. Used for motion blur."""
-
-    @close.setter
-    def close(self, value:float)->None: ...
-
-
-class Exposure(Attribute):
-
-    @property
-    def iso(self)->Attribute[float]:
-        """The speed rating of the sensor or film when calculating exposure.
-        Higher numbers give a brighter image, lower numbers darker."""
-
-    @iso.setter
-    def iso(self, value:float)->None: ...
-
-    @property
-    def time(self)->Attribute[float]:
-        """Time in seconds that the sensor is exposed to light when calculating exposure.
-        Longer exposure times create a brighter image, shorter times darker.
-        Note that shutter:open and shutter:close model essentially the
-        same property of a physical camera, but are for specifying the
-        size of the motion blur streak which is for practical purposes
-        useful to keep separate."""
-
-    @time.setter
-    def time(self, value:float)->None: ...
-
-    @property
-    def fStop(self)->Attribute[float]:
-        """f-stop of the aperture when calculating exposure. Smaller numbers
-        create a brighter image, larger numbers darker.
-        Note that the `fStop` attribute also models the diameter of the camera
-        aperture, but for specifying depth of field.  For practical
-        purposes it is useful to keep the exposure and the depth of field
-        controls separate.
-        """
-
-    @fStop.setter
-    def fStop(self, value:float)->None: ...
-
-    @property
-    def responsivity(self)->Attribute[float]:
-        """Scalar multiplier representing overall responsivity of the
-        sensor system to light when calculating exposure. Intended to be
-        used as a per camera/lens system measured scaling value."""
-
-    @responsivity.setter
-    def responsivity(self, value:float)->None: ...
-
 
 class Camera(Xformable):
     """Transformable camera.
@@ -155,105 +90,111 @@ class Camera(Xformable):
     give a scale of 1.0.
 
     \\sa \\ref UsdGeom_LinAlgBasics
-     """
 
-    def __init__(self, name:str="")->None: ...
+    """
+
+
+    class Projection(token):
+        Perspective = "perspective"
+        Orthographic = "orthographic"
+
+    class StereoRole(token):
+        Mono = "mono"
+        Left = "left"
+        Right = "right"
 
     @property
-    def projection(self)->Attribute[token]: ...
+    def exposure(self) -> Exposure: ...
+
+    @property
+    def shutter(self) -> Shutter: ...
+
+    @property
+    def projection(self)->AttributeSpec[Projection]:
+        ...
 
     @projection.setter
-    def projection(self, value:token)->None: ...
+    def projection(self, value:Projection)->None: ...
 
     @property
-    def horizontalAperture(self)->Attribute[float]:
+    def horizontalAperture(self)->AttributeSpec[float]:
         """Horizontal aperture in tenths of a scene unit; see
-        \\ref UsdGeom_CameraUnits . Default is the equivalent of
-        the standard 35mm spherical projector aperture."""
+                 \\ref UsdGeom_CameraUnits . Default is the equivalent of
+                 the standard 35mm spherical projector aperture."""
 
     @horizontalAperture.setter
     def horizontalAperture(self, value:float)->None: ...
 
     @property
-    def verticalAperture(self)->Attribute[float]:
+    def verticalAperture(self)->AttributeSpec[float]:
         """Vertical aperture in tenths of a scene unit; see
-        \\ref UsdGeom_CameraUnits . Default is the equivalent of
-        the standard 35mm spherical projector aperture."""
+                 \\ref UsdGeom_CameraUnits . Default is the equivalent of
+                 the standard 35mm spherical projector aperture."""
 
     @verticalAperture.setter
     def verticalAperture(self, value:float)->None: ...
 
     @property
-    def horizontalApertureOffset(self)->Attribute[float]:
+    def horizontalApertureOffset(self)->AttributeSpec[float]:
         """Horizontal aperture offset in the same units as
-        horizontalAperture. Defaults to 0."""
+                 horizontalAperture. Defaults to 0."""
 
     @horizontalApertureOffset.setter
     def horizontalApertureOffset(self, value:float)->None: ...
 
     @property
-    def verticalApertureOffset(self)->Attribute[float]:
+    def verticalApertureOffset(self)->AttributeSpec[float]:
         """Vertical aperture offset in the same units as
-        verticalAperture. Defaults to 0."""
+                 verticalAperture. Defaults to 0."""
 
     @verticalApertureOffset.setter
     def verticalApertureOffset(self, value:float)->None: ...
 
     @property
-    def focalLength(self)->Attribute[float]:
+    def focalLength(self)->AttributeSpec[float]:
         """Perspective focal length in tenths of a scene unit; see
-        \\ref UsdGeom_CameraUnits ."""
+                 \\ref UsdGeom_CameraUnits ."""
 
     @focalLength.setter
     def focalLength(self, value:float)->None: ...
 
     @property
-    def clippingRange(self)->Attribute[float2]:
+    def clippingRange(self)->AttributeSpec[float2]:
         """Near and far clipping distances in scene units; see
-        \\ref UsdGeom_CameraUnits ."""
+                 \\ref UsdGeom_CameraUnits ."""
 
     @clippingRange.setter
     def clippingRange(self, value:float2)->None: ...
 
     @property
-    def clippingPlanes(self)->Attribute[List[float4]]:
+    def clippingPlanes(self)->AttributeSpec[List[float4]]:
         """Additional, arbitrarily oriented clipping planes.
-        A vector (a,b,c,d) encodes a clipping plane that cuts off
-        (x,y,z) with a * x + b * y + c * z + d * 1 < 0 where (x,y,z)
-        are the coordinates in the camera's space."""
+                 A vector (a,b,c,d) encodes a clipping plane that cuts off
+                 (x,y,z) with a * x + b * y + c * z + d * 1 < 0 where (x,y,z)
+                 are the coordinates in the camera's space."""
 
     @clippingPlanes.setter
     def clippingPlanes(self, value:List[float4])->None: ...
 
     @property
-    def fStop(self)->Attribute[float]:
+    def fStop(self)->AttributeSpec[float]:
         """Lens aperture. Defaults to 0.0, which turns off depth of field effects."""
 
     @fStop.setter
     def fStop(self, value:float)->None: ...
 
     @property
-    def focusDistance(self)->Attribute[float]:
+    def focusDistance(self)->AttributeSpec[float]:
         """Distance from the camera to the focus plane in scene units; see
-        \\ref UsdGeom_CameraUnits ."""
+                 \\ref UsdGeom_CameraUnits ."""
 
     @focusDistance.setter
     def focusDistance(self, value:float)->None: ...
 
     @property
-    def stereoRole(self)->Attribute[token]:
+    def stereoRole(self)->AttributeSpec[StereoRole]:
         """If different from mono, the camera is intended to be the left
-        or right camera of a stereo setup."""
+                 or right camera of a stereo setup."""
 
     @stereoRole.setter
-    def stereoRole(self, value:token)->None: ...
-
-    @property
-    def shutter(self)->Shutter: ...
-
-    @property
-    def exposure(self)->Exposure:
-        """Exposure compensation, as a log base-2 value.  The default
-        of 0.0 has no effect.  A value of 1.0 will double the
-        image-plane intensities in a rendered image; a value of
-        -1.0 will halve them."""
+    def stereoRole(self, value:StereoRole)->None: ...

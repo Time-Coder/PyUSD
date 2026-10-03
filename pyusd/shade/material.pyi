@@ -1,4 +1,3 @@
-from ..mtlx.material_x_config_api import MaterialXConfigAPI
 from .node_graph import NodeGraph
 from .outputs import Outputs
 
@@ -62,6 +61,3 @@ class Material(NodeGraph):
 
     @property
     def outputs(self) -> Outputs: ...
-
-    @property
-    def material_x_config_api(self)->MaterialXConfigAPI: ...

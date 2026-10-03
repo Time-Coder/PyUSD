@@ -1,5 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace
 
@@ -15,13 +15,15 @@ class MotionAPI(APISchemaBase):
     of the scene without changing the recorded animation.  See
     \\ref UsdGeomMotionAPI_blurScale for use and implementation details.
 
+
     """
 
-    schema_kind = SchemaKind.SingleApplyAPI
+    schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
 
-    motion: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    motion.blurScale = Attribute(float, "blurScale", value=1.0, doc=
-        """BlurScale is an __inherited__ float attribute that stipulates
+    motion: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    motion.blurScale = AttributeSpec(float,
+        value=1.0,
+        doc="""BlurScale is an __inherited__ float attribute that stipulates
         the rendered motion blur (as typically specified via UsdGeomCamera's
         _shutter:open_ and _shutter:close_ properties) should be scaled for
         __all objects__ at and beneath the prim in namespace on which the
@@ -39,14 +41,11 @@ class MotionAPI(APISchemaBase):
         the feature universally and efficiently.
 
         \\sa ComputeMotionBlurScale()
+
         """
     )
-    motion.velocityScale = Attribute(float, value=1.0,
-        metadata={
-            "customData": {
-                "apiName": "velocityScale"
-            }
-        },
+    motion.velocityScale = AttributeSpec(float,
+        value=1.0,
         doc="""\\deprecated
 
         VelocityScale is an **inherited** float attribute that
@@ -58,14 +57,16 @@ class MotionAPI(APISchemaBase):
         we require more or less motion-blur to achieve the desired look.
         VelocityScale allows artists to dial-in, as a post-sim correction,
         a scale factor to be applied to the velocity prior to computing
-        interpolated positions from it."""
-    )
-    motion.nonlinearSampleCount = Attribute(int, value=3,
+        interpolated positions from it.
+        """,
         metadata={
             "customData": {
-                "apiName": "nonlinearSampleCount"
+                "apiName": "velocityScale"
             }
-        },
+        }
+    )
+    motion.nonlinearSampleCount = AttributeSpec(int,
+        value=3,
         doc="""Determines the number of position or transformation samples
         created when motion is described by attributes contributing non-linear
         terms.
@@ -85,5 +86,11 @@ class MotionAPI(APISchemaBase):
         or 'accelerations' are authored.
 
         'nonlinearSampleCount' is an **inherited** attribute, also
-        see ComputeNonlinearSampleCount()"""
+        see ComputeNonlinearSampleCount()
+        """,
+        metadata={
+            "customData": {
+                "apiName": "nonlinearSampleCount"
+            }
+        }
     )

@@ -2,9 +2,9 @@ from typing import Any, Dict, List, Optional
 
 from tree_sitter import Node
 
-from .attribute import Attribute
+from .attribute_spec import AttributeSpec
 from .metadata_parser import MetadataParser
-from .property import Property
+from .property_spec import PropertySpec
 from .usda_parser import UsdaParser
 
 
@@ -14,7 +14,7 @@ class AttributeParser:
     # attribute exists for type checkers instead of appearing only via hasattr.
     _LOAD_USD_TYPES: Optional[Dict[str, type]] = None
 
-    def parse(node:Node)->Attribute:
+    def parse(node:Node)->AttributeSpec:
         type_name = "token"
         name = ""
         value = None
@@ -38,9 +38,9 @@ class AttributeParser:
                 value = UsdaParser.load_value(child)
                 has_value = True
 
-        prop = Attribute(AttributeParser.usd_type(type_name), name=name, value=None, metadata=metadata, uniform=uniform, custom=custom, fix_type=False)
+        prop = AttributeSpec(AttributeParser.usd_type(type_name), name=name, value=None, metadata=metadata, uniform=uniform, custom=custom, fix_type=False)
         prop._value = value
-        prop._value_state = Property.ValueState.Authored if has_value else Property.ValueState.NotAuthored
+        prop._value_state = PropertySpec.ValueState.Authored if has_value else PropertySpec.ValueState.NotAuthored
         for key, authored_value in metadata.items():
             MetadataParser.set_authored(prop._metadata, key, authored_value)
 

@@ -1,9 +1,9 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..dtypes import int64
 from ..gf import float3, point3f, quatf, quath, vector3f
-from ..relationship import Relationship
+from ..relationship_spec import RelationshipSpec
 from .boundable import Boundable
 
 class PointInstancer(Boundable):
@@ -232,22 +232,11 @@ class PointInstancer(Boundable):
     21     }
     22 }
     \\endcode
+
     """
 
-    def __init__(self, name:str="")->None: ...
-
     @property
-    def prototypes(self)->Relationship:
-        """<b>Required property</b>. Orders and targets the prototype root
-      prims, which can be located anywhere in the scenegraph that is convenient,
-      although we promote organizing prototypes as children of the
-      PointInstancer.  The position of a prototype in this relationship defines
-      the value an instance would specify in the \\em protoIndices attribute to
-      instance that prototype. Since relationships are uniform, this property
-      cannot be animated."""
-
-    @property
-    def protoIndices(self)->Attribute[List[int]]:
+    def protoIndices(self)->AttributeSpec[List[int]]:
         """<b>Required property</b>. Per-instance index into
       \\em prototypes relationship that identifies what geometry should be
       drawn for each instance.  <b>Topology attribute</b> - can be animated,
@@ -257,7 +246,7 @@ class PointInstancer(Boundable):
     def protoIndices(self, value:List[int])->None: ...
 
     @property
-    def ids(self)->Attribute[List[int64]]:
+    def ids(self)->AttributeSpec[List[int64]]:
         """Ids are optional; if authored, the ids array should be the same
       length as the \\em protoIndices array, specifying (at each timeSample if
       instance identities are changing) the id of each instance. The
@@ -269,7 +258,7 @@ class PointInstancer(Boundable):
     def ids(self, value:List[int64])->None: ...
 
     @property
-    def positions(self)->Attribute[List[point3f]]:
+    def positions(self)->AttributeSpec[List[point3f]]:
         """<b>Required property</b>. Per-instance position.  See also
       \\ref UsdGeomPointInstancer_transform ."""
 
@@ -277,7 +266,7 @@ class PointInstancer(Boundable):
     def positions(self, value:List[point3f])->None: ...
 
     @property
-    def orientations(self)->Attribute[List[quath]]:
+    def orientations(self)->AttributeSpec[List[quath]]:
         """If authored, per-instance orientation of each instance about its
       prototype's origin, represented as a unit length quaternion, which
       allows us to encode it with sufficient precision in a compact GfQuath.
@@ -295,7 +284,7 @@ class PointInstancer(Boundable):
     def orientations(self, value:List[quath])->None: ...
 
     @property
-    def orientationsf(self)->Attribute[List[quatf]]:
+    def orientationsf(self)->AttributeSpec[List[quatf]]:
         """If authored, per-instance orientation of each instance about its
       prototype's origin, represented as a unit length quaternion, encoded
       as a GfQuatf to support higher precision computations.
@@ -315,7 +304,7 @@ class PointInstancer(Boundable):
     def orientationsf(self, value:List[quatf])->None: ...
 
     @property
-    def scales(self)->Attribute[List[float3]]:
+    def scales(self)->AttributeSpec[List[float3]]:
         """If authored, per-instance scale to be applied to
       each instance, before any rotation is applied.
 
@@ -325,7 +314,7 @@ class PointInstancer(Boundable):
     def scales(self, value:List[float3])->None: ...
 
     @property
-    def velocities(self)->Attribute[List[vector3f]]:
+    def velocities(self)->AttributeSpec[List[vector3f]]:
         """If provided, per-instance 'velocities' will be used to
        compute positions between samples for the 'positions' attribute,
        rather than interpolating between neighboring 'positions' samples.
@@ -342,7 +331,7 @@ class PointInstancer(Boundable):
     def velocities(self, value:List[vector3f])->None: ...
 
     @property
-    def accelerations(self)->Attribute[List[vector3f]]:
+    def accelerations(self)->AttributeSpec[List[vector3f]]:
         """If authored, per-instance 'accelerations' will be used with
         velocities to compute positions between samples for the 'positions'
         attribute rather than interpolating between neighboring 'positions'
@@ -354,7 +343,7 @@ class PointInstancer(Boundable):
     def accelerations(self, value:List[vector3f])->None: ...
 
     @property
-    def angularVelocities(self)->Attribute[List[vector3f]]:
+    def angularVelocities(self)->AttributeSpec[List[vector3f]]:
         """If authored, per-instance angular velocity vector to be used for
       interoplating orientations.  Angular velocities should be considered
       mandatory if both \\em protoIndices and \\em orientations are animated.
@@ -368,9 +357,22 @@ class PointInstancer(Boundable):
     def angularVelocities(self, value:List[vector3f])->None: ...
 
     @property
-    def invisibleIds(self)->Attribute[List[int64]]:
+    def invisibleIds(self)->AttributeSpec[List[int64]]:
         """A list of id's to make invisible at the evaluation time.
       See \\ref UsdGeomPointInstancer_invisibleIds ."""
 
     @invisibleIds.setter
     def invisibleIds(self, value:List[int64])->None: ...
+
+    @property
+    def prototypes(self)->RelationshipSpec:
+        """<b>Required property</b>. Orders and targets the prototype root
+      prims, which can be located anywhere in the scenegraph that is convenient,
+      although we promote organizing prototypes as children of the
+      PointInstancer.  The position of a prototype in this relationship defines
+      the value an instance would specify in the \\em protoIndices attribute to
+      instance that prototype. Since relationships are uniform, this property
+      cannot be animated."""
+
+    @prototypes.setter
+    def prototypes(self, value:RelationshipSpec)->None: ...

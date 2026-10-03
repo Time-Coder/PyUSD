@@ -10,18 +10,18 @@ from .utils import in_annotations, infer_type
 
 if TYPE_CHECKING:
     from .api_schema_base import APISchemaBase
-    from .attribute import Attribute
+    from .attribute_spec import AttributeSpec
     from .prim_spec import PrimSpec
-    from .relationship import Relationship
+    from .relationship_spec import RelationshipSpec
 
-# Fields Property.clone manages itself; anything else on a subclass instance is
+# Fields PropertySpec.clone manages itself; anything else on a subclass instance is
 # state the clone has to carry over.
 _CLONE_MANAGED_FIELDS = frozenset(
     {"_parent", "_name", "_metadata", "_props", "_custom", "_is_leaf", "_value_state"}
 )
 
 
-class Property:
+class PropertySpec:
 
     class ValueState(IntEnum):
         Fallback = 0
@@ -29,17 +29,17 @@ class Property:
         Authored = 2
         Cleared = 3
 
-    # Any rather than Union[PrimSpec, Property]: a self-referential annotation in
+    # Any rather than Union[PrimSpec, PropertySpec]: a self-referential annotation in
     # this class body makes type checkers treat the attribute as read-only, which
     # breaks the legitimate `prop._parent = prim` assignments below. Metadata
     # declares its own `_parent` as Any for the same reason.
     _parent: Any
     _name: str
     _metadata: Metadata
-    _props: Dict[str, Property]
+    _props: Dict[str, PropertySpec]
     _is_leaf: bool
     _custom: bool
-    _value_state: Property.ValueState
+    _value_state: PropertySpec.ValueState
 
     meta: Dict[str, Any] = {}
 
@@ -58,20 +58,20 @@ class Property:
 
         self.__doc__ = doc
 
-        self._parent: Optional[Union[PrimSpec, Property]] = None
+        self._parent: Optional[Union[PrimSpec, PropertySpec]] = None
         self._name:str = name
         self._metadata:Metadata = Metadata(self, metadata)
-        self._props:Dict[str, Property] = {}
+        self._props:Dict[str, PropertySpec] = {}
         self._custom:bool = custom
         self._is_leaf:bool = is_leaf
-        self._value_state:Property.ValueState = Property.ValueState.Fallback
+        self._value_state:PropertySpec.ValueState = PropertySpec.ValueState.Fallback
 
         for klass in self.__class__.__mro__:
             if klass is object:
                 continue
 
             for name, value in klass.__dict__.items():
-                if not isinstance(value, Property):
+                if not isinstance(value, PropertySpec):
                     continue
 
                 value._name = name
@@ -85,8 +85,8 @@ class Property:
 
         self._metadata.update(self.meta)
 
-    def clone(self, clone_child:bool=True)->Property:
-        result = Property()
+    def clone(self, clone_child:bool=True)->PropertySpec:
+        result = PropertySpec()
         result.__class__ = self.__class__
         result.__doc__ = self.__doc__
         result._parent = None
@@ -99,8 +99,8 @@ class Property:
         result._value_state = self._value_state
 
         # Reclassing never runs the subclass __init__, so anything a subclass
-        # stored beyond the Property/Attribute contract is carried over here.
-        # Subclass clones (Attribute.clone) still overwrite the fields they own.
+        # stored beyond the PropertySpec/AttributeSpec contract is carried over here.
+        # Subclass clones (AttributeSpec.clone) still overwrite the fields they own.
         for key, value in self.__dict__.items():
             if key in _CLONE_MANAGED_FIELDS or key in result.__dict__:
                 continue
@@ -119,7 +119,7 @@ class Property:
             self._parent._touch()
 
     @property
-    def parent(self)->Optional[Union[PrimSpec, Property]]:
+    def parent(self)->Optional[Union[PrimSpec, PropertySpec]]:
         return self._parent
 
     @property
@@ -153,43 +153,43 @@ class Property:
         return self._metadata
 
     @property
-    def value_state(self)->Property.ValueState:
+    def value_state(self)->PropertySpec.ValueState:
         return self._value_state
 
     @property
     def custom(self)->bool:
         return self._custom
 
-    def rel(self, prim:PrimSpec)->Relationship:
-        if self.__class__.__name__ != "Property":
+    def rel(self, prim:PrimSpec)->RelationshipSpec:
+        if self.__class__.__name__ != "PropertySpec":
             raise AttributeError(f"'{self.__class__.__name__}' object has not attribute 'rel'")
 
-        from .relationship import Relationship
-        self.__class__ = Relationship
+        from .relationship_spec import RelationshipSpec
+        self.__class__ = RelationshipSpec
         self._targets = [prim]
-        self._value_state = Property.ValueState.Authored
-        return cast(Relationship, self)
+        self._value_state = PropertySpec.ValueState.Authored
+        return cast(RelationshipSpec, self)
 
-    def create(self, value_type:type, value:Optional[Any]=None, uniform:bool=False, custom:bool=False, fix_type:bool=True)->Attribute:
-        if self.__class__.__name__ != "Property":
+    def create(self, value_type:type, value:Optional[Any]=None, uniform:bool=False, custom:bool=False, fix_type:bool=True)->AttributeSpec:
+        if self.__class__.__name__ != "PropertySpec":
             raise AttributeError(f"'{self.__class__.__name__}' object has not attribute 'create'")
 
-        from .attribute import Attribute
-        self.__class__ = Attribute
+        from .attribute_spec import AttributeSpec
+        self.__class__ = AttributeSpec
         self._custom = custom
-        # The __class__ swap above already made this an Attribute; the cast just
+        # The __class__ swap above already made this an AttributeSpec; the cast just
         # lets the type checker see that before _init's Self-typed call.
-        attribute = cast(Attribute, self)
+        attribute = cast(AttributeSpec, self)
         attribute._init(value_type, value=value, uniform=uniform, fix_type=fix_type)
-        self._value_state = Property.ValueState.NotAuthored
+        self._value_state = PropertySpec.ValueState.NotAuthored
         return attribute
 
-    def create_prop(self, prop:Property)->Property:
+    def create_prop(self, prop:PropertySpec)->PropertySpec:
         self._props[prop.name] = prop
         prop._parent = self
         return prop
 
-    def update_children(self, prop:Property)->None:
+    def update_children(self, prop:PropertySpec)->None:
         for child_name, child in prop._props.items():
             if child_name not in self._props:
                 self._props[child_name] = child.clone()
@@ -197,11 +197,11 @@ class Property:
             else:
                 self._props[child_name].update_children(child)
 
-    def __get__(self, instance:Union[PrimSpec, Property, APISchemaBase], owner)->Property:
+    def __get__(self, instance:Union[PrimSpec, PropertySpec, APISchemaBase], owner)->PropertySpec:
         from .api_schema_base import APISchemaBase
         from .prim_spec import PrimSpec
 
-        if isinstance(instance, (PrimSpec, Property)):
+        if isinstance(instance, (PrimSpec, PropertySpec)):
             return instance._props[self._name]
         elif isinstance(instance, APISchemaBase):
             if instance.schema_kind == SchemaKind.MultipleApplyAPI:
@@ -215,7 +215,7 @@ class Property:
         from .api_schema_base import APISchemaBase
         from .prim_spec import PrimSpec
 
-        if isinstance(instance, (PrimSpec, Property)):
+        if isinstance(instance, (PrimSpec, PropertySpec)):
             instance._props[self._name].set(value)
         elif isinstance(instance, APISchemaBase):
             if instance.schema_kind == SchemaKind.MultipleApplyAPI:
@@ -225,9 +225,9 @@ class Property:
             else:
                 instance._prim._props[self._name].set(value)
 
-    def __getattr__(self, name:str)->Property:
+    def __getattr__(self, name:str)->PropertySpec:
         if name not in self._props:
-            self.create_prop(Property(name, custom=True, is_leaf=False))
+            self.create_prop(PropertySpec(name, custom=True, is_leaf=False))
 
         return self._props[name]
 
@@ -236,36 +236,36 @@ class Property:
             super().__setattr__(name, value)
             return
 
-        from .attribute import Attribute
+        from .attribute_spec import AttributeSpec
         from .prim_spec import PrimSpec
-        from .relationship import Relationship
+        from .relationship_spec import RelationshipSpec
 
-        is_rel:bool = (isinstance(value, PrimSpec) or (isinstance(value, list) and all(isinstance(item, PrimSpec) for item in value)) or isinstance(value, Relationship))
+        is_rel:bool = (isinstance(value, PrimSpec) or (isinstance(value, list) and all(isinstance(item, PrimSpec) for item in value)) or isinstance(value, RelationshipSpec))
         if name in self._props:
             prop = self._props[name]
-            if isinstance(prop, Attribute) and is_rel:
+            if isinstance(prop, AttributeSpec) and is_rel:
                 if not prop._custom:
                     if isinstance(value, PrimSpec):
-                        error_message = "cannot assign Prim to Attribute"
+                        error_message = "cannot assign Prim to AttributeSpec"
                     elif isinstance(value, list):
-                        error_message = "cannot assign List[Prim] to Attribute"
-                    elif isinstance(value, Relationship):
-                        error_message = "cannot assign Relationship to Attribute"
+                        error_message = "cannot assign List[Prim] to AttributeSpec"
+                    elif isinstance(value, RelationshipSpec):
+                        error_message = "cannot assign RelationshipSpec to AttributeSpec"
 
                     raise TypeError(error_message)
 
                 del self._props[name]
 
-            if isinstance(prop, Relationship) and not is_rel:
+            if isinstance(prop, RelationshipSpec) and not is_rel:
                 if not prop._custom:
-                    raise TypeError(f"cannot assign {value.__class__} object to Relationship")
+                    raise TypeError(f"cannot assign {value.__class__} object to RelationshipSpec")
 
                 del self._props[name]
 
         if name not in self._props and self._is_leaf:
-            raise AttributeError("leaf Property cannot create child Property")
+            raise AttributeError("leaf PropertySpec cannot create child PropertySpec")
 
-        if name not in self._props and isinstance(value, Property):
+        if name not in self._props and isinstance(value, PropertySpec):
             if value._parent is None:
                 value._name = name
                 self.create_prop(value)
@@ -278,7 +278,7 @@ class Property:
 
         if name not in self._props:
             if not isinstance(value, PrimSpec):
-                if isinstance(self, Attribute):
+                if isinstance(self, AttributeSpec):
                     target_type = self._type
                     target_uniform = self._uniform
                     target_custom = self._custom
@@ -289,15 +289,15 @@ class Property:
                     target_custom = True
                     target_fix_type = False
 
-                self.create_prop(Attribute(target_type, name, uniform=target_uniform, custom=target_custom, is_leaf=(not target_custom), fix_type=target_fix_type))
+                self.create_prop(AttributeSpec(target_type, name, uniform=target_uniform, custom=target_custom, is_leaf=(not target_custom), fix_type=target_fix_type))
             else:
                 # A PrimSpec target means a new relationship, and there is no
-                # source Property here to inherit flags from, so it is custom.
-                self.create_prop(Relationship(name, custom=True, is_leaf=False))
+                # source PropertySpec here to inherit flags from, so it is custom.
+                self.create_prop(RelationshipSpec(name, custom=True, is_leaf=False))
 
-        # Both branches above leave an Attribute or a Relationship in place, and
-        # set() comes from Data on those; the dict itself is typed as Property.
-        prop = cast(Union[Attribute, Relationship], self._props[name])
+        # Both branches above leave an AttributeSpec or a RelationshipSpec in place, and
+        # set() comes from Data on those; the dict itself is typed as PropertySpec.
+        prop = cast(Union[AttributeSpec, RelationshipSpec], self._props[name])
         prop.set(value)
 
     def to_str(self, indents:int=0, full:bool=False)->str:

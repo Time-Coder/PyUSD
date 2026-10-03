@@ -1,7 +1,7 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace, string
-from ..relationship import Relationship
+from ..relationship_spec import RelationshipSpec
 from ..typed import Typed
 
 
@@ -27,8 +27,8 @@ class PhysicsCollisionGroup(Typed):
         "prepend apiSchemas": ["CollectionAPI:colliders"]
     }
 
-    physics: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    physics.mergeGroup = Attribute(string,
+    physics: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    physics.mergeGroup = AttributeSpec(string,
         doc="""If non-empty, any collision groups in a stage with a matching
         mergeGroup should be considered to refer to the same collection. Matching
         collision groups should behave as if there were a single group containing
@@ -41,7 +41,7 @@ class PhysicsCollisionGroup(Typed):
             "displayName": "Merge With Groups"
         }
     )
-    physics.invertFilteredGroups = Attribute(bool,
+    physics.invertFilteredGroups = AttributeSpec(bool,
         doc="""Normally, the filter will disable collisions against the selected
         filter groups. However, if this option is set, the filter will disable
         collisions against all colliders except for those in the selected filter
@@ -54,7 +54,7 @@ class PhysicsCollisionGroup(Typed):
             "displayName": "Invert Filtered Groups"
         }
     )
-    physics.filteredGroups = Relationship(
+    physics.filteredGroups = RelationshipSpec(
         doc="""References a list of PhysicsCollisionGroups with which
         collisions should be ignored.
         """,

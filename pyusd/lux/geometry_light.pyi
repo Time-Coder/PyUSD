@@ -1,4 +1,4 @@
-from ..relationship import Relationship
+from ..relationship_spec import RelationshipSpec
 from .light import Light
 from .nonboundable_light_base import NonboundableLightBase
 
@@ -12,8 +12,8 @@ class GeometryLight(NonboundableLightBase):
     def light(self) -> Light: ...
 
     @property
-    def geometry(self)->Relationship:
+    def geometry(self)->RelationshipSpec:
         """Relationship to the geometry to use as the light source."""
 
     @geometry.setter
-    def geometry(self, value:Relationship)->None: ...
+    def geometry(self, value:RelationshipSpec)->None: ...

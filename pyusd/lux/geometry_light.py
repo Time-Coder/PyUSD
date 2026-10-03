@@ -1,7 +1,7 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace, token
-from ..relationship import Relationship
+from ..relationship_spec import RelationshipSpec
 from .nonboundable_light_base import NonboundableLightBase
 
 
@@ -13,9 +13,10 @@ class GeometryLight(NonboundableLightBase):
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
-    light: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    light.shaderId = Attribute(token,
+    light: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    light.shaderId = AttributeSpec(token,
         uniform=True,
+        value="GeometryLight",
         metadata={
             "customData": {
                 "apiSchemaOverride": True
@@ -23,4 +24,4 @@ class GeometryLight(NonboundableLightBase):
         }
     )
 
-    geometry = Relationship(doc="Relationship to the geometry to use as the light source.")
+    geometry = RelationshipSpec(doc="Relationship to the geometry to use as the light source.")

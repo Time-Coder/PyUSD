@@ -1,6 +1,6 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import Axis, SchemaKind
 from ..dtypes import double
 from ..gf import float3
@@ -13,7 +13,8 @@ class Cylinder_1(Gprim):
     describing the size of the end points.
 
     The fallback values for Cube, Sphere, Cone, and Cylinder are set so that
-    they all pack into the same volume/bounds."""
+    they all pack into the same volume/bounds.
+    """
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
@@ -25,34 +26,37 @@ class Cylinder_1(Gprim):
         }
     }
 
-    height: Attribute[double] = Attribute(double, "height", value=2, doc=
-        """The length of the cylinder's spine along the specified
+    height: AttributeSpec[double] = AttributeSpec(double,
+        doc="""The length of the cylinder's spine along the specified
         \\em axis.  If you author \\em height you must also author \\em extent.
 
-        \\sa GetExtentAttr()"""
+        \\sa GetExtentAttr()
+        """
     )
 
-    radiusTop: Attribute[double] = Attribute(double, "radiusTop", value=1.0, doc=
-        """The radius of the top of the cylinder - i.e. the face located
+    radiusTop: AttributeSpec[double] = AttributeSpec(double,
+        doc="""The radius of the top of the cylinder - i.e. the face located
         along the positive \\em axis. If you author \\em radiusTop you must also
         author \\em extent.
 
-        \\sa GetExtentAttr()"""
+        \\sa GetExtentAttr()
+        """
     )
 
-    radiusBottom: Attribute[double] = Attribute(double, "radiusBottom", value=1.0, doc=
-        """The radius of the bottom of the cylinder - i.e. the face
+    radiusBottom: AttributeSpec[double] = AttributeSpec(double,
+        doc="""The radius of the bottom of the cylinder - i.e. the face
         point located along the negative \\em axis. If you author
         \\em radiusBottom you must also author \\em extent.
 
-        \\sa GetExtentAttr()"""
+        \\sa GetExtentAttr()
+        """
     )
 
-    axis: Attribute[Axis] = Attribute(Axis, value=Axis.Z, uniform=True,
-        doc="The axis along which the spine of the cylinder is aligned"
-    )
+    axis: AttributeSpec[Axis] = AttributeSpec(Axis, uniform=True, doc="The axis along which the spine of the cylinder is aligned")
 
-    extent: Attribute[List[float3]] = Attribute(List[float3], value=[(-1.0, -1.0, -1.0), (1.0, 1.0, 1.0)], doc=
-        """Extent is re-defined on Cylinder only to provide a fallback
-        value. \\sa UsdGeomGprim::GetExtentAttr()."""
+    extent: AttributeSpec[List[float3]] = AttributeSpec(List[float3],
+        value=[],
+        doc="""Extent is re-defined on Cylinder only to provide a fallback
+        value. \\sa UsdGeomGprim::GetExtentAttr().
+        """
     )

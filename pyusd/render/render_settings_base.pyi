@@ -1,7 +1,7 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..dtypes import token
 from ..gf import float4, int2
-from ..relationship import Relationship
+from ..relationship_spec import RelationshipSpec
 from ..typed import Typed
 
 class RenderSettingsBase(Typed):
@@ -19,7 +19,7 @@ class RenderSettingsBase(Typed):
         AdjustPixelAspectRatio = "adjustPixelAspectRatio"
 
     @property
-    def resolution(self)->Attribute[int2]:
+    def resolution(self)->AttributeSpec[int2]:
         """The image pixel resolution, corresponding to the
         camera's screen window."""
 
@@ -27,7 +27,7 @@ class RenderSettingsBase(Typed):
     def resolution(self, value:int2)->None: ...
 
     @property
-    def pixelAspectRatio(self)->Attribute[float]:
+    def pixelAspectRatio(self)->AttributeSpec[float]:
         """The aspect ratio (width/height) of image pixels..
         The default ratio 1.0 indicates square pixels."""
 
@@ -35,7 +35,7 @@ class RenderSettingsBase(Typed):
     def pixelAspectRatio(self, value:float)->None: ...
 
     @property
-    def aspectRatioConformPolicy(self)->Attribute[AspectRatioConformPolicy]:
+    def aspectRatioConformPolicy(self)->AttributeSpec[AspectRatioConformPolicy]:
         """
         Indicates the policy to use to resolve an aspect
         ratio mismatch between the camera aperture and image settings.
@@ -66,7 +66,7 @@ class RenderSettingsBase(Typed):
     def aspectRatioConformPolicy(self, value:AspectRatioConformPolicy)->None: ...
 
     @property
-    def dataWindowNDC(self)->Attribute[float4]:
+    def dataWindowNDC(self)->AttributeSpec[float4]:
         """dataWindowNDC specifies the axis-aligned rectangular
         region in the adjusted aperture window within which the renderer
         should produce data.
@@ -102,7 +102,7 @@ class RenderSettingsBase(Typed):
     def dataWindowNDC(self, value:float4)->None: ...
 
     @property
-    def instantaneousShutter(self)->Attribute[bool]:
+    def instantaneousShutter(self)->AttributeSpec[bool]:
         """Deprecated - use disableMotionBlur instead. Override
         the targeted _camera_'s _shutterClose_ to be equal to the
         value of its _shutterOpen_, to produce a zero-width shutter
@@ -113,7 +113,7 @@ class RenderSettingsBase(Typed):
     def instantaneousShutter(self, value:bool)->None: ...
 
     @property
-    def disableMotionBlur(self)->Attribute[bool]:
+    def disableMotionBlur(self)->AttributeSpec[bool]:
         """Disable all motion blur by setting the shutter interval
         of the targeted camera to [0,0] - that is, take only one sample,
         namely at the current time code."""
@@ -122,7 +122,7 @@ class RenderSettingsBase(Typed):
     def disableMotionBlur(self, value:bool)->None: ...
 
     @property
-    def disableDepthOfField(self)->Attribute[bool]:
+    def disableDepthOfField(self)->AttributeSpec[bool]:
         """Disable all depth of field by setting F-stop of the targeted
         camera to infinity."""
 
@@ -130,9 +130,9 @@ class RenderSettingsBase(Typed):
     def disableDepthOfField(self, value:bool)->None: ...
 
     @property
-    def camera(self)->Relationship:
+    def camera(self)->RelationshipSpec:
         """The _camera_ relationship specifies the primary
         camera to use in a render.  It must target a UsdGeomCamera."""
 
     @camera.setter
-    def camera(self, value:Relationship)->None: ...
+    def camera(self, value:RelationshipSpec)->None: ...

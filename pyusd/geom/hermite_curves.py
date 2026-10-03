@@ -1,6 +1,6 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..gf import vector3f
 from .curves import Curves
@@ -36,11 +36,14 @@ class HermiteCurves(Curves):
     for this type, as we lack a specification for primvar tangents. This
     also means that width and normal interpolation should be restricted to
     varying (linear), uniform (per curve element), or constant (per prim).
+
     """
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
-    tangents: Attribute[List[vector3f]] = Attribute(List[vector3f], "tangents", value=[], doc=
-        """Defines the outgoing trajectory tangent for each point.
-        Tangents should be the same size as the points attribute."""
+    tangents: AttributeSpec[List[vector3f]] = AttributeSpec(List[vector3f],
+        value=[],
+        doc="""Defines the outgoing trajectory tangent for each point.
+        Tangents should be the same size as the points attribute.
+        """
     )

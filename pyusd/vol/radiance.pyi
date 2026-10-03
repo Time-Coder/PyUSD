@@ -1,12 +1,12 @@
 from typing import List
 
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..gf import float3, half3
 
-class Radiance(Attribute):
+class Radiance(AttributeSpec):
 
     @property
-    def sphericalHarmonicsDegree(self)->Attribute[int]:
+    def sphericalHarmonicsDegree(self)->AttributeSpec[int]:
         """The highest degree of the spherical harmonics. A degree of N
         implies a coefficient element size (per particle) of (N+1)*(N+1) values.
         The spherical harmonics degree is the same for all particles in the
@@ -16,7 +16,7 @@ class Radiance(Attribute):
     def sphericalHarmonicsDegree(self, value:int)->None: ...
 
     @property
-    def sphericalHarmonicsCoefficients(self)->Attribute[List[float3]]:
+    def sphericalHarmonicsCoefficients(self)->AttributeSpec[List[float3]]:
         """Flattened array of SH coefficients.
         The SH coefficients are grouped in the array by particle, meaning each
         particle has N contiguous coefficients, Y(m,l) sorted first by order (m)
@@ -28,7 +28,7 @@ class Radiance(Attribute):
     def sphericalHarmonicsCoefficients(self, value:List[float3])->None: ...
 
     @property
-    def sphericalHarmonicsCoefficientsh(self)->Attribute[List[half3]]:
+    def sphericalHarmonicsCoefficientsh(self)->AttributeSpec[List[half3]]:
         """Flattened array of SH coefficients.
         The SH coefficients are grouped in the array by particle, meaning each
         particle has N contiguous coefficients, Y(m,l) sorted first by order (m)

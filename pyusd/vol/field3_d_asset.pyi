@@ -1,4 +1,4 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..dtypes import token
 from .field_asset import FieldAsset
 
@@ -17,7 +17,7 @@ class Field3DAsset(FieldAsset):
         Double3 = "double3"
 
     @property
-    def fieldDataType(self)->Attribute[FieldDataType]:
+    def fieldDataType(self)->AttributeSpec[FieldDataType]:
         """Token which is used to indicate the data type of an
                  individual field. Authors use this to tell consumers more
                  about the field without opening the file on disk. The list of
@@ -28,7 +28,7 @@ class Field3DAsset(FieldAsset):
     def fieldDataType(self, value:FieldDataType)->None: ...
 
     @property
-    def fieldPurpose(self)->Attribute[token]:
+    def fieldPurpose(self)->AttributeSpec[token]:
         """Optional token which can be used to indicate the purpose or
                  grouping of an individual field. Clients which consume Field3D
                  files should treat this as the Field3D field \\em name."""

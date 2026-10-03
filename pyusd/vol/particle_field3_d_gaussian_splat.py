@@ -1,4 +1,4 @@
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import token
 from .particle_field import ParticleField
@@ -44,7 +44,7 @@ class ParticleField3DGaussianSplat(ParticleField):
         RayHitDistance = "rayHitDistance"
 
 
-    projectionModeHint = Attribute(ProjectionModeHint,
+    projectionModeHint: AttributeSpec[ProjectionModeHint] = AttributeSpec(ProjectionModeHint,
         uniform=True,
         doc="""A hint for the renderer on how to project the gaussian to
          achieve a perspective correct view. Renderers are free to
@@ -68,7 +68,7 @@ class ParticleField3DGaussianSplat(ParticleField):
         }
     )
 
-    sortingModeHint = Attribute(SortingModeHint,
+    sortingModeHint: AttributeSpec[SortingModeHint] = AttributeSpec(SortingModeHint,
         uniform=True,
         doc="""A hint for the renderer on how to sort the gaussians while
         drawing. Renderers are free to ignore this, but the hint is often

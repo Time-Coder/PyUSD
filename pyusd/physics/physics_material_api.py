@@ -1,5 +1,5 @@
 from ..api_schema_base import APISchemaBase
-from ..attribute import Attribute
+from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import namespace
 
@@ -18,8 +18,9 @@ class PhysicsMaterialAPI(APISchemaBase):
         }
     }
 
-    physics: Attribute[namespace] = Attribute(namespace, is_leaf=False)
-    physics.dynamicFriction = Attribute(float,
+    physics: AttributeSpec[namespace] = AttributeSpec(namespace, is_leaf=False)
+    physics.dynamicFriction = AttributeSpec(float,
+        value=0.0,
         doc="Dynamic friction coefficient. Unitless.",
         metadata={
             "customData": {
@@ -28,7 +29,8 @@ class PhysicsMaterialAPI(APISchemaBase):
             "displayName": "Dynamic Friction"
         }
     )
-    physics.staticFriction = Attribute(float,
+    physics.staticFriction = AttributeSpec(float,
+        value=0.0,
         doc="Static friction coefficient. Unitless.",
         metadata={
             "customData": {
@@ -37,7 +39,8 @@ class PhysicsMaterialAPI(APISchemaBase):
             "displayName": "Static Friction"
         }
     )
-    physics.restitution = Attribute(float,
+    physics.restitution = AttributeSpec(float,
+        value=0.0,
         doc="Restitution coefficient. Unitless.",
         metadata={
             "customData": {
@@ -46,7 +49,8 @@ class PhysicsMaterialAPI(APISchemaBase):
             "displayName": "Restitution"
         }
     )
-    physics.density = Attribute(float,
+    physics.density = AttributeSpec(float,
+        value=0.0,
         doc="""If non-zero, defines the density of the material. This can be
         used for body mass computation, see PhysicsMassAPI.
         Note that if the density is 0.0 it is ignored.

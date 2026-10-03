@@ -8,11 +8,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from .attribute import Attribute
+from .attribute_spec import AttributeSpec
 from .composition import normalize_prim_path, normalize_property_name
 from .prim_spec import PrimSpec
-from .property import Property
-from .relationship import Relationship
+from .property_spec import PropertySpec
+from .relationship_spec import RelationshipSpec
 from .stage_metadata import StageMetadata
 from .utils import in_annotations
 
@@ -39,7 +39,7 @@ class StageProperty:
     def _is_relationship_value(cls, value: Any) -> bool:
         from .prim import Prim
 
-        if isinstance(value, (PrimSpec, Prim, Relationship)):
+        if isinstance(value, (PrimSpec, Prim, RelationshipSpec)):
             return True
 
         if isinstance(value, list) and value:
@@ -54,7 +54,7 @@ class StageProperty:
     def _coerce_relationship_targets(value: Any) -> List[Any]:
         from .prim import Prim
 
-        if isinstance(value, Relationship):
+        if isinstance(value, RelationshipSpec):
             return list(value.targets)
 
         if not isinstance(value, list):
@@ -77,18 +77,18 @@ class StageProperty:
         return result
 
     @staticmethod
-    def _value_of(prop: Optional[Property]) -> Any:
+    def _value_of(prop: Optional[PropertySpec]) -> Any:
         """The composed value of a resolved property, honouring clear opinions."""
         if prop is None:
             return None
 
-        if isinstance(prop, Attribute):
-            if prop.value_state == Property.ValueState.Cleared:
+        if isinstance(prop, AttributeSpec):
+            if prop.value_state == PropertySpec.ValueState.Cleared:
                 return None
             return prop.value
 
-        if isinstance(prop, Relationship):
-            if prop.value_state == Property.ValueState.Cleared:
+        if isinstance(prop, RelationshipSpec):
+            if prop.value_state == PropertySpec.ValueState.Cleared:
                 return []
             return prop.targets
 
@@ -124,7 +124,7 @@ class StageProperty:
         return StageMetadata(self._stage, self._prim_path, self._prop_name)
 
     @property
-    def resolved_property(self) -> Optional[Property]:
+    def resolved_property(self) -> Optional[PropertySpec]:
         return self._stage._engine.resolve_property(self._prim_path, self._prop_name)
 
     @property
@@ -142,7 +142,7 @@ class StageProperty:
     @property
     def targets(self) -> List[Any]:
         prop = self.resolved_property
-        if isinstance(prop, Relationship):
+        if isinstance(prop, RelationshipSpec):
             return prop.targets
 
         return []
@@ -150,25 +150,25 @@ class StageProperty:
     @property
     def timeSamples(self) -> Dict[float, Any]:
         prop = self.resolved_property
-        if isinstance(prop, Attribute):
+        if isinstance(prop, AttributeSpec):
             return prop.timeSamples
 
         return {}
 
     @property
-    def value_state(self) -> Optional[Property.ValueState]:
+    def value_state(self) -> Optional[PropertySpec.ValueState]:
         prop = self.resolved_property
         return prop.value_state if prop is not None else None
 
     @property
     def type(self) -> Optional[_ValueType]:
         prop = self.resolved_property
-        return prop.type if isinstance(prop, Attribute) else None
+        return prop.type if isinstance(prop, AttributeSpec) else None
 
     @property
     def type_name(self) -> str:
         prop = self.resolved_property
-        return prop.type_name if isinstance(prop, Attribute) else ""
+        return prop.type_name if isinstance(prop, AttributeSpec) else ""
 
     @property
     def custom(self) -> bool:
@@ -192,13 +192,13 @@ class StageProperty:
             self._prop_name,
             self.resolved_property,
         )
-        if isinstance(prop, Attribute):
+        if isinstance(prop, AttributeSpec):
             prop.clear()
-        elif isinstance(prop, Relationship):
+        elif isinstance(prop, RelationshipSpec):
             prop._targets = []
-            prop._value_state = Property.ValueState.Cleared
+            prop._value_state = PropertySpec.ValueState.Cleared
         else:
-            prop._value_state = Property.ValueState.Cleared
+            prop._value_state = PropertySpec.ValueState.Cleared
         self._stage.invalidate()
 
     def create(
@@ -229,7 +229,7 @@ class StageProperty:
             self.resolved_property,
         )
         rel._targets.extend(self._coerce_relationship_targets(prim))
-        rel._value_state = Property.ValueState.Authored
+        rel._value_state = PropertySpec.ValueState.Authored
         self._stage.invalidate()
 
     def remove_target(self, prim: Any) -> None:
@@ -242,7 +242,7 @@ class StageProperty:
         for target in targets:
             if target in rel._targets:
                 rel._targets.remove(target)
-        rel._value_state = Property.ValueState.Authored
+        rel._value_state = PropertySpec.ValueState.Authored
         self._stage.invalidate()
 
     def __getattr__(self, name: str) -> Any:
