@@ -256,6 +256,16 @@ class Stage:
     def _set_property(self, prim_path: str, prop_name: str, value: Any) -> PropertySpec:
         prim_path = normalize_prim_path(prim_path)
         prop_name = normalize_property_name(prop_name)
+
+        # An augmented assignment assigns its result back, so `prim.radius += 1`
+        # finishes by storing the handle that __iadd__ returned, and a plain
+        # `prim.radius = other.radius` hands over a handle too. Neither is asking
+        # to author a handle, so unwrap to the value the handle stands for. A
+        # Relationship unwraps to its targets, which then route to the relationship
+        # branch below like any other path list.
+        if isinstance(value, Property):
+            value = value._value()
+
         template = self._engine.resolve_property(prim_path, prop_name)
         edit_prim = self._ensure_edit_prim(prim_path)
 

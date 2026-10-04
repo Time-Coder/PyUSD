@@ -45,6 +45,18 @@ path and neither needs a bound/unbound mode.
   fresh `Camera` that no layer has materialised. Anything else raises
   `AttributeError`, because a plain attribute has no members and `prim.radius.foo`
   is a typo rather than a request for a property named `radius:foo`.
+- The arithmetic a property used to support is restated on `Attribute`, not
+  inherited. `Data` still supplies it to the stored `AttributeSpec`, but a
+  composed handle is not a `Data` subclass, and routing `Prim` attribute access to
+  a view class is what silently cost `prim.radius += 1` in the first place. The
+  bodies mirror `Data`'s so both forms agree; the one difference a view forces is
+  that an in-place operator authors through `set()` rather than mutating a spec.
+  `Data.__setitem__` is the one operator deliberately not mirrored -- it mutates
+  the value it holds, which a value composed out of a layer stack cannot do.
+- An augmented assignment on a property finishes by assigning the operator's
+  result back, and `__iadd__` returns `self`. `Stage._set_property` therefore
+  unwraps a `Property` handed to it, so `prim.radius = other.radius` and
+  `prim.radius += 1` both mean "that value" rather than "author a handle".
 - Metadata and variant views live in `stage_metadata.py` and
   `stage_variant_sets.py`, mirroring their `Stage*` classes.
 - The composition engine reads storage nodes directly, so it needs the in-layer

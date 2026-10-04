@@ -303,6 +303,58 @@ try:
 except AttributeError:
     check("undeclared ns child raises", True, True)
 
+# --- restored operators -----------------------------------------------------
+# A composed handle is not a Data subclass, so the arithmetic Data used to supply
+# has to be restated on Attribute. The in-place forms have to author, and the
+# assignment an augmented statement finishes with has to be understood as "that
+# value", not "that handle".
+ops_layer = Layer("smoke_ops.usda")
+ops = Stage(ops_layer)
+ops_a = ops.def_(Sphere, "/A")
+ops_b = ops.def_(Sphere, "/B")
+ops_a.radius = 5.0
+ops_b.radius = 1.0
+
+check("handle + scalar", ops_a.radius + 1, 6.0)
+check("scalar + handle", 1 + ops_a.radius, 6.0)
+check("handle - scalar", ops_a.radius - 1, 4.0)
+check("handle * scalar", ops_a.radius * 2, 10.0)
+check("handle / scalar", ops_a.radius / 2, 2.5)
+check("handle ** scalar", ops_a.radius**2, 25.0)
+check("handle % scalar", ops_a.radius % 3, 2.0)
+check("handle // scalar", ops_a.radius // 2, 2.0)
+check("handle > scalar", ops_a.radius > 3, True)
+check("scalar < handle", 3 < ops_a.radius, True)
+check("handle <= scalar", ops_a.radius <= 5.0, True)
+check("handle + handle", ops_a.radius + ops_b.radius, 6.0)
+check("handle + stored spec", ops_a.radius + ops_b.radius.resolved_property, 6.0)
+
+ops_a.radius += 1
+check("+= authors", ops_a.radius.get(), 6.0)
+ops_a.radius *= 2
+check("*= authors", ops_a.radius.get(), 12.0)
+ops_a.radius -= 3
+check("-= authors", ops_a.radius.get(), 9.0)
+ops_a.radius /= 2
+check("/= authors", ops_a.radius.get(), 4.5)
+ops_a.radius **= 2
+check("**= authors", ops_a.radius.get(), 20.25)
+ops_a.radius //= 3
+check("//= authors", ops_a.radius.get(), 6.0)
+ops_a.radius %= 3
+check("%= authors", ops_a.radius.get(), 0.0)
+
+# An augmented statement also assigns its result back, so the handle the operator
+# returned has to unwrap on the way in rather than be authored as a value.
+ops_a.radius = ops_b.radius
+check("assigning a handle authors its value", ops_a.radius.get(), 1.0)
+
+ops_x = ops.def_(Xform, "/X")
+ops_x.xformOp.translate = (1.0, 2.0, 3.0)
+check("len of a vector attribute", len(ops_x.xformOp.translate), 3)
+check("indexing a vector attribute", ops_x.xformOp.translate[0], 1.0)
+check_true("in rejects a non-member", 9.0 not in ops_x.xformOp.translate)
+
 # --- schema type survives a round trip ------------------------------------
 rt_layer = Layer("smoke_roundtrip.usda")
 rt_layer.def_(Xform, "/A")
