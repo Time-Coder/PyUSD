@@ -236,7 +236,31 @@ Useful checks and workflows:
   `max` going through `__builtins__` (a dict inside an imported module), ordering
   comparisons on vectors and matrices, `matrix *= matrix` silently doing nothing
   because a slice index matched no branch of `__setitem__`, and the four `genQuat`
-  field getters. Treat a new `gf` finding as a possible bug until proven otherwise.
+  field getters. Three more turned up while restoring attribute arithmetic, all of
+  them in the element-wise operators and all of them silent until exercised:
+  - `_op`, `_rop`, `_compare_op` and `_compare_rop` accepted any operand. An object
+    that is neither a number nor a shape-matched `genType` was passed to the
+    element function whole, so `double3(...) + attribute` computed a plausible
+    result type from the handle's delegated `dtype` and then assigned a whole
+    vector into every element. They return `NotImplemented` now, which is what lets
+    Python reach the other operand's reflected method; raising `TypeError` there
+    stops the fallback instead of enabling it. `_iop` and `_compare_op` keep
+    raising, since neither has a reflected form to defer to.
+  - All five loops counted slots with `len()`. That is right for a flat `genVec` or
+    `genQuat` and wrong for `genMat`, whose `__len__` is ctypes' flat element count
+    while `m[i]` is a row -- so `matrix + matrix`, `matrix - matrix` and
+    `matrix * 2` raised `IndexError`. `genMat._op` rescues `*` itself, which is why
+    matrix multiplication worked and nothing else did; the count is `_slot_count`.
+  - `genQuat.__init__` passed `[1, 0, 0, 0]` to `ctypes.Structure.__init__`, which
+    wants one positional value per field, so `quatd()` raised "must be real number,
+    not list". Every quaternion operator default-constructs its result, so all of
+    quaternion arithmetic was dead.
+- `genVec3`, `genMat3` and `genQuat` have no `dtype`, and that is by design: they
+  are abstract intermediates, and the `dtype`/`math_form`/`shape` they would have to
+  guess belong to the concrete subclass. Only instantiate the concrete types
+  (`double3`, `matrix4d`, `quatd`), and reach for `gen_type` when the concrete type
+  is not known statically.
+- Treat a new `gf` finding as a possible bug until proven otherwise.
 - `python workspace/test_roundtrip.py` asserts every `_assets/` fixture survives a
   parse/serialize round trip unchanged.
 - `python workspace/test_pxr_parity.py` cross-checks composed prim paths, typeNames,

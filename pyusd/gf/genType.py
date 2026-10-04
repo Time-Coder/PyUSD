@@ -129,6 +129,23 @@ class genType:
 
         return genType.__gen_type_map[key]
 
+    def _slot_count(self) -> int:
+        """How many top-level slots this container exposes to the operators below.
+
+        A genVec and a genQuat are flat, so their length is the element count. A
+        genMat is two dimensional and mixes the two conventions: __len__ is
+        ctypes' flat element count (16 for a 4x4) while m[i] is the i-th row, and
+        there are only ``rows`` of those. Driving the element-wise loops with
+        ``len()`` therefore runs off the end of the array on the first row past the
+        row count, which is why matrix addition and subtraction raised IndexError
+        while matrix multiplication -- the one operator genMat._op handles itself --
+        worked.
+        """
+        if self.math_form == MathForm.Mat:
+            return cast(Any, self).rows
+
+        return len(self)
+
     def _call_on_changed(self):
         if self._on_changed is None:
             return
@@ -208,20 +225,34 @@ class genType:
         return cast(genType, other)[index]
 
     def _op(self, operator:str, other:Union[float, bool, int, genType])->genType:
+        # An operand that is neither a number nor a shape-matched genType has no
+        # element-wise meaning here, and returning NotImplemented rather than
+        # raising is what lets Python try the other operand's reflected method.
+        # Without it, `double3(...) + attribute` treats the whole attribute as one
+        # scalar, c_double.__add__ hands it to the attribute's __radd__, and every
+        # element ends up assigned a vector.
+        other_is_homo:bool = self._is_homo(other)
+        if not other_is_homo and not is_number(other):
+            return NotImplemented
+
         result_type = self._bin_op_type(operator, self, other)
         result:genType = result_type()
-        other_is_homo:bool = self._is_homo(other)
         operator_func:Callable[[Any,Any], Any] = self._operator_funcs[operator]
-        for i in range(len(result)):
+        for i in range(result._slot_count()):
             result[i] = operator_func(self[i], genType._at(other, i) if other_is_homo else other)
 
         return result
 
     def _rop(self, operator:str, other:Union[float, bool, int, genType])->genType:
+        # The reflected form only ever has a scalar on the left, so anything else
+        # has no meaning to offer and Python should hear so via NotImplemented.
+        if not is_number(other):
+            return NotImplemented
+
         result_type = self._bin_op_type(operator, other, self)
         result:genType = result_type()
         operator_func:Callable[[Any,Any], Any] = self._operator_funcs[operator]
-        for i in range(len(result)):
+        for i in range(result._slot_count()):
             result[i] = operator_func(other, self[i])
 
         return result
@@ -232,7 +263,7 @@ class genType:
             raise TypeError(f"unsupported operand type(s) for {operator}=: '{self.__class__.__name__}' and '{other.__class__.__name__}'")
 
         operator_func:Callable[[Any,Any], Any] = self._operator_funcs[operator]
-        for i in range(len(self)):
+        for i in range(self._slot_count()):
             self[i] = operator_func(self[i], genType._at(other, i) if other_is_homo else other)
 
         self._update_data()
@@ -245,20 +276,25 @@ class genType:
 
         other_is_homo:bool = self._is_homo(other)
         if not other_is_homo and not is_number(other):
-            raise TypeError(f"unsupported operand type(s) for {operator}: '{self.__class__.__name__}' and '{other.__class__.__name__}'")
+            # NotImplemented, not TypeError, so that `gf_value > attribute` can
+            # reach the attribute's own comparison rather than stopping here.
+            return NotImplemented
 
         operator_func:Callable[[Any,Any], Any] = self._operator_funcs[operator]
-        for i in range(len(self)):
+        for i in range(self._slot_count()):
             result[i] = operator_func(self[i], genType._at(other, i) if other_is_homo else other)
 
         return result
 
     def _compare_rop(self, operator:str, other:Union[float, bool, int, genType])->genType:
+        if not is_number(other):
+            return NotImplemented
+
         btype = self.gen_type(self.math_form, ctypes.c_bool, self.shape)
         result:genType = btype()
 
         operator_func:Callable[[Any,Any], Any] = self._operator_funcs[operator]
-        for i in range(len(result)):
+        for i in range(result._slot_count()):
             result[i] = operator_func(other, self[i])
 
         return result

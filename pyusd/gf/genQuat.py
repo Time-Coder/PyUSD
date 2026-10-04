@@ -16,7 +16,11 @@ class genQuat(genType, ctypes.Structure):
         genType.__init__(self)
 
         if len(args) == 0:
-            ctypes.Structure.__init__(self, [1, 0, 0, 0])
+            # One field per component, not a list: ctypes.Structure.__init__ takes
+            # positional field values, and passing the list through raised
+            # "must be real number, not list". Every quaternion operator
+            # default-constructs its result, so this broke all of them.
+            ctypes.Structure.__init__(self, 1, 0, 0, 0)
             return
 
         if len(args) == 1:
