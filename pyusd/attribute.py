@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 from .attribute_spec import AttributeSpec
-from .data import Data
+from .data import Data, _Arithmetic
 from .property import Property
 from .property_spec import PropertySpec
 
@@ -20,7 +20,7 @@ from .property_spec import PropertySpec
 _ValueType = type
 
 
-class Attribute(Property):
+class Attribute(_Arithmetic, Property):
     """A composed attribute: a value, a type, and optionally time samples."""
 
     @property
@@ -43,6 +43,37 @@ class Attribute(Property):
 
     def set(self, value: Any) -> None:
         self._stage._set_property(self._prim_path, self._prop_name, value)
+
+    # -- the three hooks _Arithmetic asks for ---------------------------------
+    #
+    # Everything above this line is about what an attribute *is*; everything below
+    # is what lets it share the arithmetic with Data. Keeping them together makes
+    # the whole contract visible in one place.
+
+    def _read(self) -> Any:
+        """The composed value. Recomputed per call and never cached."""
+        return self._value()
+
+    def _write(self, value: Any) -> None:
+        """Where an in-place result lands: a new opinion in the edit layer.
+
+        Not on this object. A handle composes its value out of the layer stack on
+        every read, so writing to itself would write to a temporary -- and it would
+        miss the edit layer, the invalidation, and the layer strength that decides
+        which layer an opinion belongs to.
+        """
+        self.set(value)
+
+    @staticmethod
+    def _other_value(other: Any) -> Any:
+        """Unwrap an operand that is itself a handle or a stored spec."""
+        if isinstance(other, Property):
+            return other._value()
+
+        if isinstance(other, Data):
+            return other._raw()
+
+        return other
 
     @property
     def value(self) -> Any:
@@ -71,126 +102,3 @@ class Attribute(Property):
         prop = self._attribute
         return prop.timeSamples if prop is not None else {}
 
-    # -- operators ----------------------------------------------------------
-    #
-    # These used to reach a prim property through Data, which the stored
-    # AttributeSpec inherits and a composed handle does not: the split that
-    # introduced the view classes routed Prim attribute access to one, and
-    # `prim.radius += 1` stopped working without anyone deciding it should. The
-    # bodies mirror Data's so the arithmetic agrees with the stored form, with one
-    # difference that only a view can make: an in-place operator authors through
-    # set() so the result lands in the edit layer, rather than mutating a spec the
-    # caller never asked to change.
-    #
-    # Data.__setitem__ is deliberately not mirrored. It mutates the value it
-    # holds, which is meaningless for a value composed out of a layer stack -- the
-    # change has to go through the edit layer -- so element assignment stays on the
-    # spec, where it means what it says.
-
-    @staticmethod
-    def _other_value(other: Any) -> Any:
-        """Unwrap an operand so a handle or a spec contributes its value."""
-        if isinstance(other, Property):
-            return other._value()
-
-        if isinstance(other, Data):
-            return other._raw()
-
-        return other
-
-    def __add__(self, other: Any) -> Any:
-        return self._value() + self._other_value(other)
-
-    def __radd__(self, other: Any) -> Any:
-        return self._other_value(other) + self._value()
-
-    def __iadd__(self, other: Any) -> Attribute:
-        self.set(self._value() + self._other_value(other))
-        return self
-
-    def __sub__(self, other: Any) -> Any:
-        return self._value() - self._other_value(other)
-
-    def __rsub__(self, other: Any) -> Any:
-        return self._other_value(other) - self._value()
-
-    def __isub__(self, other: Any) -> Attribute:
-        self.set(self._value() - self._other_value(other))
-        return self
-
-    def __mul__(self, other: Any) -> Any:
-        return self._value() * self._other_value(other)
-
-    def __rmul__(self, other: Any) -> Any:
-        return self._other_value(other) * self._value()
-
-    def __imul__(self, other: Any) -> Attribute:
-        self.set(self._value() * self._other_value(other))
-        return self
-
-    def __truediv__(self, other: Any) -> Any:
-        return self._value() / self._other_value(other)
-
-    def __rtruediv__(self, other: Any) -> Any:
-        return self._other_value(other) / self._value()
-
-    def __itruediv__(self, other: Any) -> Attribute:
-        self.set(self._value() / self._other_value(other))
-        return self
-
-    def __floordiv__(self, other: Any) -> Any:
-        return self._value() // self._other_value(other)
-
-    def __rfloordiv__(self, other: Any) -> Any:
-        return self._other_value(other) // self._value()
-
-    def __ifloordiv__(self, other: Any) -> Attribute:
-        self.set(self._value() // self._other_value(other))
-        return self
-
-    def __mod__(self, other: Any) -> Any:
-        return self._value() % self._other_value(other)
-
-    def __rmod__(self, other: Any) -> Any:
-        return self._other_value(other) % self._value()
-
-    def __imod__(self, other: Any) -> Attribute:
-        self.set(self._value() % self._other_value(other))
-        return self
-
-    def __pow__(self, other: Any) -> Any:
-        return self._value() ** self._other_value(other)
-
-    def __rpow__(self, other: Any) -> Any:
-        return self._other_value(other) ** self._value()
-
-    def __ipow__(self, other: Any) -> Attribute:
-        self.set(self._value() ** self._other_value(other))
-        return self
-
-    def __lt__(self, other: Any) -> bool:
-        return self._value() < self._other_value(other)
-
-    def __rlt__(self, other: Any) -> bool:
-        return self._other_value(other) < self._value()
-
-    def __gt__(self, other: Any) -> bool:
-        return self._value() > self._other_value(other)
-
-    def __rgt__(self, other: Any) -> bool:
-        return self._other_value(other) > self._value()
-
-    def __le__(self, other: Any) -> bool:
-        return self._value() <= self._other_value(other)
-
-    def __rle__(self, other: Any) -> bool:
-        return self._other_value(other) <= self._value()
-
-    def __ge__(self, other: Any) -> bool:
-        return self._value() >= self._other_value(other)
-
-    def __rge__(self, other: Any) -> bool:
-        return self._other_value(other) >= self._value()
-
-    def __contains__(self, item: Any) -> bool:
-        return self._other_value(item) in self._value()

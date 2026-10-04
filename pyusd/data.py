@@ -14,7 +14,148 @@ from .utils import (
 )
 
 T = TypeVar('T')
-class Data(Generic[T]):
+
+
+class _Arithmetic:
+    """Element-wise operators over one value that can be read and written back.
+
+    Two classes need these bodies and neither can inherit them from the other. Data
+    owns a stored value; the composed Attribute in attribute.py reads its value out
+    of composition and has to write into the edit layer instead. What the two
+    genuinely share is the arithmetic, so that is what lives here, and the three
+    methods a participant supplies are the whole contract:
+
+      _read()          the value to compute on
+      _write(value)    where an in-place result goes
+      _other_value(x)  unwraps an operand that is itself one of these
+
+    Nothing here says *where* the value lives, which is the only thing the two
+    forms disagree about. An in-place operator ends in _write, so on a stored value
+    it rewrites that object and on a composed handle it authors a new opinion --
+    same body, one line of difference.
+
+    Equality is deliberately absent: Data and Property each already define one and
+    they agree, so moving it here would add a second definition without changing
+    behaviour. __setitem__ is absent for the same reason it is not mirrored on the
+    handle: it mutates the value it holds, which a value composed out of a layer
+    stack cannot do.
+    """
+
+    def _read(self)->Any:
+        raise NotImplementedError
+
+    def _write(self, value:Any)->None:
+        raise NotImplementedError
+
+    @staticmethod
+    def _other_value(other:Any)->Any:
+        """Unwrap an operand that is itself one of these.
+
+        Declared here because the bodies below call it, and left unimplemented on
+        purpose: which of these an operand may be is one of the things the two forms
+        disagree about, so each has to say which it accepts.
+        """
+        raise NotImplementedError
+
+    def __add__(self, other:Any)->Any:
+        return self._read() + self._other_value(other)
+
+    def __radd__(self, other:Any)->Any:
+        return self._other_value(other) + self._read()
+
+    def __iadd__(self, other:Any)->Any:
+        self._write(self._read() + self._other_value(other))
+        return self
+
+    def __sub__(self, other:Any)->Any:
+        return self._read() - self._other_value(other)
+
+    def __rsub__(self, other:Any)->Any:
+        return self._other_value(other) - self._read()
+
+    def __isub__(self, other:Any)->Any:
+        self._write(self._read() - self._other_value(other))
+        return self
+
+    def __mul__(self, other:Any)->Any:
+        return self._read() * self._other_value(other)
+
+    def __rmul__(self, other:Any)->Any:
+        return self._other_value(other) * self._read()
+
+    def __imul__(self, other:Any)->Any:
+        self._write(self._read() * self._other_value(other))
+        return self
+
+    def __truediv__(self, other:Any)->Any:
+        return self._read() / self._other_value(other)
+
+    def __rtruediv__(self, other:Any)->Any:
+        return self._other_value(other) / self._read()
+
+    def __itruediv__(self, other:Any)->Any:
+        self._write(self._read() / self._other_value(other))
+        return self
+
+    def __floordiv__(self, other:Any)->Any:
+        return self._read() // self._other_value(other)
+
+    def __rfloordiv__(self, other:Any)->Any:
+        return self._other_value(other) // self._read()
+
+    def __ifloordiv__(self, other:Any)->Any:
+        self._write(self._read() // self._other_value(other))
+        return self
+
+    def __mod__(self, other:Any)->Any:
+        return self._read() % self._other_value(other)
+
+    def __rmod__(self, other:Any)->Any:
+        return self._other_value(other) % self._read()
+
+    def __imod__(self, other:Any)->Any:
+        self._write(self._read() % self._other_value(other))
+        return self
+
+    def __pow__(self, other:Any)->Any:
+        return self._read() ** self._other_value(other)
+
+    def __rpow__(self, other:Any)->Any:
+        return self._other_value(other) ** self._read()
+
+    def __ipow__(self, other:Any)->Any:
+        self._write(self._read() ** self._other_value(other))
+        return self
+
+    def __gt__(self, other:Any)->bool:
+        return self._read() > self._other_value(other)
+
+    def __rgt__(self, other:Any)->bool:
+        return self._other_value(other) > self._read()
+
+    def __lt__(self, other:Any)->bool:
+        return self._read() < self._other_value(other)
+
+    def __rlt__(self, other:Any)->bool:
+        return self._other_value(other) < self._read()
+
+    def __ge__(self, other:Any)->bool:
+        return self._read() >= self._other_value(other)
+
+    def __rge__(self, other:Any)->bool:
+        return self._other_value(other) >= self._read()
+
+    def __le__(self, other:Any)->bool:
+        return self._read() <= self._other_value(other)
+
+    def __rle__(self, other:Any)->bool:
+        return self._other_value(other) <= self._read()
+
+    def __contains__(self, item:Any)->bool:
+        return self._other_value(item) in self._read()
+
+
+class Data(_Arithmetic, Generic[T]):
 
     _type: type
     _dtype: type
@@ -138,81 +279,19 @@ class Data(Generic[T]):
 
         return other
 
+    def _read(self)->Any:
+        """What the shared arithmetic in _Arithmetic computes on."""
+        return self._raw()
+
+    def _write(self, value:Any)->None:
+        """Where an in-place result lands. Here, on this stored object."""
+        self.value = value
+
     def __str__(self)->str:
         return str(self.value)
 
     def __repr__(self)->str:
         return repr(self.value)
-
-    def __add__(self, other:Any)->Any:
-        return self._raw() + self._other_value(other)
-
-    def __radd__(self, other:Any)->Any:
-        return self._other_value(other) + self._raw()
-
-    def __iadd__(self, other:Any)->Any:
-        self.value += self._other_value(other)
-        return self
-
-    def __sub__(self, other:Any)->Any:
-        return self._raw() - self._other_value(other)
-
-    def __rsub__(self, other:Any)->Any:
-        return self._other_value(other) - self._raw()
-
-    def __isub__(self, other:Any)->Any:
-        self.value -= self._other_value(other)
-        return self
-
-    def __mul__(self, other:Any)->Any:
-        return self._raw() * self._other_value(other)
-
-    def __rmul__(self, other:Any)->Any:
-        return self._other_value(other) * self._raw()
-
-    def __imul__(self, other:Any)->Any:
-        self.value *= self._other_value(other)
-        return self
-
-    def __truediv__(self, other:Any)->Any:
-        return self._raw() / self._other_value(other)
-
-    def __rtruediv__(self, other:Any)->Any:
-        return self._other_value(other) / self._raw()
-
-    def __itruediv__(self, other:Any)->Any:
-        self.value /= self._other_value(other)
-        return self
-
-    def __floordiv__(self, other:Any)->Any:
-        return self._raw() // self._other_value(other)
-
-    def __rfloordiv__(self, other:Any)->Any:
-        return self._other_value(other) // self._raw()
-
-    def __ifloordiv__(self, other:Any)->Any:
-        self.value //= self._other_value(other)
-        return self
-
-    def __mod__(self, other:Any)->Any:
-        return self._raw() % self._other_value(other)
-
-    def __rmod__(self, other:Any)->Any:
-        return self._other_value(other) % self._raw()
-
-    def __imod__(self, other:Any)->Any:
-        self.value %= self._other_value(other)
-        return self
-
-    def __pow__(self, other:Any)->Any:
-        return self._raw() ** self._other_value(other)
-
-    def __rpow__(self, other:Any)->Any:
-        return self._other_value(other) ** self._raw()
-
-    def __ipow__(self, other:Any)->Any:
-        self.value **= self._other_value(other)
-        return self
 
     def __eq__(self, other:Any)->bool:
         return (self._raw() == self._other_value(other))
@@ -225,34 +304,6 @@ class Data(Generic[T]):
 
     def __rne__(self, other:Any)->bool:
         return (self._other_value(other) != self._raw())
-
-    def __gt__(self, other:Any)->bool:
-        return (self._raw() > self._other_value(other))
-
-    def __rgt__(self, other:Any)->bool:
-        return (self._other_value(other) > self._raw())
-
-    def __lt__(self, other:Any)->bool:
-        return (self._raw() < self._other_value(other))
-
-    def __rlt__(self, other:Any)->bool:
-        return (self._other_value(other) < self._raw())
-
-    def __ge__(self, other:Any)->bool:
-        return (self._raw() >= self._other_value(other))
-
-    def __rge__(self, other:Any)->bool:
-        return (self._other_value(other) >= self._raw())
-
-    def __le__(self, other:Any)->bool:
-        return (self._raw() <= self._other_value(other))
-
-    def __rle__(self, other:Any)->bool:
-        return (self._other_value(other) <= self._raw())
-
-    def __contains__(self, item:Any)->bool:
-        return (self._other_value(item) in self._raw())
-
     def __len__(self)->int:
         return len(self._raw())
 

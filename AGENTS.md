@@ -45,14 +45,23 @@ path and neither needs a bound/unbound mode.
   fresh `Camera` that no layer has materialised. Anything else raises
   `AttributeError`, because a plain attribute has no members and `prim.radius.foo`
   is a typo rather than a request for a property named `radius:foo`.
-- The arithmetic a property used to support is restated on `Attribute`, not
-  inherited. `Data` still supplies it to the stored `AttributeSpec`, but a
-  composed handle is not a `Data` subclass, and routing `Prim` attribute access to
-  a view class is what silently cost `prim.radius += 1` in the first place. The
-  bodies mirror `Data`'s so both forms agree; the one difference a view forces is
-  that an in-place operator authors through `set()` rather than mutating a spec.
-  `Data.__setitem__` is the one operator deliberately not mirrored -- it mutates
-  the value it holds, which a value composed out of a layer stack cannot do.
+- The arithmetic a property used to support is shared, not inherited. `Data` cannot be a
+  base of the composed `Attribute`, because `Data` owns a stored value: `_value` is an
+  instance field there and a method on the handle, `__iadd__` rewrites `self.value`
+  rather than authoring an opinion, and `__getattr__` forwards to the value where a
+  handle has to read a child property or raise. `isinstance(x, Data)` is also live
+  dispatch in five places (`_convert_from`, `_other_value`, `UsdaSerializer`,
+  `infer_type`, and `Attribute._other_value`), so inheriting it would make a composed
+  handle pass as a stored value. What the two genuinely have in common is the
+  arithmetic, so that lives in `_Arithmetic` in `data.py`: a stateless mixin over three
+  hooks, `_read()`, `_write(value)` and `_other_value(operand)`. `Data` reads its own
+  field and writes itself; `Attribute` reads composition and authors the edit layer.
+  The in-place operators end in `_write`, which is the entire behavioural difference.
+  Equality is deliberately not in the mixin -- `Data` and `Property` each already have
+  one and they agree -- and neither is `__setitem__`, which mutates a value in place and
+  so cannot mean anything for one composed out of a layer stack.
+  `workspace/test_prim_view.py` asserts `Attribute.__add__ is AttributeSpec.__add__`, so
+  a second copy cannot creep back in unnoticed.
 - An augmented assignment on a property finishes by assigning the operator's
   result back, and `__iadd__` returns `self`. `Stage._set_property` therefore
   unwraps a `Property` handed to it, so `prim.radius = other.radius` and

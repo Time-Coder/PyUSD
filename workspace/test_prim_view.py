@@ -355,6 +355,24 @@ check("len of a vector attribute", len(ops_x.xformOp.translate), 3)
 check("indexing a vector attribute", ops_x.xformOp.translate[0], 1.0)
 check_true("in rejects a non-member", 9.0 not in ops_x.xformOp.translate)
 
+# The handle and the stored spec must come from one implementation. They were once
+# two copies of the same thirty methods, agreeing only because they were written to
+# agree, and the reason they cannot be one base class is that Data owns a stored
+# value while a handle composes one -- the arithmetic is what they actually share.
+check(
+    "handle and spec share one arithmetic",
+    Attribute.__add__ is AttributeSpec.__add__,
+    True,
+)
+check("spec arithmetic comes from the same mixin", Attribute.__lt__ is AttributeSpec.__lt__, True)
+
+stored = AttributeSpec(float, name="stored", value=5.0)
+stored += 1
+check("stored spec += still rewrites itself", stored.get(), 6.0)
+check("stored spec * scalar", stored * 2, 12.0)
+check("stored spec ordering", stored > 1, True)
+check("stored spec reflected", 10 - stored, 4.0)
+
 # --- schema type survives a round trip ------------------------------------
 rt_layer = Layer("smoke_roundtrip.usda")
 rt_layer.def_(Xform, "/A")
