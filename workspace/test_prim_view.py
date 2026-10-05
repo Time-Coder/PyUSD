@@ -170,6 +170,60 @@ check("specialize accepted a Prim", len(arcs._specializes), 1)
 arc_dst.remove_reference(arc_src)
 check("remove_reference accepts a Prim", len(arc_dst.authored_prim._references), 0)
 
+# A string target is USDA arc syntax, and it is what round trips: the serializer writes
+# strings verbatim and OpenUSD reads them back. These spellings were each checked against
+# pxr 0.26.8 with Sdf.Layer.ImportFromString, which parses without resolving.
+str_stage = Stage(Layer("smoke_str_arcs.usda"))
+str_prim = str_stage.def_(Xform, "/S")
+str_prim.reference("/t")
+str_prim.payload("@./a.usda@</A>")
+str_prim.specialize("</c>")
+str_prim.inherit("</Base>")
+check(
+    "bare path gains its brackets",
+    str(list(str_prim.authored_prim._references)),
+    "['</t>']",
+)
+check(
+    "asset arc is stored verbatim",
+    list(str_prim.authored_prim._payloads),
+    ["@./a.usda@</A>"],
+)
+str_text = str_stage.root_layer.to_str()
+check_true("payload is spelled the way USD spells it", "prepend payload = " in str_text)
+check_true("the plural spelling is gone", "prepend payloads" not in str_text)
+
+# Both spellings still read, so a file written before that fix is not lost.
+
+for spelling in ("payload", "payloads"):
+    with tempfile.NamedTemporaryFile(
+        "w", suffix=".usda", delete=False, encoding="utf-8"
+    ) as handle:
+        handle.write(
+            '#usda 1.0\n\ndef Xform "P" (\n    prepend ' + spelling
+            + ' = @./a.usda@</A>\n)\n{\n    double x = 1\n}\n'
+        )
+        rt_path = handle.name
+    check(
+        f"{spelling} reads back",
+        list(Layer.load(rt_path).prim_spec_at("/P")._payloads),
+        ["@./a.usda@</A>"],
+    )
+
+# Two things OpenUSD rejects, refused here rather than written into a file that will not
+# open: an asset arc for inherits, which is internal-only, and an asset path with the
+# leading @ left off.
+try:
+    str_prim.inherit("@./a.usda@</A>")
+    check("inherits refuses an asset arc", False, True)
+except ValueError:
+    check("inherits refuses an asset arc", True, True)
+try:
+    str_prim.reference("./a.usda@</A>")
+    check("a missing leading @ is refused", False, True)
+except ValueError:
+    check("a missing leading @ is refused", True, True)
+
 # A prim that exists only as a composed result has no stored form to point at, so it
 # is refused rather than silently written as something unreadable.
 try:

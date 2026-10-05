@@ -107,7 +107,13 @@ class MetadataSerializer:
                 need_quote=(not is_ref or key in ["variantSets", "variants"])
             )
             if is_ref and key not in ["subLayers", "variants", "relocates"]:
-                builtin_str_list.append(f"{next_tabs}prepend {key} = {value_str}")
+                # USD's field is `payload`, singular. Writing `payloads` produces a file
+                # OpenUSD will not open -- it reads the list-op prefix and then expects
+                # None or a bracket, not an asset path. The builtin key stays `payloads`
+                # because that is the name this package exposes on prim.metadata; only
+                # the file gets the spelling USD understands.
+                out_key = "payload" if key == "payloads" else key
+                builtin_str_list.append(f"{next_tabs}prepend {out_key} = {value_str}")
             else:
                 builtin_str_list.append(f"{next_tabs}{key} = {value_str}")
 

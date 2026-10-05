@@ -213,16 +213,26 @@ class Prim:
     def _edit_spec(self) -> PrimSpec:
         return self._stage._ensure_edit_prim(self._path)
 
-    def _as_arc_target(self, target: Union[Prim, PrimSpec, Layer]) -> Union[PrimSpec, Layer]:
+    def _as_arc_target(
+        self, attr_name: str, target: Union[Prim, PrimSpec, Layer, str]
+    ) -> Union[PrimSpec, Layer, str]:
         """Reduce an arc target to what the composition engine understands.
 
-        The engine reads three shapes: a ``PrimSpec`` (resolved through the layer it
-        lives in), a ``Layer`` (the whole file), and a string (an ``@asset@</path>``
-        or a bare path). A ``Prim`` was none of those, and nothing rejected it -- it was
-        appended to the arc list as-is and serialised as ``prepend references =
+        The engine reads four shapes: a ``PrimSpec`` (resolved through the layer it
+        lives in), a ``Layer`` (the whole file), an ``@asset@</path>`` string, and a
+        bare internal path. A ``Prim`` was none of those, and nothing rejected it -- it
+        was appended to the arc list as-is and serialised as ``prepend references =
         Prim(</t>)``, which is not a reference at all and does not survive a round trip
         through OpenUSD. A view is what a caller actually has, so it is accepted and
         reduced to its spec here rather than being a silent way to write nonsense.
+
+        A string is USDA arc syntax and is stored close to verbatim, because that is
+        what the serializer writes and what OpenUSD reads back: a reference written as
+        ``@./a.usda@</Asset>`` round trips exactly. Two normalisations are applied, because
+        the shorthand is what a caller naturally writes and getting it wrong produces a
+        file that only fails later. A leading ``/`` gains its angle brackets, and a string
+        carrying an asset path but no leading ``@`` is refused rather than written out as
+        something OpenUSD rejects.
 
         The spec has to be authored in *some* layer: an arc is stored data, so a prim
         that exists only as a composed result has nothing to point at. Passing the
@@ -239,6 +249,29 @@ class Prim:
         if isinstance(target, (PrimSpec, Layer)):
             return target
 
+        if isinstance(target, str):
+            text = target.strip()
+            if text.startswith("@"):
+                if attr_name == "_inherits":
+                    # Class inheritance is internal only. OpenUSD rejects
+                    # `inherits = @./a.usda@</Class>` outright, so this is refused here
+                    # rather than written into a file that will not open.
+                    raise ValueError(
+                        f"inherits cannot take an asset arc ({target!r}); class "
+                        "inheritance is internal, so use a path such as '</MyClass>'"
+                    )
+
+                return text
+            if text.startswith("/"):
+                return f"<{normalize_prim_path(text)}>"
+            if "@" in text:
+                raise ValueError(
+                    f"{target!r} looks like an asset arc but is missing its leading '@'; "
+                    f"write it as '@{text}'"
+                )
+
+            return target
+
         spec = target.authored_prim
         if spec is None:
             raise ValueError(
@@ -251,10 +284,10 @@ class Prim:
     def _add_arc(
         self,
         attr_name: str,
-        target: Union[Prim, PrimSpec, Layer],
+        target: Union[Prim, PrimSpec, Layer, str],
         prepend: bool,
     ) -> None:
-        target = self._as_arc_target(target)
+        target = self._as_arc_target(attr_name, target)
         spec = self._edit_spec()
         arcs = getattr(spec, attr_name)
         if target in arcs:
@@ -268,9 +301,9 @@ class Prim:
         self._stage.invalidate()
 
     def _remove_arc(
-        self, attr_name: str, target: Union[Prim, PrimSpec, Layer]
+        self, attr_name: str, target: Union[Prim, PrimSpec, Layer, str]
     ) -> None:
-        target = self._as_arc_target(target)
+        target = self._as_arc_target(attr_name, target)
         spec = self._edit_spec()
         arcs = getattr(spec, attr_name)
         if target in arcs:
@@ -278,28 +311,28 @@ class Prim:
 
         self._stage.invalidate()
 
-    def inherit(self, target: Union[Prim, PrimSpec, Layer], prepend: bool = True) -> None:
+    def inherit(self, target: Union[Prim, PrimSpec, Layer, str], prepend: bool = True) -> None:
         self._add_arc("_inherits", target, prepend)
 
-    def remove_inherit(self, target: Union[Prim, PrimSpec, Layer]) -> None:
+    def remove_inherit(self, target: Union[Prim, PrimSpec, Layer, str]) -> None:
         self._remove_arc("_inherits", target)
 
-    def reference(self, target: Union[Prim, PrimSpec, Layer], prepend: bool = True) -> None:
+    def reference(self, target: Union[Prim, PrimSpec, Layer, str], prepend: bool = True) -> None:
         self._add_arc("_references", target, prepend)
 
-    def remove_reference(self, target: Union[Prim, PrimSpec, Layer]) -> None:
+    def remove_reference(self, target: Union[Prim, PrimSpec, Layer, str]) -> None:
         self._remove_arc("_references", target)
 
-    def payload(self, target: Union[Prim, PrimSpec, Layer], prepend: bool = True) -> None:
+    def payload(self, target: Union[Prim, PrimSpec, Layer, str], prepend: bool = True) -> None:
         self._add_arc("_payloads", target, prepend)
 
-    def remove_payload(self, target: Union[Prim, PrimSpec, Layer]) -> None:
+    def remove_payload(self, target: Union[Prim, PrimSpec, Layer, str]) -> None:
         self._remove_arc("_payloads", target)
 
-    def specialize(self, target: Union[Prim, PrimSpec, Layer], prepend: bool = True) -> None:
+    def specialize(self, target: Union[Prim, PrimSpec, Layer, str], prepend: bool = True) -> None:
         self._add_arc("_specializes", target, prepend)
 
-    def remove_specialize(self, target: Union[Prim, PrimSpec, Layer])->None:
+    def remove_specialize(self, target: Union[Prim, PrimSpec, Layer, str])->None:
         self._remove_arc("_specializes", target)
 
     def def_(self, prim_type: Type[PrimType], path: str) -> PrimType:

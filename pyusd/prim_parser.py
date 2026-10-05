@@ -106,6 +106,10 @@ class PrimParser:
             "inherits": "_inherits",
             "prepend references": "_references",
             "references": "_references",
+            # The field is `payload`, singular -- OpenUSD rejects `payloads`. Both spellings
+            # are read so a file this package wrote before that was fixed still loads.
+            "prepend payload": "_payloads",
+            "payload": "_payloads",
             "prepend payloads": "_payloads",
             "payloads": "_payloads",
             "prepend specializes": "_specializes",
