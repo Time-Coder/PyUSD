@@ -210,6 +210,39 @@ for spelling in ("payload", "payloads"):
         ["@./a.usda@</A>"],
     )
 
+# Each accepted form has to compose, not just serialise: the reader takes an asset
+# reference from the leading @, and a prim path from the brackets.
+arc_dir = Path(tempfile.mkdtemp())
+arc_asset = arc_dir / "arc_asset.usda"
+arc_asset.write_text('#usda 1.0\n\ndef Xform "A"\n{\n    double mass = 7\n}\n')
+default_asset = Layer(str(arc_dir / "arc_default.usda"))
+default_asset.def_(Xform, "Default").mass = 9
+default_asset.default_prim = "Default"
+default_asset.save()
+
+for label, target, expected in (
+    ("internal bare path", "/T", 3),
+    ("internal bracketed", "</T>", 4),
+    ("asset with prim path", f"@{arc_asset}@</A>", 7),
+    ("asset without prim path", f"@{arc_dir / 'arc_default.usda'}@", 9),
+):
+    compose_stage = Stage(Layer())
+    source = compose_stage.def_(Xform, "/T")
+    source.mass = 3 if "bare" in label else 4
+    dest = compose_stage.def_(Xform, "/P")
+    dest.reference(target)
+    check(f"{label} composes", dest.mass.get(), expected)
+
+# Anything the engine cannot resolve is refused. A string with no leading @ has no asset
+# and no brackets means no prim path, so it composes to nothing while looking stored --
+# and USD does not parse it either.
+for bad in ("./a.usda", "a.usda", "rel/path", "", "<>"):
+    try:
+        str_prim.reference(bad)
+        check(f"{bad!r} is refused", False, True)
+    except ValueError:
+        check(f"{bad!r} is refused", True, True)
+
 # Two things OpenUSD rejects, refused here rather than written into a file that will not
 # open: an asset arc for inherits, which is internal-only, and an asset path with the
 # leading @ left off.

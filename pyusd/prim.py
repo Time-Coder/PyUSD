@@ -262,15 +262,32 @@ class Prim:
                     )
 
                 return text
-            if text.startswith("/"):
-                return f"<{normalize_prim_path(text)}>"
-            if "@" in text:
-                raise ValueError(
-                    f"{target!r} looks like an asset arc but is missing its leading '@'; "
-                    f"write it as '@{text}'"
-                )
+            if text.startswith("<"):
+                inner = text[1:-1] if text.endswith(">") else text[1:]
+            elif text.startswith("/"):
+                inner = text
+            else:
+                inner = None
 
-            return target
+            if inner is not None:
+                path = normalize_prim_path(inner)
+                if path == "/":
+                    raise ValueError(
+                        f"{target!r} resolves to the pseudo-root, which is not something "
+                        "an arc can point at"
+                    )
+
+                return f"<{path}>"
+
+            # Anything else is neither of the two forms the composition engine can
+            # resolve: no leading @ means no asset, and no angle brackets means no prim
+            # path, so it composes to nothing while looking stored. USD does not parse it
+            # either. A layer's whole contents are still reachable by passing a Layer.
+            raise ValueError(
+                f"{target!r} is not an arc this package can resolve. Use an internal path "
+                "such as '/Other' or '</Other>', or an asset reference such as "
+                "'@./other.usda@</Other>'; pass a Layer to reference a whole file."
+            )
 
         spec = target.authored_prim
         if spec is None:
