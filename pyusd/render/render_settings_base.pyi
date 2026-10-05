@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..attribute_spec import AttributeSpec
 from ..dtypes import token
 from ..gf import float4, int2
@@ -11,7 +13,7 @@ class RenderSettingsBase(Typed):
     """
 
 
-    class AspectRatioConformPolicy(token):
+    class AspectRatioConformPolicy(token, ReprEnum):
         ExpandAperture = "expandAperture"
         CropAperture = "cropAperture"
         AdjustApertureWidth = "adjustApertureWidth"

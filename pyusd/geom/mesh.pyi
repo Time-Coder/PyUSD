@@ -1,3 +1,4 @@
+from enum import ReprEnum
 from typing import List
 
 from ..attribute_spec import AttributeSpec
@@ -78,18 +79,18 @@ class Mesh(PointBased):
     """
 
 
-    class SubdivisionScheme(token):
+    class SubdivisionScheme(token, ReprEnum):
         CatmullClark = "catmullClark"
         Loop = "loop"
         Bilinear = "bilinear"
         None_ = "none"
 
-    class InterpolateBoundary(token):
+    class InterpolateBoundary(token, ReprEnum):
         None_ = "none"
         EdgeOnly = "edgeOnly"
         EdgeAndCorner = "edgeAndCorner"
 
-    class FaceVaryingLinearInterpolation(token):
+    class FaceVaryingLinearInterpolation(token, ReprEnum):
         None_ = "none"
         CornersOnly = "cornersOnly"
         CornersPlus1 = "cornersPlus1"
@@ -97,7 +98,7 @@ class Mesh(PointBased):
         Boundaries = "boundaries"
         All = "all"
 
-    class TriangleSubdivisionRule(token):
+    class TriangleSubdivisionRule(token, ReprEnum):
         CatmullClark = "catmullClark"
         Smooth = "smooth"
 

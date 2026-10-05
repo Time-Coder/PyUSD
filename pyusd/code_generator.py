@@ -1273,7 +1273,19 @@ class CodeGenerator:
         imports = self._generate_imports(base_class, class_info)
 
         # 检查是否有需要从 common.py 导入的枚举类
-        _, imported_token_classes = self._generate_token_classes(class_info['attributes'])
+        token_classes, imported_token_classes = self._generate_token_classes(class_info['attributes'])
+        if token_classes:
+            imports += "\nfrom enum import ReprEnum"
+
+        # A token[] with allowedTokens is declared List[SomeEnum], which _generate_imports
+        # cannot see because it only looks at the schema's own type name. Collect it here
+        # so the annotation resolves.
+        if any(
+            attr.get('allowed_tokens') and attr['type'].endswith('[]')
+            for attr in class_info['attributes']
+        ) and "from typing import List" not in imports:
+            imports += "\nfrom typing import List"
+
         if imported_token_classes:
             imports += f"\nfrom {up}common import {', '.join(sorted(set(imported_token_classes)))}"
 
@@ -1399,6 +1411,8 @@ class CodeGenerator:
 
         # 生成 allowedTokens 对应的枚举类
         token_classes, imported_token_classes = self._generate_token_classes(members)
+        if token_classes:
+            imports.append("from enum import ReprEnum")
 
         # Enums that already live in common.py (Axis, Kind) are referenced by the
         # member signatures below rather than emitted here, so they have to be
@@ -1531,6 +1545,12 @@ class CodeGenerator:
         # 添加从 common 导入的枚举类
         if imported_token_classes:
             imports.append(f"from {up}common import {', '.join(sorted(set(imported_token_classes)))}")
+
+        # The stub re-emits the allowedTokens enumerations, which now name ReprEnum
+        # themselves because dtypes.token is a plain str subclass rather than an Enum.
+        emitted, _ = self._generate_token_classes(class_info['attributes'])
+        if emitted and "from enum import ReprEnum" not in imports:
+            imports.insert(0, "from enum import ReprEnum")
 
         # 添加命名空间类的导入
         if generated_ns_files:
@@ -1974,8 +1994,11 @@ class CodeGenerator:
                 if class_name in common_enums:
                     imported_classes.append(class_name)
                 else:
-                    lines.append(f"    class {class_name}(token):")
-
+                    # ReprEnum is explicit because dtypes.token is no longer one. It
+                    # is a plain str subclass -- an Enum metaclass intercepts
+                    # construction, so token("default") raised -- which makes token a
+                    # usable *base* for these enumerations but not an Enum itself.
+                    lines.append(f"    class {class_name}(token, ReprEnum):")
                     for token_value in attr['allowed_tokens']:
                         const_name = self._token_to_constant(token_value)
                         lines.append(f"        {const_name} = \"{token_value}\"")
@@ -2061,7 +2084,11 @@ class CodeGenerator:
         # 如果有 allowedTokens，使用生成的类名
         if attr.get('allowed_tokens'):
             class_name = self._snake_to_pascal(attr['name'])
-            py_type = class_name
+            # An array of allowed tokens is still an array. Replacing the whole type
+            # with the enum dropped the List, so `token[] x = [...]` was declared as
+            # the bare enum and its default could not be converted. Invisible while
+            # defaults went unemitted; the stub signature needs the same wrap.
+            py_type = f"List[{class_name}]" if attr['type'].endswith('[]') else class_name
 
         attr_name = attr['name']
 
@@ -2075,14 +2102,23 @@ class CodeGenerator:
         params_list = []
         if attr['is_uniform']:
             params_list.append("uniform=True")
-        # Only an array-typed property gets a synthesised empty default, which is what
-        # the package has always emitted: xformOpOrder then reads as [] rather than
-        # None when nothing is authored. Defaults parsed from the schema are
-        # deliberately not emitted. Turning those on exercises coercions pyusd does
-        # not support for every dtype -- a token-typed property with a string default
-        # fails outright, because dtypes.token is an Enum with no members and cannot be
-        # called -- and it would rewrite ~113 declarations the tree is fine with.
-        if attr['type'].endswith('[]') and not attr.get('allowed_tokens'):
+        # A default parsed from the schema is emitted, so a property the type declares
+        # but no layer authored still reads as what the schema says it is. pxr does
+        # exactly this and reports it as un-authored; the fallback at the end of
+        # composition.resolve_property hands out this declaration, so without the value
+        # prim.radius on a fresh Sphere read as None.
+        #
+        # This used to be suppressed because a token-typed property with a string
+        # default could not be constructed: dtypes.token was a ReprEnum with no members,
+        # so token("default") raised. token is a plain str subclass now, and the
+        # enumerations generated for allowedTokens ask for ReprEnum themselves.
+        #
+        # An array with no declared default still gets a synthesised empty one, which
+        # is what the package has always emitted: xformOpOrder then reads as [] rather
+        # than None.
+        if attr.get('default_value') is not None:
+            params_list.append(f"value={self._format_default_value(attr['default_value'])}")
+        elif attr['type'].endswith('[]') and not attr.get('allowed_tokens'):
             params_list.append("value=[]")
         if attr['doc']:
             doc_str = self._format_doc_string(attr['doc'])
@@ -2107,6 +2143,30 @@ class CodeGenerator:
 
         return (f"    {attr_name}: AttributeSpec[{py_type}] = AttributeSpec({py_type}"
                 f"{', ' + params if params else ''})")
+
+    def _format_default_value(self, value: Any) -> str:
+        """Render a parsed schema default as Python source.
+
+        The parser has already produced real Python objects, so the only work here is
+        choosing a literal that survives a round trip through eval in the generated
+        module: a tuple stays a tuple because USDA writes (-1, -1, -1) and USD array
+        defaults are tuples, while a str is quoted. Anything unrecognised is rendered
+        through repr rather than dropped, so an unexpected shape shows up as a broken
+        default instead of a silently missing one.
+        """
+        if isinstance(value, tuple):
+            return "(" + ", ".join(self._format_default_value(item) for item in value) + ")"
+        if isinstance(value, list):
+            return "[" + ", ".join(self._format_default_value(item) for item in value) + "]"
+        if isinstance(value, bool):
+            return "True" if value else "False"
+        if isinstance(value, str):
+            escaped = value.replace("\\", "\\\\").replace('"', '\\"')
+            return f'"{escaped}"'
+        if isinstance(value, (int, float)):
+            return repr(value)
+
+        return repr(value)
 
     def _generate_relationship_definition(self, rel: Dict[str, Any]) -> str:
         """生成关系定义"""

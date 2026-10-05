@@ -1,3 +1,4 @@
+from enum import ReprEnum
 from typing import List
 
 from ..attribute_spec import AttributeSpec
@@ -94,11 +95,11 @@ class Camera(Xformable):
     """
 
 
-    class Projection(token):
+    class Projection(token, ReprEnum):
         Perspective = "perspective"
         Orthographic = "orthographic"
 
-    class StereoRole(token):
+    class StereoRole(token, ReprEnum):
         Mono = "mono"
         Left = "left"
         Right = "right"

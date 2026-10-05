@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..api_schema_base import APISchemaBase
 from ..dtypes import token
 from .info import Info
@@ -25,7 +27,7 @@ class NodeDefAPI(APISchemaBase):
     """
 
 
-    class ImplementationSource(token):
+    class ImplementationSource(token, ReprEnum):
         Id = "id"
         SourceAsset = "sourceAsset"
         SourceCode = "sourceCode"

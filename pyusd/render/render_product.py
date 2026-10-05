@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import token
@@ -28,13 +30,14 @@ class RenderProduct(RenderSettingsBase):
         }
     }
 
-    class ProductType(token):
+    class ProductType(token, ReprEnum):
         Raster = "raster"
         DeepRaster = "deepRaster"
 
 
     productType: AttributeSpec[ProductType] = AttributeSpec(ProductType,
         uniform=True,
+        value="raster",
         doc="""
         The type of output to produce. Allowed values are ones most
         renderers should be able to support.
@@ -51,6 +54,7 @@ class RenderProduct(RenderSettingsBase):
     )
 
     productName: AttributeSpec[token] = AttributeSpec(token,
+        value="",
         doc="""Specifies the name that the output/display driver
         should give the product.  This is provided as-authored to the
         driver, whose responsibility it is to situate the product on a

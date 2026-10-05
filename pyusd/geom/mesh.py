@@ -1,3 +1,4 @@
+from enum import ReprEnum
 from typing import List
 
 from ..attribute_spec import AttributeSpec
@@ -88,18 +89,18 @@ class Mesh(PointBased):
         }
     }
 
-    class SubdivisionScheme(token):
+    class SubdivisionScheme(token, ReprEnum):
         CatmullClark = "catmullClark"
         Loop = "loop"
         Bilinear = "bilinear"
         None_ = "none"
 
-    class InterpolateBoundary(token):
+    class InterpolateBoundary(token, ReprEnum):
         None_ = "none"
         EdgeOnly = "edgeOnly"
         EdgeAndCorner = "edgeAndCorner"
 
-    class FaceVaryingLinearInterpolation(token):
+    class FaceVaryingLinearInterpolation(token, ReprEnum):
         None_ = "none"
         CornersOnly = "cornersOnly"
         CornersPlus1 = "cornersPlus1"
@@ -107,7 +108,7 @@ class Mesh(PointBased):
         Boundaries = "boundaries"
         All = "all"
 
-    class TriangleSubdivisionRule(token):
+    class TriangleSubdivisionRule(token, ReprEnum):
         CatmullClark = "catmullClark"
         Smooth = "smooth"
 
@@ -132,6 +133,7 @@ class Mesh(PointBased):
 
     subdivisionScheme: AttributeSpec[SubdivisionScheme] = AttributeSpec(SubdivisionScheme,
         uniform=True,
+        value="catmullClark",
         doc="""The subdivision scheme to be applied to the surface.
         Valid values are:
 
@@ -154,6 +156,7 @@ class Mesh(PointBased):
     )
 
     interpolateBoundary: AttributeSpec[InterpolateBoundary] = AttributeSpec(InterpolateBoundary,
+        value="edgeAndCorner",
         doc="""Specifies how subdivision is applied for faces adjacent to
         boundary edges and boundary points. Valid values correspond to choices
         available in OpenSubdiv:
@@ -172,6 +175,7 @@ class Mesh(PointBased):
     )
 
     faceVaryingLinearInterpolation: AttributeSpec[FaceVaryingLinearInterpolation] = AttributeSpec(FaceVaryingLinearInterpolation,
+        value="cornersPlus1",
         doc="""Specifies how elements of a primvar of interpolation type
         "faceVarying" are interpolated for subdivision surfaces. Interpolation
         can be as smooth as a "vertex" primvar or constrained to be linear at
@@ -198,6 +202,7 @@ class Mesh(PointBased):
     )
 
     triangleSubdivisionRule: AttributeSpec[TriangleSubdivisionRule] = AttributeSpec(TriangleSubdivisionRule,
+        value="catmullClark",
         doc="""Specifies an option to the subdivision rules for the
         Catmull-Clark scheme to try and improve undesirable artifacts when
         subdividing triangles.  Valid values are "catmullClark" for the

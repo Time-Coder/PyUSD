@@ -194,6 +194,37 @@ Useful checks and workflows:
   derives it from the schema directory instead. The core schema is not in
   `generate_code.py` at all, which is why this went unnoticed -- that script's real cost
   is that running it rewrites 243 files, so do not run it as part of an unrelated change.
+- A default parsed from a schema **is** emitted into the generated declaration, so a
+  property the type declares but no layer authored still reads as what the schema says
+  it is. pxr does the same and reports it as un-authored; the fallback at the end of
+  `composition.resolve_property` hands out that declaration, so without the value
+  `prim.radius` on a fresh Sphere read as `None` and `def Sphere "x"` had no extent.
+  An array with no declared default still gets a synthesised `value=[]`, which is
+  where pyusd and pxr diverge on `xformOpOrder` -- pxr returns `None` there. That
+  divergence is long-standing and deliberate; do not "fix" it as collateral.
+  Emitting defaults needed three things, each of which blocked it before:
+  - `dtypes.token` was a `ReprEnum` with no members, so `token("default")` raised
+    "has no members" and no token-typed default could be constructed. It is a plain
+    `str` subclass now, which makes it a usable *base* for the enumerations the
+    generator emits for `allowedTokens` -- those ask for `ReprEnum` themselves, and
+    `attribute_spec.py` separates them from `token` with `value_type != token` before
+    reading member values. `common.py` and `sdf/common.py` hold four such enums by
+    hand and were changed by hand.
+  - A `token[]` with `allowedTokens` was declared as the bare enum rather than
+    `List[Enum]`, because the generator replaced the whole type instead of the
+    element type. Invisible while no default was emitted; the default then failed to
+    convert. `_generate_imports` cannot see the `List` because it only reads the
+    schema's own type name, so `_generate_class_file` and `_generate_pyi_imports`
+    add it.
+  - `_generate_pyi_imports` has to add `from enum import ReprEnum` whenever the stub
+    re-emits an `allowedTokens` enumeration, or `ty` reports it undefined. Same for
+    `_generate_namespace_pyi`, and both class-file paths in `_generate_class_file`
+    and `_generate_namespace_pyi`.
+- A `PropertySpec` with no parent was never installed in a prim, so no layer holds an
+  opinion about it. `AttributeSpec.value_state`'s "a non-empty list means authored"
+  heuristic has to stop there: it is about a materialised spec whose value arrived
+  without going through the setter, and without the guard a schema declaration such as
+  `Sphere.extent` reported `Authored` while pxr reports `HasAuthoredValue() == False`.
 - `Xformable` still cannot be regenerated. Its `xformOp: XformOp = XformOp()` declaration
   is what backs `prim.xformOp.translate = ...` and the automatic `xformOpOrder` upkeep,
   but the generator no longer emits it: `XformOp` is not in the geom class table and

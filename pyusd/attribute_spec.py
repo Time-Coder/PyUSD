@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import copy
-from typing import Any, Dict, Optional, TypeVar, cast
+from typing import Any, Dict, Iterable, Optional, TypeVar, cast
 
 from .attribute_serializer import AttributeSerializer
 from .data import Data
@@ -21,7 +21,12 @@ class AttributeSpec(PropertySpec, Data[T]):
             metadata = {}
 
         if isinstance(value_type, type) and issubclass(value_type, token) and value_type != token:
-            metadata["allowedTokens"] = [member.value for member in value_type]
+            # The allowedTokens enumerations are generated as `class X(token, ReprEnum)`,
+            # so their members are Enums whose value is the token string. The guard above
+            # is what separates them from token itself, which is a plain str subclass
+            # and therefore not iterable.
+            members: Iterable[Any] = cast(Iterable[Any], value_type)
+            metadata["allowedTokens"] = [member.value for member in members]
 
         PropertySpec.__init__(self, name, doc=doc, metadata=metadata, custom=custom, is_leaf=is_leaf)
         self._init(value_type, value, uniform, fix_type)
@@ -67,7 +72,19 @@ class AttributeSpec(PropertySpec, Data[T]):
 
     @property
     def value_state(self)->AttributeSpec.ValueState:
-        if self._value_state != AttributeSpec.ValueState.Authored and isinstance(self._value, list) and self._value:
+        # A non-empty list is treated as authored. That heuristic is about a
+        # materialised spec whose value arrived without going through the setter --
+        # parsing, not authoring -- and it has to stop at a spec with no parent. A
+        # schema declaration has none: it is never installed in a prim, so no layer
+        # holds an opinion about it, and composition hands it straight back as a
+        # fallback. Without this, a declaration carrying a list default such as
+        # Sphere's extent reported Authored while pxr reports HasAuthoredValue False.
+        if (
+            self._parent is not None
+            and self._value_state != AttributeSpec.ValueState.Authored
+            and isinstance(self._value, list)
+            and self._value
+        ):
             return AttributeSpec.ValueState.Authored
 
         return self._value_state

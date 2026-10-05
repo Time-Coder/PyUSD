@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..api_schema_base import APISchemaBase
 from ..attribute_spec import AttributeSpec
 from ..dtypes import token
@@ -38,17 +40,17 @@ class VisibilityAPI(APISchemaBase):
     """
 
 
-    class GuideVisibility(token):
+    class GuideVisibility(token, ReprEnum):
         Inherited = "inherited"
         Invisible = "invisible"
         Visible = "visible"
 
-    class ProxyVisibility(token):
+    class ProxyVisibility(token, ReprEnum):
         Inherited = "inherited"
         Invisible = "invisible"
         Visible = "visible"
 
-    class RenderVisibility(token):
+    class RenderVisibility(token, ReprEnum):
         Inherited = "inherited"
         Invisible = "invisible"
         Visible = "visible"

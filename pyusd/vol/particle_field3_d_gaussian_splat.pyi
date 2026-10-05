@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..attribute_spec import AttributeSpec
 from ..dtypes import token
 from .particle_field import ParticleField
@@ -16,11 +18,11 @@ class ParticleField3DGaussianSplat(ParticleField):
     """
 
 
-    class ProjectionModeHint(token):
+    class ProjectionModeHint(token, ReprEnum):
         Perspective = "perspective"
         Tangential = "tangential"
 
-    class SortingModeHint(token):
+    class SortingModeHint(token, ReprEnum):
         ZDepth = "zDepth"
         CameraDistance = "cameraDistance"
         RayHitDistance = "rayHitDistance"

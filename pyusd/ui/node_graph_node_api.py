@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..api_schema_base import APISchemaBase
 from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
@@ -13,7 +15,7 @@ class NodeGraphNodeAPI(APISchemaBase):
 
     schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
 
-    class ExpansionState(token):
+    class ExpansionState(token, ReprEnum):
         Open = "open"
         Closed = "closed"
         Minimized = "minimized"

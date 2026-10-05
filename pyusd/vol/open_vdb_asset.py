@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import token
@@ -11,7 +13,7 @@ class OpenVDBAsset(FieldAsset):
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
-    class FieldDataType(token):
+    class FieldDataType(token, ReprEnum):
         Half = "half"
         Float = "float"
         Double = "double"
@@ -33,7 +35,7 @@ class OpenVDBAsset(FieldAsset):
         Mask = "mask"
         String = "string"
 
-    class FieldClass(token):
+    class FieldClass(token, ReprEnum):
         LevelSet = "levelSet"
         FogVolume = "fogVolume"
         Staggered = "staggered"

@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..api_schema_base import APISchemaBase
 from ..dtypes import token
 from .physics import Physics
@@ -9,7 +11,7 @@ class PhysicsMeshCollisionAPI(APISchemaBase):
     """
 
 
-    class Approximation(token):
+    class Approximation(token, ReprEnum):
         None_ = "none"
         ConvexDecomposition = "convexDecomposition"
         ConvexHull = "convexHull"

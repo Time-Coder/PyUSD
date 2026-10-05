@@ -25,6 +25,7 @@ class Sphere(Gprim):
     }
 
     radius: AttributeSpec[double] = AttributeSpec(double,
+        value=1.0,
         doc="""Indicates the sphere's radius.  If you
         author \\em radius you must also author \\em extent.
 
@@ -33,7 +34,7 @@ class Sphere(Gprim):
     )
 
     extent: AttributeSpec[List[float3]] = AttributeSpec(List[float3],
-        value=[],
+        value=[(-1.0, -1.0, -1.0), (1.0, 1.0, 1.0)],
         doc="""Extent is re-defined on Sphere only to provide a fallback
         value. \\sa UsdGeomGprim::GetExtentAttr().
         """

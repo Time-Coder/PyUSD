@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..attribute_spec import AttributeSpec
 from ..dtypes import token
 from .field_asset import FieldAsset
@@ -8,7 +10,7 @@ class Field3DAsset(FieldAsset):
     """
 
 
-    class FieldDataType(token):
+    class FieldDataType(token, ReprEnum):
         Half = "half"
         Float = "float"
         Double = "double"

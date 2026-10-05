@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..attribute_spec import AttributeSpec
 from ..dtypes import token
 from .curves import Curves
@@ -208,16 +210,16 @@ class BasisCurves(Curves):
     """
 
 
-    class Type(token):
+    class Type(token, ReprEnum):
         Linear = "linear"
         Cubic = "cubic"
 
-    class Basis(token):
+    class Basis(token, ReprEnum):
         Bezier = "bezier"
         Bspline = "bspline"
         CatmullRom = "catmullRom"
 
-    class Wrap(token):
+    class Wrap(token, ReprEnum):
         Nonperiodic = "nonperiodic"
         Periodic = "periodic"
         Pinned = "pinned"

@@ -1,3 +1,4 @@
+from enum import ReprEnum
 
 from ..attribute_spec import AttributeSpec
 from ..dtypes import token
@@ -13,7 +14,7 @@ class Gprim(Boundable):
     """
 
 
-    class Orientation(token):
+    class Orientation(token, ReprEnum):
         RightHanded = "rightHanded"
         LeftHanded = "leftHanded"
 

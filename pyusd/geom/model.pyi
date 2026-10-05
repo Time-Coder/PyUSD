@@ -1,17 +1,19 @@
+from enum import ReprEnum
+
 from ..attribute_spec import AttributeSpec
 from ..dtypes import asset, token
 from ..gf import float3
 
 class Model(AttributeSpec):
 
-    class DrawMode(token):
+    class DrawMode(token, ReprEnum):
         Origin = "origin"
         Bounds = "bounds"
         Cards = "cards"
         Default = "default"
         Inherited = "inherited"
 
-    class CardGeometry(token):
+    class CardGeometry(token, ReprEnum):
         Cross = "cross"
         Box = "box"
         FromTexture = "fromTexture"

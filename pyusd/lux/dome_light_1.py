@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import asset, namespace, token
@@ -49,14 +51,14 @@ class DomeLight_1(NonboundableLightBase):
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
-    class Format(token):
+    class Format(token, ReprEnum):
         Automatic = "automatic"
         Latlong = "latlong"
         MirroredBall = "mirroredBall"
         Angular = "angular"
         CubeMapVerticalCross = "cubeMapVerticalCross"
 
-    class PoleAxis(token):
+    class PoleAxis(token, ReprEnum):
         Scene = "scene"
         Y = "Y"
         Z = "Z"
@@ -114,6 +116,7 @@ class DomeLight_1(NonboundableLightBase):
     )
 
     guideRadius: AttributeSpec[float] = AttributeSpec(float,
+        value=100000.0,
         doc="The radius of guide geometry to use to visualize the dome light.  The default is 1 km for scenes whose metersPerUnit is the USD default of 0.01 (i.e., 1 world unit is 1 cm).",
         metadata={
             "displayGroup": "Guides",
@@ -123,6 +126,7 @@ class DomeLight_1(NonboundableLightBase):
 
     poleAxis: AttributeSpec[PoleAxis] = AttributeSpec(PoleAxis,
         uniform=True,
+        value="scene",
         doc="""
         A token which indicates the starting alignment of the dome
         light's top pole. This alignment is for the dome itself and is *not*

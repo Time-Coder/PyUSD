@@ -25,6 +25,7 @@ class Cube(Gprim):
     }
 
     size: AttributeSpec[double] = AttributeSpec(double,
+        value=2.0,
         doc="""Indicates the length of each edge of the cube.  If you
         author \\em size you must also author \\em extent.
 
@@ -33,7 +34,7 @@ class Cube(Gprim):
     )
 
     extent: AttributeSpec[List[float3]] = AttributeSpec(List[float3],
-        value=[],
+        value=[(-1.0, -1.0, -1.0), (1.0, 1.0, 1.0)],
         doc="""Extent is re-defined on Cube only to provide a fallback value.
         \\sa UsdGeomGprim::GetExtentAttr().
         """

@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..api_schema_base import APISchemaBase
 from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
@@ -47,17 +49,17 @@ class VisibilityAPI(APISchemaBase):
         }
     }
 
-    class GuideVisibility(token):
+    class GuideVisibility(token, ReprEnum):
         Inherited = "inherited"
         Invisible = "invisible"
         Visible = "visible"
 
-    class ProxyVisibility(token):
+    class ProxyVisibility(token, ReprEnum):
         Inherited = "inherited"
         Invisible = "invisible"
         Visible = "visible"
 
-    class RenderVisibility(token):
+    class RenderVisibility(token, ReprEnum):
         Inherited = "inherited"
         Invisible = "invisible"
         Visible = "visible"
@@ -65,6 +67,7 @@ class VisibilityAPI(APISchemaBase):
 
     guideVisibility: AttributeSpec[GuideVisibility] = AttributeSpec(GuideVisibility,
         uniform=True,
+        value="invisible",
         doc="""
         This attribute controls visibility for geometry with purpose "guide".
 
@@ -88,6 +91,7 @@ class VisibilityAPI(APISchemaBase):
 
     proxyVisibility: AttributeSpec[ProxyVisibility] = AttributeSpec(ProxyVisibility,
         uniform=True,
+        value="inherited",
         doc="""
         This attribute controls visibility for geometry with purpose "proxy".
 
@@ -114,6 +118,7 @@ class VisibilityAPI(APISchemaBase):
 
     renderVisibility: AttributeSpec[RenderVisibility] = AttributeSpec(RenderVisibility,
         uniform=True,
+        value="inherited",
         doc="""
         This attribute controls visibility for geometry with purpose
         "render".

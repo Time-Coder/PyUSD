@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import token
@@ -20,7 +22,7 @@ class RenderSettingsBase(Typed):
         }
     }
 
-    class AspectRatioConformPolicy(token):
+    class AspectRatioConformPolicy(token, ReprEnum):
         ExpandAperture = "expandAperture"
         CropAperture = "cropAperture"
         AdjustApertureWidth = "adjustApertureWidth"
@@ -30,6 +32,7 @@ class RenderSettingsBase(Typed):
 
     resolution: AttributeSpec[int2] = AttributeSpec(int2,
         uniform=True,
+        value=(2048, 1080),
         doc="""The image pixel resolution, corresponding to the
         camera's screen window.
         """
@@ -37,6 +40,7 @@ class RenderSettingsBase(Typed):
 
     pixelAspectRatio: AttributeSpec[float] = AttributeSpec(float,
         uniform=True,
+        value=1.0,
         doc="""The aspect ratio (width/height) of image pixels..
         The default ratio 1.0 indicates square pixels.
         """
@@ -44,6 +48,7 @@ class RenderSettingsBase(Typed):
 
     aspectRatioConformPolicy: AttributeSpec[AspectRatioConformPolicy] = AttributeSpec(AspectRatioConformPolicy,
         uniform=True,
+        value="expandAperture",
         doc="""
         Indicates the policy to use to resolve an aspect
         ratio mismatch between the camera aperture and image settings.
@@ -74,6 +79,7 @@ class RenderSettingsBase(Typed):
 
     dataWindowNDC: AttributeSpec[float4] = AttributeSpec(float4,
         uniform=True,
+        value=(0.0, 0.0, 1.0, 1.0),
         doc="""dataWindowNDC specifies the axis-aligned rectangular
         region in the adjusted aperture window within which the renderer
         should produce data.
@@ -109,6 +115,7 @@ class RenderSettingsBase(Typed):
 
     instantaneousShutter: AttributeSpec[bool] = AttributeSpec(bool,
         uniform=True,
+        value=False,
         doc="""Deprecated - use disableMotionBlur instead. Override
         the targeted _camera_'s _shutterClose_ to be equal to the
         value of its _shutterOpen_, to produce a zero-width shutter
@@ -119,6 +126,7 @@ class RenderSettingsBase(Typed):
 
     disableMotionBlur: AttributeSpec[bool] = AttributeSpec(bool,
         uniform=True,
+        value=False,
         doc="""Disable all motion blur by setting the shutter interval
         of the targeted camera to [0,0] - that is, take only one sample,
         namely at the current time code.
@@ -127,6 +135,7 @@ class RenderSettingsBase(Typed):
 
     disableDepthOfField: AttributeSpec[bool] = AttributeSpec(bool,
         uniform=True,
+        value=False,
         doc="""Disable all depth of field by setting F-stop of the targeted
         camera to infinity.
         """

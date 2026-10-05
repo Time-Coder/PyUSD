@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..api_schema_base import APISchemaBase
 from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
@@ -18,7 +20,7 @@ class PhysicsMeshCollisionAPI(APISchemaBase):
         }
     }
 
-    class Approximation(token):
+    class Approximation(token, ReprEnum):
         None_ = "none"
         ConvexDecomposition = "convexDecomposition"
         ConvexHull = "convexHull"

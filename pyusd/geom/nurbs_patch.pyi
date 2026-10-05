@@ -1,3 +1,4 @@
+from enum import ReprEnum
 from typing import List
 
 from ..attribute_spec import AttributeSpec
@@ -58,12 +59,12 @@ class NurbsPatch(PointBased):
     """
 
 
-    class UForm(token):
+    class UForm(token, ReprEnum):
         Open = "open"
         Closed = "closed"
         Periodic = "periodic"
 
-    class VForm(token):
+    class VForm(token, ReprEnum):
         Open = "open"
         Closed = "closed"
         Periodic = "periodic"

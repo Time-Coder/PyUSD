@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import token
@@ -211,16 +213,16 @@ class BasisCurves(Curves):
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
-    class Type(token):
+    class Type(token, ReprEnum):
         Linear = "linear"
         Cubic = "cubic"
 
-    class Basis(token):
+    class Basis(token, ReprEnum):
         Bezier = "bezier"
         Bspline = "bspline"
         CatmullRom = "catmullRom"
 
-    class Wrap(token):
+    class Wrap(token, ReprEnum):
         Nonperiodic = "nonperiodic"
         Periodic = "periodic"
         Pinned = "pinned"
@@ -228,6 +230,7 @@ class BasisCurves(Curves):
 
     type: AttributeSpec[Type] = AttributeSpec(Type,
         uniform=True,
+        value="cubic",
         doc="""Linear curves interpolate linearly between two vertices.
         Cubic curves use a basis matrix with four vertices to interpolate a segment.
         """
@@ -235,6 +238,7 @@ class BasisCurves(Curves):
 
     basis: AttributeSpec[Basis] = AttributeSpec(Basis,
         uniform=True,
+        value="bezier",
         doc="""The basis specifies the vstep and matrix used for cubic
         interpolation.  \\note The 'hermite' and 'power' tokens have been
         removed. We've provided UsdGeomHermiteCurves
@@ -244,6 +248,7 @@ class BasisCurves(Curves):
 
     wrap: AttributeSpec[Wrap] = AttributeSpec(Wrap,
         uniform=True,
+        value="nonperiodic",
         doc="""If wrap is set to periodic, the curve when rendered will
         repeat the initial vertices (dependent on the vstep) to close the
         curve. If wrap is set to 'pinned', phantom points may be created

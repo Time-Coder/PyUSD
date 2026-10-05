@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import asset, double, timecode, token
@@ -40,11 +42,11 @@ class SpatialAudio(Xformable):
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
-    class AuralMode(token):
+    class AuralMode(token, ReprEnum):
         Spatial = "spatial"
         NonSpatial = "nonSpatial"
 
-    class PlaybackMode(token):
+    class PlaybackMode(token, ReprEnum):
         OnceFromStart = "onceFromStart"
         OnceFromStartToEnd = "onceFromStartToEnd"
         LoopFromStart = "loopFromStart"
@@ -67,6 +69,7 @@ class SpatialAudio(Xformable):
 
     auralMode: AttributeSpec[AuralMode] = AttributeSpec(AuralMode,
         uniform=True,
+        value="spatial",
         doc="""Determines how audio should be played.
         Valid values are:
         - spatial: Play the audio in 3D space if the device can support spatial
@@ -83,6 +86,7 @@ class SpatialAudio(Xformable):
 
     playbackMode: AttributeSpec[PlaybackMode] = AttributeSpec(PlaybackMode,
         uniform=True,
+        value="onceFromStart",
         doc="""Along with \\a startTime and \\a endTime, determines when the
         audio playback should start and stop during the stage's animation
         playback and whether the audio should loop during its duration.
@@ -106,6 +110,7 @@ class SpatialAudio(Xformable):
 
     startTime: AttributeSpec[timecode] = AttributeSpec(timecode,
         uniform=True,
+        value=0,
         doc="""Expressed in the timeCodesPerSecond of the containing stage,
         \\a startTime specifies when the audio stream will start playing during
         animation playback. This value is ignored when \\a playbackMode is set
@@ -120,6 +125,7 @@ class SpatialAudio(Xformable):
 
     endTime: AttributeSpec[timecode] = AttributeSpec(timecode,
         uniform=True,
+        value=0,
         doc="""Expressed in the timeCodesPerSecond of the containing stage,
         \\a endTime specifies when the audio stream will cease playing during
         animation playback if the length of the referenced audio clip is
@@ -137,6 +143,7 @@ class SpatialAudio(Xformable):
 
     mediaOffset: AttributeSpec[double] = AttributeSpec(double,
         uniform=True,
+        value=0,
         doc="""Expressed in seconds, \\a mediaOffset specifies the offset from
         the referenced audio file's beginning at which we should begin playback
         when stage playback reaches the time that prim's audio should start.
@@ -148,6 +155,7 @@ class SpatialAudio(Xformable):
     )
 
     gain: AttributeSpec[double] = AttributeSpec(double,
+        value=1.0,
         doc="""Multiplier on the incoming audio signal. A value of 0 "mutes"
         the signal. Negative values will be clamped to 0.
 

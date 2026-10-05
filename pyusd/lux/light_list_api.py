@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..api_schema_base import APISchemaBase
 from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
@@ -128,7 +130,7 @@ class LightListAPI(APISchemaBase):
 
     schema_kind: SchemaKind = SchemaKind.NonAppliedAPI
 
-    class CacheBehavior(token):
+    class CacheBehavior(token, ReprEnum):
         ConsumeAndHalt = "consumeAndHalt"
         ConsumeAndContinue = "consumeAndContinue"
         Ignore = "ignore"

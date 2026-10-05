@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..api_schema_base import APISchemaBase
 from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
@@ -60,7 +62,7 @@ class AccessibilityAPI(APISchemaBase):
         }
     }
 
-    class Priority(token):
+    class Priority(token, ReprEnum):
         Low = "low"
         Standard = "standard"
         High = "high"
@@ -90,6 +92,7 @@ class AccessibilityAPI(APISchemaBase):
     )
 
     priority: AttributeSpec[Priority] = AttributeSpec(Priority,
+        value="standard",
         doc="""A hint to the accessibility runtime of how to prioritize this
         instance's label and description, relative to others.
 

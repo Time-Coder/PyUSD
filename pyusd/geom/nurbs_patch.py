@@ -1,3 +1,4 @@
+from enum import ReprEnum
 from typing import List
 
 from ..attribute_spec import AttributeSpec
@@ -60,12 +61,12 @@ class NurbsPatch(PointBased):
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
-    class UForm(token):
+    class UForm(token, ReprEnum):
         Open = "open"
         Closed = "closed"
         Periodic = "periodic"
 
-    class VForm(token):
+    class VForm(token, ReprEnum):
         Open = "open"
         Closed = "closed"
         Periodic = "periodic"
@@ -147,6 +148,7 @@ class NurbsPatch(PointBased):
 
     uForm: AttributeSpec[UForm] = AttributeSpec(UForm,
         uniform=True,
+        value="open",
         doc="""Interpret the control grid and knot vectors as representing
         an open, geometrically closed, or geometrically closed and C2 continuous
         surface along the U dimension.
@@ -156,6 +158,7 @@ class NurbsPatch(PointBased):
 
     vForm: AttributeSpec[VForm] = AttributeSpec(VForm,
         uniform=True,
+        value="open",
         doc="""Interpret the control grid and knot vectors as representing
         an open, geometrically closed, or geometrically closed and C2 continuous
         surface along the V dimension.

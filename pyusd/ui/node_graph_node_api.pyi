@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..api_schema_base import APISchemaBase
 from ..dtypes import token
 from .ui import Ui
@@ -9,7 +11,7 @@ class NodeGraphNodeAPI(APISchemaBase):
     """
 
 
-    class ExpansionState(token):
+    class ExpansionState(token, ReprEnum):
         Open = "open"
         Closed = "closed"
         Minimized = "minimized"

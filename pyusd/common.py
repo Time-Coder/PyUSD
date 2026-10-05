@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum, ReprEnum
 
 from .dtypes import token
 
@@ -29,7 +29,7 @@ class SchemaKind(Enum):
     MultipleApplyAPI = 6
 
 
-class Kind(token):
+class Kind(token, ReprEnum):
     # base class for all model kinds. model is considered an abstract type and should not be assigned as any prim’s kind
     Model = "model"
 
@@ -46,7 +46,7 @@ class Kind(token):
     Subcomponent = "subcomponent"
 
 
-class Axis(token):
+class Axis(token, ReprEnum):
     X = "X"
     Y = "Y"
     Z = "Z"

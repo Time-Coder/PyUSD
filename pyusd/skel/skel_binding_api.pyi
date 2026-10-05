@@ -1,3 +1,4 @@
+from enum import ReprEnum
 
 from ..api_schema_base import APISchemaBase
 from ..dtypes import token
@@ -15,12 +16,12 @@ class SkelBindingAPI(APISchemaBase):
     """
 
 
-    class SkinningMethod(token):
+    class SkinningMethod(token, ReprEnum):
         ClassicLinear = "classicLinear"
         DualQuaternion = "dualQuaternion"
 
     @property
-    def skel(self) -> Skel: ...
+    def primvars(self) -> Primvars: ...
 
     @property
-    def primvars(self) -> Primvars: ...
+    def skel(self) -> Skel: ...

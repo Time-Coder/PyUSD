@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from .api_schema_base import APISchemaBase
 from .attribute_spec import AttributeSpec
 from .common import SchemaKind
@@ -169,12 +171,12 @@ class CollectionAPI(APISchemaBase):
         }
     }
 
-    class ExpansionRule(token):
+    class ExpansionRule(token, ReprEnum):
         ExplicitOnly = "explicitOnly"
         ExpandPrims = "expandPrims"
         ExpandPrimsAndProperties = "expandPrimsAndProperties"
 
-    class Mode(token):
+    class Mode(token, ReprEnum):
         Automatic = "automatic"
         Relationship = "relationship"
         Expression = "expression"
@@ -182,6 +184,7 @@ class CollectionAPI(APISchemaBase):
 
     expansionRule: AttributeSpec[ExpansionRule] = AttributeSpec(ExpansionRule,
         uniform=True,
+        value="expandPrims",
         doc="""Specifies how the paths that are included in
         the collection must be expanded to determine its members.
         """
@@ -205,6 +208,7 @@ class CollectionAPI(APISchemaBase):
 
     mode: AttributeSpec[Mode] = AttributeSpec(Mode,
         uniform=True,
+        value="automatic",
         doc="""Specifies which mode the collection uses to determine
         membership: `automatic`, `relationship`, or `expression`.
         <ul>

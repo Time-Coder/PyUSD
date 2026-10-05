@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..api_schema_base import APISchemaBase
 from ..dtypes import token
 from .model import Model
@@ -94,14 +96,14 @@ class GeomModelAPI(APISchemaBase):
     """
 
 
-    class DrawMode(token):
+    class DrawMode(token, ReprEnum):
         Origin = "origin"
         Bounds = "bounds"
         Cards = "cards"
         Default = "default"
         Inherited = "inherited"
 
-    class CardGeometry(token):
+    class CardGeometry(token, ReprEnum):
         Cross = "cross"
         Box = "box"
         FromTexture = "fromTexture"

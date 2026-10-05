@@ -25,9 +25,6 @@ class LightFilter(Xformable):
     """
 
     @property
-    def collection(self) -> Collection: ...
-
-    @property
     def shaderId(self)->AttributeSpec[token]:
         """Default ID for the light filter's shader.
         This defines the shader ID for this light filter when a render context
@@ -41,3 +38,6 @@ class LightFilter(Xformable):
 
     @shaderId.setter
     def shaderId(self, value:token)->None: ...
+
+    @property
+    def collection(self) -> Collection: ...

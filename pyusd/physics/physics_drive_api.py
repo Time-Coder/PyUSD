@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..api_schema_base import APISchemaBase
 from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
@@ -26,7 +28,7 @@ class PhysicsDriveAPI(APISchemaBase):
         }
     }
 
-    class Type(token):
+    class Type(token, ReprEnum):
         Force = "force"
         Acceleration = "acceleration"
 

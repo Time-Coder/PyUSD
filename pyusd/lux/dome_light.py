@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import asset, namespace, token
@@ -37,7 +39,7 @@ class DomeLight(NonboundableLightBase):
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
-    class Format(token):
+    class Format(token, ReprEnum):
         Automatic = "automatic"
         Latlong = "latlong"
         MirroredBall = "mirroredBall"
@@ -97,6 +99,7 @@ class DomeLight(NonboundableLightBase):
     )
 
     guideRadius: AttributeSpec[float] = AttributeSpec(float,
+        value=100000.0,
         doc="The radius of guide geometry to use to visualize the dome light.  The default is 1 km for scenes whose metersPerUnit is the USD default of 0.01 (i.e., 1 world unit is 1 cm).",
         metadata={
             "displayGroup": "Guides",

@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..attribute_spec import AttributeSpec
 from ..dtypes import string, token
 from ..typed import Typed
@@ -19,7 +21,7 @@ class RenderVar(Typed):
     """
 
 
-    class SourceType(token):
+    class SourceType(token, ReprEnum):
         Raw = "raw"
         Primvar = "primvar"
         Lpe = "lpe"

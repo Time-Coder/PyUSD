@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import asset, token
@@ -9,7 +11,7 @@ class VolumeFieldAsset(FieldBase):
 
     schema_kind: SchemaKind = SchemaKind.AbstractTyped
 
-    class VectorDataRoleHint(token):
+    class VectorDataRoleHint(token, ReprEnum):
         None_ = "None"
         Point = "Point"
         Normal = "Normal"
@@ -53,6 +55,7 @@ class VolumeFieldAsset(FieldBase):
     )
 
     vectorDataRoleHint: AttributeSpec[VectorDataRoleHint] = AttributeSpec(VectorDataRoleHint,
+        value="None",
         doc="""Optional token which is used to indicate the role of a vector
         valued field. This can drive the data type in which fields
         are made available in a renderer or whether the vector values

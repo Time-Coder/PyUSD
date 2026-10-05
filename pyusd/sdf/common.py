@@ -1,13 +1,15 @@
+from enum import ReprEnum
+
 from ..dtypes import token
 
 
-class Specifier(token):
+class Specifier(token, ReprEnum):
     Def = "def"
     Over = "over"
     Class = "class"
 
 
-class Purpose(token):
+class Purpose(token, ReprEnum):
     Default = "default"
     Public = "public"
     Private = "private"

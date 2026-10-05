@@ -26,6 +26,7 @@ class Cylinder(Gprim):
     }
 
     height: AttributeSpec[double] = AttributeSpec(double,
+        value=2,
         doc="""The size of the cylinder's spine along the specified
         \\em axis.  If you author \\em height you must also author \\em extent.
 
@@ -34,6 +35,7 @@ class Cylinder(Gprim):
     )
 
     radius: AttributeSpec[double] = AttributeSpec(double,
+        value=1.0,
         doc="""The radius of the cylinder. If you author \\em radius
         you must also author \\em extent.
 
@@ -41,10 +43,14 @@ class Cylinder(Gprim):
         """
     )
 
-    axis: AttributeSpec[Axis] = AttributeSpec(Axis, uniform=True, doc="The axis along which the spine of the cylinder is aligned")
+    axis: AttributeSpec[Axis] = AttributeSpec(Axis,
+        uniform=True,
+        value="Z",
+        doc="The axis along which the spine of the cylinder is aligned"
+    )
 
     extent: AttributeSpec[List[float3]] = AttributeSpec(List[float3],
-        value=[],
+        value=[(-1.0, -1.0, -1.0), (1.0, 1.0, 1.0)],
         doc="""Extent is re-defined on Cylinder only to provide a fallback
         value. \\sa UsdGeomGprim::GetExtentAttr().
         """

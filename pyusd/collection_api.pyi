@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from .api_schema_base import APISchemaBase
 from .attribute_spec import AttributeSpec
 from .dtypes import opaque, pathExpression, token
@@ -145,12 +147,12 @@ class CollectionAPI(APISchemaBase):
     """
 
 
-    class ExpansionRule(token):
+    class ExpansionRule(token, ReprEnum):
         ExplicitOnly = "explicitOnly"
         ExpandPrims = "expandPrims"
         ExpandPrimsAndProperties = "expandPrimsAndProperties"
 
-    class Mode(token):
+    class Mode(token, ReprEnum):
         Automatic = "automatic"
         Relationship = "relationship"
         Expression = "expression"

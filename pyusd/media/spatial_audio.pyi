@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..attribute_spec import AttributeSpec
 from ..dtypes import asset, double, timecode, token
 from ..geom.xformable import Xformable
@@ -37,11 +39,11 @@ class SpatialAudio(Xformable):
     """
 
 
-    class AuralMode(token):
+    class AuralMode(token, ReprEnum):
         Spatial = "spatial"
         NonSpatial = "nonSpatial"
 
-    class PlaybackMode(token):
+    class PlaybackMode(token, ReprEnum):
         OnceFromStart = "onceFromStart"
         OnceFromStartToEnd = "onceFromStartToEnd"
         LoopFromStart = "loopFromStart"

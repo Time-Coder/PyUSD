@@ -1,4 +1,3 @@
-from enum import ReprEnum
 from typing import Any
 
 
@@ -17,9 +16,17 @@ class asset(str):
 class string(str):
     pass
 
-class token(str, ReprEnum):
+class token(str):
     """
-    Enum where members are also (and must be) strings
+    A USD token: an open-ended string, not a closed set of names.
+
+    This was a ReprEnum, which made it unusable. An Enum's metaclass intercepts
+    construction, so `token("default")` raised "has no members; specify
+    `names=()`" and never reached the __new__ below -- which exists precisely to
+    build one from a string. Nothing needed it to be an Enum either: it declares
+    no members and nothing refers to one, so the base bought nothing and cost the
+    ability to construct a value at all. That blocked every token-typed schema
+    default from being emitted, since a default is written as a string literal.
     """
 
     def __new__(cls, *values):
@@ -36,16 +43,7 @@ class token(str, ReprEnum):
             # check that errors argument is a string
             raise TypeError(f'errors must be a string, not {values[2]!r}')
         value = str(*values)
-        member = str.__new__(cls, value)
-        member._value_ = value
-        return member
-
-    @staticmethod
-    def _generate_next_value_(name, start, count, last_values):
-        """
-        Return the lower-cased version of the member name.
-        """
-        return name.lower()
+        return str.__new__(cls, value)
 
 class pathExpression(str):
     pass

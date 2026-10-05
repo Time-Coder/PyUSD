@@ -36,19 +36,20 @@ class ColorSpaceDefinitionAPI(APISchemaBase):
 
     name: AttributeSpec[token] = AttributeSpec(token,
         uniform=True,
+        value="custom",
         doc="""The name of the color space defined on this prim.
 
         """
     )
 
-    redChroma: AttributeSpec[float2] = AttributeSpec(float2, doc="Red chromaticity coordinates")
+    redChroma: AttributeSpec[float2] = AttributeSpec(float2, value=(1, 0), doc="Red chromaticity coordinates")
 
-    greenChroma: AttributeSpec[float2] = AttributeSpec(float2, doc="Green chromaticity coordinates")
+    greenChroma: AttributeSpec[float2] = AttributeSpec(float2, value=(0, 1), doc="Green chromaticity coordinates")
 
-    blueChroma: AttributeSpec[float2] = AttributeSpec(float2, doc="Blue chromaticity coordinates")
+    blueChroma: AttributeSpec[float2] = AttributeSpec(float2, value=(0, 0), doc="Blue chromaticity coordinates")
 
-    whitePoint: AttributeSpec[float2] = AttributeSpec(float2, doc="Whitepoint chromaticity coordinates")
+    whitePoint: AttributeSpec[float2] = AttributeSpec(float2, value=(0.33333333, 0.33333333), doc="Whitepoint chromaticity coordinates")
 
-    gamma: AttributeSpec[float] = AttributeSpec(float, doc="Gamma value of the log section")
+    gamma: AttributeSpec[float] = AttributeSpec(float, value=1.0, doc="Gamma value of the log section")
 
-    linearBias: AttributeSpec[float] = AttributeSpec(float, doc="Linear bias of the log section")
+    linearBias: AttributeSpec[float] = AttributeSpec(float, value=0.0, doc="Linear bias of the log section")

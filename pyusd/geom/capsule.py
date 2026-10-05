@@ -27,6 +27,7 @@ class Capsule(Gprim):
     }
 
     height: AttributeSpec[double] = AttributeSpec(double,
+        value=1.0,
         doc="""The length of the capsule's spine along the specified
         \\em axis excluding the size of the two half spheres, i.e.
         the length of the cylinder portion of the capsule.
@@ -36,6 +37,7 @@ class Capsule(Gprim):
     )
 
     radius: AttributeSpec[double] = AttributeSpec(double,
+        value=0.5,
         doc="""The radius of the capsule.  If you
         author \\em radius you must also author \\em extent.
 
@@ -43,10 +45,14 @@ class Capsule(Gprim):
         """
     )
 
-    axis: AttributeSpec[Axis] = AttributeSpec(Axis, uniform=True, doc="The axis along which the spine of the capsule is aligned")
+    axis: AttributeSpec[Axis] = AttributeSpec(Axis,
+        uniform=True,
+        value="Z",
+        doc="The axis along which the spine of the capsule is aligned"
+    )
 
     extent: AttributeSpec[List[float3]] = AttributeSpec(List[float3],
-        value=[],
+        value=[(-0.5, -0.5, -1.0), (0.5, 0.5, 1.0)],
         doc="""Extent is re-defined on Capsule only to provide a fallback
         value. \\sa UsdGeomGprim::GetExtentAttr().
         """

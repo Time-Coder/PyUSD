@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import token
@@ -28,11 +30,11 @@ class Imageable(Typed):
         }
     }
 
-    class Visibility(token):
+    class Visibility(token, ReprEnum):
         Inherited = "inherited"
         Invisible = "invisible"
 
-    class Purpose(token):
+    class Purpose(token, ReprEnum):
         Default = "default"
         Render = "render"
         Proxy = "proxy"
@@ -40,6 +42,7 @@ class Imageable(Typed):
 
 
     visibility: AttributeSpec[Visibility] = AttributeSpec(Visibility,
+        value="inherited",
         doc="""Visibility is meant to be the simplest form of "pruning"
         visibility that is supported by most DCC apps.  Visibility is
         animatable, allowing a sub-tree of geometry to be present for some
@@ -51,6 +54,7 @@ class Imageable(Typed):
 
     purpose: AttributeSpec[Purpose] = AttributeSpec(Purpose,
         uniform=True,
+        value="default",
         doc="""Purpose is a classification of geometry into categories that
         can each be independently included or excluded from traversals of prims
         on a stage, such as rendering or bounding-box computation traversals.

@@ -34,6 +34,7 @@ class Plane(Gprim):
 
     doubleSided: AttributeSpec[bool] = AttributeSpec(bool,
         uniform=True,
+        value=True,
         doc="""Planes are double-sided by default. Clients may also support
         single-sided planes.
 
@@ -42,6 +43,7 @@ class Plane(Gprim):
     )
 
     width: AttributeSpec[double] = AttributeSpec(double,
+        value=2.0,
         doc="""The width of the plane, which aligns to the x-axis when \\em axis is
         'Z' or 'Y', or to the z-axis when \\em axis is 'X'.  If you author \\em width
         you must also author \\em extent.
@@ -51,6 +53,7 @@ class Plane(Gprim):
     )
 
     length: AttributeSpec[double] = AttributeSpec(double,
+        value=2.0,
         doc="""The length of the plane, which aligns to the y-axis when \\em axis is
         'Z' or 'X', or to the z-axis when \\em axis is 'Y'.  If you author \\em length
         you must also author \\em extent.
@@ -61,6 +64,7 @@ class Plane(Gprim):
 
     axis: AttributeSpec[Axis] = AttributeSpec(Axis,
         uniform=True,
+        value="Z",
         doc="""The axis along which the surface of the plane is aligned. When set
         to 'Z' the plane is in the xy-plane; when \\em axis is 'X' the plane is in
         the yz-plane, and when \\em axis is 'Y' the plane is in the xz-plane.
@@ -70,7 +74,7 @@ class Plane(Gprim):
     )
 
     extent: AttributeSpec[List[float3]] = AttributeSpec(List[float3],
-        value=[],
+        value=[(-1.0, -1.0, 0.0), (1.0, 1.0, 0.0)],
         doc="""Extent is re-defined on Plane only to provide a fallback
         value. \\sa UsdGeomGprim::GetExtentAttr().
         """

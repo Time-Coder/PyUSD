@@ -1,3 +1,4 @@
+from enum import ReprEnum
 from typing import List
 
 from ..attribute_spec import AttributeSpec
@@ -27,7 +28,7 @@ class GeomSubset(Typed):
     """
 
 
-    class ElementType(token):
+    class ElementType(token, ReprEnum):
         Face = "face"
         Point = "point"
         Edge = "edge"

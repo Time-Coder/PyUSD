@@ -57,6 +57,7 @@ class CylinderLight(BoundableLightBase):
     )
 
     treatAsLine: AttributeSpec[bool] = AttributeSpec(bool,
+        value=False,
         doc="""A hint that this light can be treated as a 'line'
         light (effectively, a zero-radius cylinder) by renderers that
         benefit from non-area lighting. Renderers that only support

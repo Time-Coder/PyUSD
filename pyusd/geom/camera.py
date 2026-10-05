@@ -1,3 +1,4 @@
+from enum import ReprEnum
 from typing import List
 
 from ..attribute_spec import AttributeSpec
@@ -102,11 +103,11 @@ class Camera(Xformable):
         }
     }
 
-    class Projection(token):
+    class Projection(token, ReprEnum):
         Perspective = "perspective"
         Orthographic = "orthographic"
 
-    class StereoRole(token):
+    class StereoRole(token, ReprEnum):
         Mono = "mono"
         Left = "left"
         Right = "right"
@@ -165,9 +166,10 @@ class Camera(Xformable):
         """
     )
 
-    projection: AttributeSpec[Projection] = AttributeSpec(Projection)
+    projection: AttributeSpec[Projection] = AttributeSpec(Projection, value="perspective")
 
     horizontalAperture: AttributeSpec[float] = AttributeSpec(float,
+        value=20.955,
         doc="""Horizontal aperture in tenths of a scene unit; see
         \\ref UsdGeom_CameraUnits . Default is the equivalent of
         the standard 35mm spherical projector aperture.
@@ -175,6 +177,7 @@ class Camera(Xformable):
     )
 
     verticalAperture: AttributeSpec[float] = AttributeSpec(float,
+        value=15.2908,
         doc="""Vertical aperture in tenths of a scene unit; see
         \\ref UsdGeom_CameraUnits . Default is the equivalent of
         the standard 35mm spherical projector aperture.
@@ -182,24 +185,28 @@ class Camera(Xformable):
     )
 
     horizontalApertureOffset: AttributeSpec[float] = AttributeSpec(float,
+        value=0.0,
         doc="""Horizontal aperture offset in the same units as
         horizontalAperture. Defaults to 0.
         """
     )
 
     verticalApertureOffset: AttributeSpec[float] = AttributeSpec(float,
+        value=0.0,
         doc="""Vertical aperture offset in the same units as
         verticalAperture. Defaults to 0.
         """
     )
 
     focalLength: AttributeSpec[float] = AttributeSpec(float,
+        value=50.0,
         doc="""Perspective focal length in tenths of a scene unit; see
         \\ref UsdGeom_CameraUnits .
         """
     )
 
     clippingRange: AttributeSpec[float2] = AttributeSpec(float2,
+        value=(1, 1000000),
         doc="""Near and far clipping distances in scene units; see
         \\ref UsdGeom_CameraUnits .
         """
@@ -214,9 +221,13 @@ class Camera(Xformable):
         """
     )
 
-    fStop: AttributeSpec[float] = AttributeSpec(float, doc="Lens aperture. Defaults to 0.0, which turns off depth of field effects.")
+    fStop: AttributeSpec[float] = AttributeSpec(float,
+        value=0.0,
+        doc="Lens aperture. Defaults to 0.0, which turns off depth of field effects."
+    )
 
     focusDistance: AttributeSpec[float] = AttributeSpec(float,
+        value=0.0,
         doc="""Distance from the camera to the focus plane in scene units; see
         \\ref UsdGeom_CameraUnits .
         """
@@ -224,6 +235,7 @@ class Camera(Xformable):
 
     stereoRole: AttributeSpec[StereoRole] = AttributeSpec(StereoRole,
         uniform=True,
+        value="mono",
         doc="""If different from mono, the camera is intended to be the left
         or right camera of a stereo setup.
         """

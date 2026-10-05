@@ -1,10 +1,12 @@
+from enum import ReprEnum
+
 from ..attribute_spec import AttributeSpec
 from ..dtypes import asset, string, token
 from ..gf import color3f, float2
 
 class Ui(AttributeSpec):
 
-    class ExpansionState(token):
+    class ExpansionState(token, ReprEnum):
         Open = "open"
         Closed = "closed"
         Minimized = "minimized"

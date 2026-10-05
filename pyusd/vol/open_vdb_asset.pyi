@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..attribute_spec import AttributeSpec
 from ..dtypes import token
 from .field_asset import FieldAsset
@@ -8,7 +10,7 @@ class OpenVDBAsset(FieldAsset):
     """
 
 
-    class FieldDataType(token):
+    class FieldDataType(token, ReprEnum):
         Half = "half"
         Float = "float"
         Double = "double"
@@ -30,7 +32,7 @@ class OpenVDBAsset(FieldAsset):
         Mask = "mask"
         String = "string"
 
-    class FieldClass(token):
+    class FieldClass(token, ReprEnum):
         LevelSet = "levelSet"
         FogVolume = "fogVolume"
         Staggered = "staggered"

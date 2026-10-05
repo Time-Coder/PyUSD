@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..api_schema_base import APISchemaBase
 from ..attribute_spec import AttributeSpec
 from ..dtypes import string, token
@@ -45,7 +47,7 @@ class AccessibilityAPI(APISchemaBase):
     """
 
 
-    class Priority(token):
+    class Priority(token, ReprEnum):
         Low = "low"
         Standard = "standard"
         High = "high"

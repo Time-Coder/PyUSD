@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import token
@@ -34,11 +36,11 @@ class ParticleField3DGaussianSplat(ParticleField):
         "prepend apiSchemas": ["ParticleFieldPositionAttributeAPI", "ParticleFieldOrientationAttributeAPI", "ParticleFieldScaleAttributeAPI", "ParticleFieldOpacityAttributeAPI", "ParticleFieldKernelGaussianEllipsoidAPI", "ParticleFieldSphericalHarmonicsAttributeAPI"]
     }
 
-    class ProjectionModeHint(token):
+    class ProjectionModeHint(token, ReprEnum):
         Perspective = "perspective"
         Tangential = "tangential"
 
-    class SortingModeHint(token):
+    class SortingModeHint(token, ReprEnum):
         ZDepth = "zDepth"
         CameraDistance = "cameraDistance"
         RayHitDistance = "rayHitDistance"
@@ -46,6 +48,7 @@ class ParticleField3DGaussianSplat(ParticleField):
 
     projectionModeHint: AttributeSpec[ProjectionModeHint] = AttributeSpec(ProjectionModeHint,
         uniform=True,
+        value="perspective",
         doc="""A hint for the renderer on how to project the gaussian to
          achieve a perspective correct view. Renderers are free to
          ignore this, but the hint is often valuable to tune the
@@ -70,6 +73,7 @@ class ParticleField3DGaussianSplat(ParticleField):
 
     sortingModeHint: AttributeSpec[SortingModeHint] = AttributeSpec(SortingModeHint,
         uniform=True,
+        value="zDepth",
         doc="""A hint for the renderer on how to sort the gaussians while
         drawing. Renderers are free to ignore this, but the hint is often
         valuable to tune the rendering of the scene. It often corresponds to a

@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..attribute_spec import AttributeSpec
 from ..common import Axis
 from ..dtypes import string, token
@@ -6,7 +8,7 @@ from ..relationship_spec import RelationshipSpec
 
 class Physics(AttributeSpec):
 
-    class Approximation(token):
+    class Approximation(token, ReprEnum):
         None_ = "none"
         ConvexDecomposition = "convexDecomposition"
         ConvexHull = "convexHull"
@@ -14,7 +16,7 @@ class Physics(AttributeSpec):
         BoundingCube = "boundingCube"
         MeshSimplification = "meshSimplification"
 
-    class Type(token):
+    class Type(token, ReprEnum):
         Force = "force"
         Acceleration = "acceleration"
 

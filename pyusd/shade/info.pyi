@@ -1,9 +1,11 @@
+from enum import ReprEnum
+
 from ..attribute_spec import AttributeSpec
 from ..dtypes import token
 
 class Info(AttributeSpec):
 
-    class ImplementationSource(token):
+    class ImplementationSource(token, ReprEnum):
         Id = "id"
         SourceAsset = "sourceAsset"
         SourceCode = "sourceCode"

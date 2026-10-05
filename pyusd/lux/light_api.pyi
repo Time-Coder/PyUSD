@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..api_schema_base import APISchemaBase
 from ..dtypes import token
 from .collection import Collection
@@ -75,16 +77,16 @@ class LightAPI(APISchemaBase):
     """
 
 
-    class MaterialSyncMode(token):
+    class MaterialSyncMode(token, ReprEnum):
         MaterialGlowTintsLight = "materialGlowTintsLight"
         Independent = "independent"
         NoMaterialResponse = "noMaterialResponse"
+
+    @property
+    def inputs(self) -> Inputs: ...
 
     @property
     def collection(self) -> Collection: ...
 
     @property
     def light(self) -> Light: ...
-
-    @property
-    def inputs(self) -> Inputs: ...

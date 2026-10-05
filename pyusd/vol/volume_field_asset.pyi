@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..attribute_spec import AttributeSpec
 from ..dtypes import asset, token
 from .field_base import FieldBase
@@ -6,7 +8,7 @@ class VolumeFieldAsset(FieldBase):
     "Base class for volume field primitives defined by an external file."
 
 
-    class VectorDataRoleHint(token):
+    class VectorDataRoleHint(token, ReprEnum):
         None_ = "None"
         Point = "Point"
         Normal = "Normal"

@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import token
@@ -11,7 +13,7 @@ class Field3DAsset(FieldAsset):
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
 
-    class FieldDataType(token):
+    class FieldDataType(token, ReprEnum):
         Half = "half"
         Float = "float"
         Double = "double"

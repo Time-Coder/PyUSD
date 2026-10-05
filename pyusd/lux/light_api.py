@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..api_schema_base import APISchemaBase
 from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
@@ -91,7 +93,7 @@ class LightAPI(APISchemaBase):
         "prepend apiSchemas": ["CollectionAPI:lightLink", "CollectionAPI:shadowLink"]
     }
 
-    class MaterialSyncMode(token):
+    class MaterialSyncMode(token, ReprEnum):
         MaterialGlowTintsLight = "materialGlowTintsLight"
         Independent = "independent"
         NoMaterialResponse = "noMaterialResponse"

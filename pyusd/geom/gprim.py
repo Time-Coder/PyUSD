@@ -1,3 +1,4 @@
+from enum import ReprEnum
 from typing import List
 
 from ..attribute_spec import AttributeSpec
@@ -17,7 +18,7 @@ class Gprim(Boundable):
 
     schema_kind: SchemaKind = SchemaKind.AbstractTyped
 
-    class Orientation(token):
+    class Orientation(token, ReprEnum):
         RightHanded = "rightHanded"
         LeftHanded = "leftHanded"
 
@@ -51,6 +52,7 @@ class Gprim(Boundable):
 
     doubleSided: AttributeSpec[bool] = AttributeSpec(bool,
         uniform=True,
+        value=False,
         doc="""Although some renderers treat all parametric or polygonal
         surfaces as if they were effectively laminae with outward-facing
         normals on both sides, some renderers derive significant optimizations
@@ -73,6 +75,7 @@ class Gprim(Boundable):
 
     orientation: AttributeSpec[Orientation] = AttributeSpec(Orientation,
         uniform=True,
+        value="rightHanded",
         doc="""Orientation specifies whether the gprim's surface normal
         should be computed using the right hand rule, or the left hand rule.
         Please see \\ref UsdGeom_WindingOrder for a deeper explanation and

@@ -1,9 +1,11 @@
+from enum import ReprEnum
+
 from ..attribute_spec import AttributeSpec
 from ..dtypes import token
 
 class LightList(AttributeSpec):
 
-    class CacheBehavior(token):
+    class CacheBehavior(token, ReprEnum):
         ConsumeAndHalt = "consumeAndHalt"
         ConsumeAndContinue = "consumeAndContinue"
         Ignore = "ignore"

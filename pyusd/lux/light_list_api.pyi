@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..api_schema_base import APISchemaBase
 from ..dtypes import token
 from .light_list import LightList
@@ -125,7 +127,7 @@ class LightListAPI(APISchemaBase):
     """
 
 
-    class CacheBehavior(token):
+    class CacheBehavior(token, ReprEnum):
         ConsumeAndHalt = "consumeAndHalt"
         ConsumeAndContinue = "consumeAndContinue"
         Ignore = "ignore"

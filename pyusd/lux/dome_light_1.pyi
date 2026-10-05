@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..attribute_spec import AttributeSpec
 from ..dtypes import token
 from ..relationship_spec import RelationshipSpec
@@ -48,23 +50,23 @@ class DomeLight_1(NonboundableLightBase):
     """
 
 
-    class Format(token):
+    class Format(token, ReprEnum):
         Automatic = "automatic"
         Latlong = "latlong"
         MirroredBall = "mirroredBall"
         Angular = "angular"
         CubeMapVerticalCross = "cubeMapVerticalCross"
 
-    class PoleAxis(token):
+    class PoleAxis(token, ReprEnum):
         Scene = "scene"
         Y = "Y"
         Z = "Z"
 
     @property
-    def light(self) -> Light: ...
+    def inputs(self) -> Inputs: ...
 
     @property
-    def inputs(self) -> Inputs: ...
+    def light(self) -> Light: ...
 
     @property
     def guideRadius(self)->AttributeSpec[float]:

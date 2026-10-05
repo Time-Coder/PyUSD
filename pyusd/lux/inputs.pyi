@@ -1,10 +1,12 @@
+from enum import ReprEnum
+
 from ..attribute_spec import AttributeSpec
 from ..dtypes import asset, token
 from ..gf import color3f
 
 class Inputs(AttributeSpec):
 
-    class Format(token):
+    class Format(token, ReprEnum):
         Automatic = "automatic"
         Latlong = "latlong"
         MirroredBall = "mirroredBall"

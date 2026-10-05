@@ -42,6 +42,7 @@ class SphereLight(BoundableLightBase):
     )
 
     treatAsPoint: AttributeSpec[bool] = AttributeSpec(bool,
+        value=False,
         doc="""A hint that this light can be treated as a 'point'
         light (effectively, a zero-radius sphere) by renderers that
         benefit from non-area lighting. Renderers that only support

@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..attribute_spec import AttributeSpec
 from ..dtypes import token
 from ..relationship_spec import RelationshipSpec
@@ -17,11 +19,11 @@ class Imageable(Typed):
     """
 
 
-    class Visibility(token):
+    class Visibility(token, ReprEnum):
         Inherited = "inherited"
         Invisible = "invisible"
 
-    class Purpose(token):
+    class Purpose(token, ReprEnum):
         Default = "default"
         Render = "render"
         Proxy = "proxy"

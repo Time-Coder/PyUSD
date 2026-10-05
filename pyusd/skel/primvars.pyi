@@ -1,3 +1,4 @@
+from enum import ReprEnum
 from typing import List
 
 from ..attribute_spec import AttributeSpec
@@ -6,7 +7,7 @@ from ..gf import matrix4d
 
 class Primvars(AttributeSpec):
 
-    class SkinningMethod(token):
+    class SkinningMethod(token, ReprEnum):
         ClassicLinear = "classicLinear"
         DualQuaternion = "dualQuaternion"
 

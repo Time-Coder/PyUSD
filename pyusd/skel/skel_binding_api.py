@@ -1,3 +1,4 @@
+from enum import ReprEnum
 from typing import List
 
 from ..api_schema_base import APISchemaBase
@@ -30,7 +31,7 @@ class SkelBindingAPI(APISchemaBase):
         }
     }
 
-    class SkinningMethod(token):
+    class SkinningMethod(token, ReprEnum):
         ClassicLinear = "classicLinear"
         DualQuaternion = "dualQuaternion"
 

@@ -1,3 +1,4 @@
+from enum import ReprEnum
 from typing import List
 
 from ..attribute_spec import AttributeSpec
@@ -13,7 +14,7 @@ class RenderSettings(RenderSettingsBase):
     """
 
 
-    class MaterialBindingPurposes(token):
+    class MaterialBindingPurposes(token, ReprEnum):
         Full = "full"
         Preview = "preview"
         Empty = ""

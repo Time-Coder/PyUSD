@@ -1,3 +1,5 @@
+from enum import ReprEnum
+
 from ..attribute_spec import AttributeSpec
 from ..common import SchemaKind
 from ..dtypes import string, token
@@ -28,17 +30,22 @@ class RenderVar(Typed):
         }
     }
 
-    class SourceType(token):
+    class SourceType(token, ReprEnum):
         Raw = "raw"
         Primvar = "primvar"
         Lpe = "lpe"
         Intrinsic = "intrinsic"
 
 
-    dataType: AttributeSpec[token] = AttributeSpec(token, uniform=True, doc="The type of this channel, as a USD attribute type.")
+    dataType: AttributeSpec[token] = AttributeSpec(token,
+        uniform=True,
+        value="color3f",
+        doc="The type of this channel, as a USD attribute type."
+    )
 
     sourceName: AttributeSpec[string] = AttributeSpec(string,
         uniform=True,
+        value="",
         doc="""The renderer should look for an output of this name
         as the computed value for the RenderVar.
         """
@@ -46,6 +53,7 @@ class RenderVar(Typed):
 
     sourceType: AttributeSpec[SourceType] = AttributeSpec(SourceType,
         uniform=True,
+        value="raw",
         doc="""
         Indicates the type of the source.
 

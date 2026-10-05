@@ -1,3 +1,4 @@
+from enum import ReprEnum
 from typing import List
 
 from ..attribute_spec import AttributeSpec
@@ -43,7 +44,7 @@ class GeomSubset(Typed):
         }
     }
 
-    class ElementType(token):
+    class ElementType(token, ReprEnum):
         Face = "face"
         Point = "point"
         Edge = "edge"
@@ -53,6 +54,7 @@ class GeomSubset(Typed):
 
     elementType: AttributeSpec[ElementType] = AttributeSpec(ElementType,
         uniform=True,
+        value="face",
         doc="""The type of element that the indices target. "elementType" can
         have one of the following values:
         <ul><li><b>face</b>: Identifies faces on a Gprim's surface. For a
@@ -95,6 +97,7 @@ class GeomSubset(Typed):
 
     familyName: AttributeSpec[token] = AttributeSpec(token,
         uniform=True,
+        value="",
         doc="""The name of the family of subsets that this subset belongs to.
         This is optional and is primarily useful when there are multiple
         families of subsets under a geometric prim. In some cases, this could
