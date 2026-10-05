@@ -24,8 +24,14 @@ class LayerImpl:
 
     global_revision = 0
 
-    def __init__(self, file_name: str = "") -> None:
+    def __init__(self, file_name: str = "", new: bool = False) -> None:
         self._file_name: str = file_name
+        # Whether this layer was asked into existence rather than opened. It is the
+        # single source of truth for "never read the file": Stage.__init__ consults it
+        # when it would otherwise call Layer.load, and LayerCache.materialize consults
+        # it when it would otherwise load lazily. One flag rather than two parameters
+        # threading through both paths, because the lazy one is the one that surprises.
+        self._is_new: bool = new
         self._identifier: str = f"anon:{uuid.uuid4().hex}"
         self._root_prims: Dict[str, PrimSpec] = {}
         self._default_prim: Optional[PrimSpec] = None
@@ -66,6 +72,7 @@ class Layer:
     _revision: int
     _loaded: bool
     _dirty: bool
+    _is_new: bool
     _stage: Optional[Any]
 
     @staticmethod
@@ -99,14 +106,23 @@ class Layer:
 
         return self._impl._stage
 
-    def __init__(self, file_name: str = "", _impl: Optional[LayerImpl] = None) -> None:
+    def __init__(self, file_name: str = "", _impl: Optional[LayerImpl] = None, new: bool = False) -> None:
         if _impl is None:
-            key = self._registry_key(file_name)
-            _impl = self._registry.get(key) if key else None
-            if _impl is None:
-                _impl = LayerImpl(file_name)
-                if key:
-                    self._registry[key] = _impl
+            if new:
+                # A layer asked into existence does not take part in the "same file name
+                # means the same layer" identity that _registry exists to provide. It
+                # neither looks up nor registers: an empty scratch layer that merely
+                # carries a name is not that file's layer, so sharing or clobbering one
+                # would be wrong in both directions. Two of these are independent, in the
+                # same way two anonymous layers are.
+                _impl = LayerImpl(file_name, new=True)
+            else:
+                key = self._registry_key(file_name)
+                _impl = self._registry.get(key) if key else None
+                if _impl is None:
+                    _impl = LayerImpl(file_name)
+                    if key:
+                        self._registry[key] = _impl
 
         object.__setattr__(self, "_impl", _impl)
         self._impl._metadata._parent = self

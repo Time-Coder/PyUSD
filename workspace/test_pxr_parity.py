@@ -32,11 +32,14 @@ FIXTURES = [
 # This is what an example under workspace/examples exercises -- def Sphere with no
 # radius read as None because the generator parsed the schema defaults and then threw
 # them away.
-DEFAULT_FIXTURE = "HelloWorld_pyusd.usda"
-# xformOpOrder is deliberately absent: it declares no default, and pyusd synthesises an
-# empty list for arrays while pxr returns None there. That divergence is long-standing
-# and orthogonal to a declared default, so it does not belong in this check.
-DEFAULT_PRIMS = {"/hello/world": ("radius", "extent")}
+#
+# Both stages are built in memory rather than read from a fixture. A fixture cannot
+# carry this check: it is untracked, it is what the examples open and edit, and the
+# moment one of them saves it, the properties this is about stop being unauthored and
+# the check silently stops testing anything.
+DEFAULT_TYPE = "Sphere"
+DEFAULT_PRIM = "/P"
+DEFAULT_PROPS = ("radius", "extent")
 
 
 def _as_comparable(value):
@@ -57,48 +60,37 @@ def _as_comparable(value):
 def _compare_declared_defaults() -> list:
     from pxr import Usd
 
-    from pyusd import Stage
+    from pyusd import Layer, Stage
+    from pyusd.geom import Sphere
 
-    # The example opens this one relative to the repository root, so that is where it
-    # lives; ASSETS points at workspace/_assets, which holds the parity fixtures.
-    path = ROOT / "_assets" / DEFAULT_FIXTURE
-    if not path.exists():
-        return [f"{DEFAULT_FIXTURE}: fixture missing at {path}"]
+    ours = Stage(Layer(""))
+    ours.def_(Sphere, DEFAULT_PRIM)
+    theirs = Usd.Stage.CreateInMemory()
+    their_prim = theirs.DefinePrim(DEFAULT_PRIM, DEFAULT_TYPE)
 
-    ours = Stage(str(path))
-    theirs = Usd.Stage.Open(str(path))
     failures = []
-    for prim_path, names in DEFAULT_PRIMS.items():
-        our_prim = ours[prim_path]
-        their_prim = theirs.GetPrimAtPath(prim_path)
-        for name in names:
-            their_attr = their_prim.GetAttribute(name)
-            if their_attr is None:
-                continue
-            if their_attr.HasAuthoredValue():
-                failures.append(
-                    f"{prim_path}.{name}: fixture authors it, so nothing is tested"
-                )
-                continue
+    for name in DEFAULT_PROPS:
+        their_attr = their_prim.GetAttribute(name)
+        if their_attr.HasAuthoredValue():
+            failures.append(f"{name}: pxr authors it, so nothing is tested")
+            continue
 
-            our_value = _as_comparable(getattr(our_prim, name).get())
-            their_value = _as_comparable(their_attr.Get())
-            if our_value != their_value:
-                failures.append(
-                    f"{prim_path}.{name} declared default: "
-                    f"pyusd={our_value!r} pxr={their_value!r}"
-                )
-                continue
+        our_value = _as_comparable(getattr(ours[DEFAULT_PRIM], name).get())
+        their_value = _as_comparable(their_attr.Get())
+        if our_value != their_value:
+            failures.append(
+                f"{DEFAULT_PRIM}.{name} declared default: "
+                f"pyusd={our_value!r} pxr={their_value!r}"
+            )
+            continue
 
-            # The fallback must not count as an authored opinion.
-            state = getattr(our_prim, name).value_state
-            if state is not None and int(state) == 2:
-                failures.append(
-                    f"{prim_path}.{name}: reading the default authored an opinion"
-                )
-                continue
+        # The fallback must not count as an authored opinion.
+        state = getattr(ours[DEFAULT_PRIM], name).value_state
+        if state is not None and int(state) == 2:
+            failures.append(f"{DEFAULT_PRIM}.{name}: reading the default authored one")
+            continue
 
-            print(f"PASS {prim_path}.{name} declared default {our_value!r}")
+        print(f"PASS {name} declared default {our_value!r}")
 
     return failures
 

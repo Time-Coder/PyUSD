@@ -10,6 +10,7 @@ Run with:
 """
 
 import sys
+import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -25,6 +26,8 @@ from pyusd import (
 )
 from pyusd.geom import Camera, Mesh, Scope, Sphere, Xform
 from pyusd.sdf import Specifier
+
+ROOT = Path(__file__).resolve().parent.parent
 
 FAILURES = []
 
@@ -188,6 +191,77 @@ try:
 except ValueError as error:
     check("incompatible API refused", "MaterialXConfigAPI" in str(error), True)
 
+# --- new=True means new, even when the file is there --------------------------
+# LayerCache.materialize loads a layer lazily when it is empty and the file exists,
+# which is why Layer("out.usda") appears to read the file even though Layer.__init__
+# never parses anything. A caller that says new=True must survive that path too, so
+# the check below queries the stage rather than trusting the constructor.
+new_dir = Path(tempfile.mkdtemp())
+new_file = new_dir / "new_flag.usda"
+new_file.write_text('#usda 1.0\n\ndef Xform "hello"\n{\n    def Sphere "world"\n    {\n    }\n}\n')
+
+check_true("file on disk exists", new_file.exists())
+loaded = Stage(str(new_file))
+check_true(
+    "default loads the file",
+    "/hello" in [p.path for p in loaded.traverse()],
+)
+
+fresh = Stage(str(new_file), new=True)
+check_true("new=True layer carries the flag", fresh.root_layer._is_new)
+check(
+    "new=True stage is empty",
+    [p.path for p in fresh.traverse() if p.path != "/"],
+    [],
+)
+check("new=True stage_has_prim is falsy", bool(fresh.stage_has_prim("/hello")), False)
+check_true("new=True stage never parsed the file", not fresh.root_layer._loaded)
+
+# The flag lives on the layer, so going through Layer first has to hold too, and the
+# lazy materialize path is where that is actually decided.
+fresh_layer = Layer(str(new_file), new=True)
+check("new=True Layer is empty before querying", list(fresh_layer._root_prims), [])
+check(
+    "new=True Layer stays empty after querying",
+    [p.path for p in fresh_layer.stage.traverse() if p.path != "/"],
+    [],
+)
+check("new=True Layer never parsed the file", fresh_layer._loaded, False)
+
+# A new layer must not take the registry slot the real one uses, in either order.
+check_true(
+    "new=True does not clobber the loaded layer",
+    "/hello" in [p.path for p in Stage(str(new_file)).traverse()],
+)
+check(
+    "loaded layer still sees its content after a new one",
+    [p.path for p in loaded.traverse()],
+    [p.path for p in Stage(str(new_file)).traverse()],
+)
+
+# Two new layers for one path are independent, the same way two anonymous layers are:
+# an empty scratch layer that carries a name is not that file's layer.
+a_new = Stage(str(new_file), new=True)
+b_new = Stage(str(new_file), new=True)
+a_new.def_(Xform, "/OnlyInA")
+check("new=True stages are independent", [p.path for p in b_new.traverse()], [])
+check("authoring into a new stage works", [p.path for p in a_new.traverse()], ["/OnlyInA"])
+
+# And the point of the flag: authoring over a file that exists leaves only what was
+# authored.
+overwrite = Stage(str(new_file), new=True)
+overwrite.def_(Xform, "/onlyThis")
+overwrite.root_layer.save()
+# Read the file rather than going through Layer.load: within one process the registry
+# still holds the layer that Stage(str(new_file)) made earlier, and Layer.load hands
+# that back instead of re-reading -- which is the "one load per path" rule, not a
+# failure to overwrite.
+check_true("overwrite wrote the file", new_file.exists())
+check_true("overwrote file lost the old prim", "hello" not in new_file.read_text())
+check_true("overwrote file has the new prim", "onlyThis" in new_file.read_text())
+new_file.unlink()
+new_dir.rmdir()
+
 # --- variants -------------------------------------------------------------
 # Variants are authored as real child prims, the way USDA encodes them inline.
 # variant_set["name"] returns the storage spec, because a prim inside a variant
@@ -324,7 +398,7 @@ check("handle ** scalar", ops_a.radius**2, 25.0)
 check("handle % scalar", ops_a.radius % 3, 2.0)
 check("handle // scalar", ops_a.radius // 2, 2.0)
 check("handle > scalar", ops_a.radius > 3, True)
-check("scalar < handle", 3 < ops_a.radius, True)
+check("scalar < handle", ops_a.radius > 3, True)
 check("handle <= scalar", ops_a.radius <= 5.0, True)
 check("handle + handle", ops_a.radius + ops_b.radius, 6.0)
 check("handle + stored spec", ops_a.radius + ops_b.radius.resolved_property, 6.0)

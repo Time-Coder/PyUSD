@@ -65,9 +65,17 @@ class Stage:
         self,
         root_layer: Union[str, Layer] = "",
         edit_layer: Optional[Layer] = None,
+        new: bool = False,
     ) -> None:
         if isinstance(root_layer, Layer):
+            # A layer handed in already decided for itself; `new` says nothing about a
+            # Layer, so it is only about the file-name form below.
             resolved_root = root_layer
+        elif new:
+            # Asked into existence, so do not consult the registry, do not look at the
+            # filesystem, and do not parse. The flag goes on the layer, which is what
+            # LayerCache.materialize reads to keep the lazy path from loading either.
+            resolved_root = Layer(str(root_layer), new=True)
         else:
             file_name = str(root_layer)
             resolved_root = Layer._lookup(file_name)

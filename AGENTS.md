@@ -234,6 +234,25 @@ Useful checks and workflows:
 - The generator emits imports in its own order and `ruff check --fix` sorts them, so a
   generate-then-lint cycle is only idempotent as a pair. That is why the accessor
   generation above leaves import order to `ruff`.
+- Whether a layer reads its file is decided in **two** places, and neither is the
+  constructor argument. `Stage.__init__` has a fast path -- a `Layer` is used as is, a
+  name is looked up in the process registry first, and `Layer.load` runs only if
+  `os.path.exists`. The real decision is `LayerCache.materialize`, which loads a layer
+  that is **empty and whose file exists**, and it runs lazily: `Layer("out.usda")` parses
+  nothing, and the file's contents appear only on the first prim query. "Loaded" is
+  therefore not observable from the constructor.
+- `new=True` on `Layer.__init__` and `Stage.__init__` means "never read this file". It
+  sets a flag on `LayerImpl` rather than threading a parameter, because `materialize` is
+  the path that has to honour it and it only ever sees a `Layer`. The flag is declared on
+  `Layer`'s annotation block too, since `Layer.__getattr__` delegates only names in
+  annotations. A new layer neither looks up nor registers in `_registry`: an empty
+  scratch layer that carries a name is not that file's layer, so sharing or clobbering
+  one would be wrong in both directions, and two of them are independent the way two
+  anonymous layers are.
+- `Layer.load` inside one process hands back the registry's layer instead of re-reading,
+  because `Layer.__init__` finds the cached impl first and the parser's `_loaded`
+  early-return then short-circuits. One load per path per process;
+  `LayerCache.invalidate(file_name)` drops the mtime/size cache for the lazy path.
 - A `Prim` is an interned view: `stage["/M"] is stage["/M"]`. The cache lives on
   `StageImpl` and is keyed by `(path, class)` -- keying on the class is what keeps it
   correct with no invalidation hook, since the class comes from the composed typeName,

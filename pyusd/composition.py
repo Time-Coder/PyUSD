@@ -116,6 +116,14 @@ class LayerCache:
         if not layer.file_name:
             return layer
 
+        # A layer created with new=True is never filled from disk. This has to be
+        # checked here and not only where the root layer is built: materializing is
+        # the lazy path, so a Layer("out.usda", new=True) would otherwise come back
+        # with the file's contents on the first prim query, long after the caller
+        # said not to read it.
+        if layer._is_new:
+            return layer
+
         abs_path = self.resolve_path(layer.file_name, anchor_file)
         has_authored_content = bool(layer._root_prims or layer._sub_layers)
         if layer._default_prim_name:
