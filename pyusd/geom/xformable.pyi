@@ -3,6 +3,7 @@ from typing import List
 from ..attribute_spec import AttributeSpec
 from ..dtypes import token
 from .imageable import Imageable
+from .xformop import XformOp
 
 class Xformable(Imageable):
     """Base class for all transformable prims, which allows arbitrary
@@ -220,3 +221,9 @@ class Xformable(Imageable):
 
     @xformOpOrder.setter
     def xformOpOrder(self, value:List[token])->None: ...
+
+    @property
+    def xformOp(self) -> XformOp: ...
+
+    @xformOp.setter
+    def xformOp(self, value:XformOp)->None: ...

@@ -110,6 +110,32 @@ def test_nested_xformop_declaration() -> None:
     )
     check_true("Xformable imports XformOp", "import XformOp" in imports)
 
+    # The stub path has to emit it too. A stub shadows the module it sits beside, so a
+    # member the .py declares and the .pyi omits is not untyped, it is invisible:
+    # attribute access falls through to Prim.__getattr__, which is Any. That is how
+    # xformOp ended up with no type while radius, extent and xformOpOrder all had one.
+    stub = generator._generate_pyi_class_definition(
+        "Xformable",
+        generator._determine_base_class(generator.classes_info["Xformable"]),
+        generator.classes_info["Xformable"],
+        set(),
+    )
+    check_true("the stub declares xformOp too", "def xformOp(self) -> XformOp" in stub)
+    # A bare annotation would make it a descriptor, because PropertySpec defines
+    # __get__/__set__, and ty then checks the access against __get__'s first parameter --
+    # a PrimSpec, not the Prim that Prim.__getattr__ hands out.
+    check_true(
+        "the stub declares it as a property, not a bare annotation",
+        "xformOp: XformOp\n" not in stub,
+    )
+    stub_imports = generator._generate_pyi_imports(
+        generator._determine_base_class(generator.classes_info["Xformable"]),
+        generator.classes_info["Xformable"],
+        [],
+        set(),
+    )
+    check_true("the stub imports XformOp", "from .xformop import XformOp" in stub_imports)
+
 
 # --- defaults are parsed ----------------------------------------------------
 # tree-sitter-usd has no default_value node: `double radius = 1.0` parses as

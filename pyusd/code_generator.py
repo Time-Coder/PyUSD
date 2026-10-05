@@ -1552,6 +1552,21 @@ class CodeGenerator:
         if emitted and "from enum import ReprEnum" not in imports:
             imports.insert(0, "from enum import ReprEnum")
 
+        # A nested schema declaration is re-emitted as a property here, so the stub has
+        # to import the class it names. _generate_imports finds it for the .py from the
+        # assignment `XformOp()`; a stub has no assignment, so it cannot.
+        #
+        # It is a property rather than a bare annotation because PropertySpec defines
+        # __get__ and __set__: a class attribute annotated with one of those is a
+        # descriptor, and ty checks the access against __get__'s first parameter, which
+        # is a PrimSpec -- not the Prim that Prim.__getattr__ hands out. Every other
+        # member in these stubs is a property for the same reason.
+        for _attr_name, class_name, nested_module in self.NESTED_SCHEMA_DECLARATIONS.get(
+                class_info['name'], ()):
+            line = f"from .{nested_module} import {class_name}"
+            if line not in imports:
+                imports.append(line)
+
         # 添加命名空间类的导入
         if generated_ns_files:
             used_ns_files = self._collect_class_namespace_prefixes(class_info) & generated_ns_files
@@ -1885,6 +1900,27 @@ class CodeGenerator:
                 continue
 
             lines.extend(self._generate_pyi_relationship_signature('', rel))
+
+        # 嵌套 schema 声明（见 NESTED_SCHEMA_DECLARATIONS）
+        #
+        # This has to be here as well as in the class file. A stub shadows the module it
+        # sits beside, so a member the .py declares but the .pyi omits is not merely
+        # untyped -- it is invisible, and attribute access silently falls through to
+        # Prim.__getattr__, which is typed Any. That is how `xformOp` ended up with no
+        # type at all while radius, extent and xformOpOrder all had one: the
+        # declaration was in xformable.py the whole time and xformable.pyi never had it.
+        for attr_name, class_name, _module in self.NESTED_SCHEMA_DECLARATIONS.get(
+                class_info['name'], ()):
+            if attr_name in taken_names:
+                continue
+
+            taken_names.add(attr_name)
+            lines.append("    @property")
+            lines.append(f"    def {attr_name}(self) -> {class_name}: ...")
+            lines.append("")
+            lines.append(f"    @{attr_name}.setter")
+            lines.append(f"    def {attr_name}(self, value:{class_name})->None: ...")
+            lines.append("")
 
         # 如果类定义没有任何内容，添加 pass
         if len(lines) == 1:  # 只有类声明行

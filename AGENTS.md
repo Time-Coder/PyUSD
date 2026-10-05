@@ -225,12 +225,26 @@ Useful checks and workflows:
   heuristic has to stop there: it is about a materialised spec whose value arrived
   without going through the setter, and without the guard a schema declaration such as
   `Sphere.extent` reported `Authored` while pxr reports `HasAuthoredValue() == False`.
-- `Xformable` still cannot be regenerated. Its `xformOp: XformOp = XformOp()` declaration
-  is what backs `prim.xformOp.translate = ...` and the automatic `xformOpOrder` upkeep,
-  but the generator no longer emits it: `XformOp` is not in the geom class table and
-  `xformOp` is not among the parsed attributes of `Xformable`, which are just
-  `xformOpOrder`. Regenerating that one file silently drops the xformOp authoring API;
-  `workspace/test_prim_view.py` catches it.
+- `UsdGeomXformable` declares no `xformOp` property -- its ops are authored on demand by
+  AddXformOp, which is why pxr reports none of them -- and the schema gives the generator
+  nothing to parse, so `xformOp` is not among the parsed attributes of `Xformable`, which
+  are just `xformOpOrder`. pyusd exposes the op slots as a nested `XformOp` instead, which
+  is what backs `prim.xformOp.translate = ...` and the automatic `xformOpOrder` upkeep.
+  That declaration comes from `NESTED_SCHEMA_DECLARATIONS`, and **both** the class-file and
+  the stub paths have to consult it. A stub shadows the module it sits beside, so a member
+  the `.py` declares and the `.pyi` omits is not untyped, it is *invisible*: attribute
+  access falls through to `Prim.__getattr__`, which is `Any`. That is exactly how `xformOp`
+  ended up with no type at all while `radius`, `extent` and `xformOpOrder` all had one --
+  the declaration was in `xformable.py` the whole time and `xformable.pyi` never had it.
+  `workspace/test_prim_view.py` catches the runtime half of this; the static half is why
+  the stub emission below is not optional.
+- A nested declaration is emitted into a stub as a `@property`, not a bare annotation.
+  `PropertySpec` defines `__get__` and `__set__`, so a class attribute annotated with one
+  of those *is* a descriptor, and `ty` checks the access against `__get__`'s first
+  parameter -- a `PrimSpec`, not the `Prim` that `Prim.__getattr__` hands out. Every other
+  member in these stubs is a property for the same reason. The stub also has to import the
+  named class, which `_generate_imports` finds for the `.py` from the `XformOp()` assignment
+  and a stub, having none, cannot.
 - The generator emits imports in its own order and `ruff check --fix` sorts them, so a
   generate-then-lint cycle is only idempotent as a pair. That is why the accessor
   generation above leaves import order to `ruff`.
