@@ -191,6 +191,43 @@ try:
 except ValueError as error:
     check("incompatible API refused", "MaterialXConfigAPI" in str(error), True)
 
+# --- defaultPrim is readable and assignable ---------------------------------
+# The read side always existed and the write side did not, so stage.default_prim = prim
+# raised and the only way in was stage.metadata.defaultPrim. That is an asymmetry, not a
+# decision, and it is the one thing the referencing example could not do.
+dp_layer = Layer("smoke_defaultprim.usda")
+dp_stage = Stage(dp_layer)
+dp_hello = dp_stage.def_(Xform, "/hello")
+dp_hello.def_(Xform, "/child")
+
+check("default prim starts unset", dp_stage.default_prim, None)
+dp_stage.default_prim = dp_hello
+check("assigning a prim sets it", dp_stage.default_prim.path, "/hello")
+check("assigned default prim is the same view", dp_stage.default_prim is dp_hello, True)
+check_true(
+    "authored into the edit layer",
+    dp_layer.metadata._builtin_data.get("defaultPrim") == "/hello",
+)
+
+# A bare name is shorthand for a path from the stage root, which is what the getter
+# already assumed; it is not relative to the default prim being replaced.
+dp_stage.default_prim = "child"
+check("a bare name means a root path", dp_stage.default_prim.path, "/child")
+
+try:
+    dp_stage.default_prim = Stage(Layer()).def_(Xform, "/elsewhere")
+    check("a foreign prim is refused", False, True)
+except ValueError:
+    check("a foreign prim is refused", True, True)
+
+try:
+    dp_stage.default_prim = 5
+    check("a non-path is refused", False, True)
+except TypeError:
+    check("a non-path is refused", True, True)
+
+check_true("defaultPrim reaches the serialized text", 'defaultPrim = "/child"' in dp_layer.to_str())
+
 # --- new=True means new, even when the file is there --------------------------
 # LayerCache.materialize loads a layer lazily when it is empty and the file exists,
 # which is why Layer("out.usda") appears to read the file even though Layer.__init__

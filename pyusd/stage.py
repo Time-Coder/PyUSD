@@ -164,6 +164,44 @@ class Stage:
 
         return self[path]
 
+    @default_prim.setter
+    def default_prim(self, value: Union[Prim, PrimSpec, str]) -> None:
+        """Author ``defaultPrim`` in the edit layer.
+
+        The read side always existed and the write side did not, so the only way in was
+        ``stage.metadata.defaultPrim``. A property that can be read but not assigned is
+        an asymmetry rather than a decision -- and it was the one thing the referencing
+        example could not do. pxr spells this ``SetDefaultPrim`` and takes a ``Usd.Prim``.
+
+        A prim belonging to another stage is rejected rather than ignored. pxr leaves
+        the existing opinion alone in that case, which is safe but silent, and here it
+        would read as a successful assignment of something that is not on this stage.
+        """
+        from .prim import Prim as _Prim
+
+        if isinstance(value, _Prim):
+            if value.stage is not self:
+                raise ValueError(
+                    f"cannot make {value.path} the default prim of a stage it does not "
+                    "belong to"
+                )
+
+            path = value.path
+        elif isinstance(value, PrimSpec):
+            path = value.path
+        elif isinstance(value, str):
+            path = value
+        else:
+            raise TypeError(
+                "default_prim must be a Prim, a PrimSpec or a path string, not "
+                f"{type(value).__name__}"
+            )
+
+        if not path.startswith("/"):
+            path = "/" + path
+
+        self.metadata.defaultPrim = path
+
     def invalidate(self) -> None:
         self._engine.clear()
 
