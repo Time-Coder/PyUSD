@@ -1,4 +1,22 @@
 from ..geom.gprim import Gprim
+from .particle_field_kernel_constant_surflet_api import (
+    ParticleFieldKernelConstantSurfletAPI,
+)
+from .particle_field_kernel_gaussian_ellipsoid_api import (
+    ParticleFieldKernelGaussianEllipsoidAPI,
+)
+from .particle_field_kernel_gaussian_surflet_api import (
+    ParticleFieldKernelGaussianSurfletAPI,
+)
+from .particle_field_opacity_attribute_api import ParticleFieldOpacityAttributeAPI
+from .particle_field_orientation_attribute_api import (
+    ParticleFieldOrientationAttributeAPI,
+)
+from .particle_field_position_attribute_api import ParticleFieldPositionAttributeAPI
+from .particle_field_scale_attribute_api import ParticleFieldScaleAttributeAPI
+from .particle_field_spherical_harmonics_attribute_api import (
+    ParticleFieldSphericalHarmonicsAttributeAPI,
+)
 
 class ParticleField(Gprim):
     """A ParticleField prim is used as a base to describe different types
@@ -22,3 +40,27 @@ class ParticleField(Gprim):
     combinations of these applied schemas allows us to describe a
     varying family of types of ParticleFields.
     """
+
+    @property
+    def particle_field_position_attribute_api(self)->ParticleFieldPositionAttributeAPI: ...
+
+    @property
+    def particle_field_orientation_attribute_api(self)->ParticleFieldOrientationAttributeAPI: ...
+
+    @property
+    def particle_field_scale_attribute_api(self)->ParticleFieldScaleAttributeAPI: ...
+
+    @property
+    def particle_field_opacity_attribute_api(self)->ParticleFieldOpacityAttributeAPI: ...
+
+    @property
+    def particle_field_kernel_gaussian_ellipsoid_api(self)->ParticleFieldKernelGaussianEllipsoidAPI: ...
+
+    @property
+    def particle_field_kernel_gaussian_surflet_api(self)->ParticleFieldKernelGaussianSurfletAPI: ...
+
+    @property
+    def particle_field_kernel_constant_surflet_api(self)->ParticleFieldKernelConstantSurfletAPI: ...
+
+    @property
+    def particle_field_spherical_harmonics_attribute_api(self)->ParticleFieldSphericalHarmonicsAttributeAPI: ...

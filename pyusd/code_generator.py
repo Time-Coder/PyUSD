@@ -227,54 +227,79 @@ class CodeGenerator:
         content = self._merge_fenced_region(
             content, 'generated api imports', imports,
             lambda key: key in content)
+
+        # The accessors are declarations with no body, so they only need to exist for a
+        # type checker. Wrapping the region in `if TYPE_CHECKING:` is what keeps the
+        # runtime unimplemented: the class then has no such attributes, and Prim.__getattr__
+        # stays the single path that resolves them. The imports they annotate already live
+        # under the module-level TYPE_CHECKING block above the class.
         content = self._merge_fenced_region(
             content, 'generated api accessors', accessors,
-            lambda key: re.search(rf"def {re.escape(key)}\(", content) is not None)
+            lambda key: re.search(rf"def {re.escape(key)}\(", content) is not None,
+            fence_open='    if TYPE_CHECKING:',
+            fence_close='')
 
         self._write_generated(prim_module, content)
         self._generate_target_api_accessors(prim_module)
 
     def _merge_fenced_region(
-        self, content: str, name: str, items: List[Tuple[str, str]],
-        present: Callable[[str], bool],
-    ) -> str:
-        """Add items to a marker-fenced region, skipping the ones already present.
+            self, content: str, name: str, items: List[Tuple[str, str]],
+            present: Callable[[str], bool], fence_open: str = "", fence_close: str = "",
+        ) -> str:
+            """Add items to a marker-fenced region, skipping the ones already present.
 
-        ``present`` decides whether an item is already declared. It cannot be a
-        substring test on the file: an accessor named ``light_api`` is a substring of
-        its own import line, ``from .lux.light_api import LightAPI``, so every
-        accessor would look present the moment its import landed.
+            ``present`` decides whether an item is already declared. It cannot be a
+            substring test on the file: an accessor named ``light_api`` is a substring of
+            its own import line, ``from .lux.light_api import LightAPI``, so every
+            accessor would look present the moment its import lands.
 
-        Presence is judged against the whole file rather than the region, because
-        ``ruff`` re-sorts import blocks and will carry the opening marker along with
-        the imports it considers to belong before it, which would otherwise make a
-        second generator run re-add those imports.
+            Presence is judged against the whole file rather than the region, because
+            ``ruff`` re-sorts import blocks and will carry the opening marker along with
+            the imports it considers to belong before it, which would otherwise make a
+            second generator run re-add those imports.
 
-        The markers live in a hand-written file, so losing one has to be loud: a
-        silent no-op would leave the accessors undeclared with no indication why.
-        """
-        begin = f"    # --- BEGIN {name} ---"
-        end = f"    # --- END {name} ---"
-        lines = content.splitlines()
-        try:
-            first = lines.index(begin)
-            last = lines.index(end)
-        except ValueError:
-            raise FileNotFoundError(
-                f"Missing '{begin.strip()}' / '{end.strip()}' marker pair; refusing "
-                f"to generate silently."
-            ) from None
-        if last < first:
-            raise ValueError(f"Marker '{end.strip()}' precedes '{begin.strip()}'")
+            The markers live in a hand-written file, so losing one has to be loud: a
+            silent no-op would leave the accessors undeclared with no indication why.
 
-        existing = [line for line in lines[first + 1:last] if line.strip()]
-        pending = [text for key, text in items if not present(key)]
-        if not pending:
-            return content
+            ``fence_open`` and ``fence_close`` wrap whatever is already inside the region
+            as well as what is being added, which is how the accessor region ends up under
+            ``if TYPE_CHECKING:`` without the generator having to know whether a previous
+            run wrote forwarders or declarations there.
+            """
+            begin = f"    # --- BEGIN {name} ---"
+            end = f"    # --- END {name} ---"
+            lines = content.splitlines()
+            try:
+                first = lines.index(begin)
+                last = lines.index(end)
+            except ValueError:
+                raise FileNotFoundError(
+                    f"Missing '{begin.strip()}' / '{end.strip()}' marker pair; refusing "
+                    f"to generate silently."
+                ) from None
+            if last < first:
+                raise ValueError(f"Marker '{end.strip()}' precedes '{begin.strip()}'")
 
-        # Ordering is left to ruff, which is the only thing that can sort the block
-        # correctly: the hand-written imports sharing this block are not ours to move.
-        return "\n".join(lines[:first + 1] + existing + pending + lines[last:])
+            existing = [line for line in lines[first + 1:last] if line.strip()]
+            pending = [text for key, text in items if not present(key)]
+            if not pending:
+                return content
+
+            # Strip a fence left by a previous run so regenerating cannot nest one.
+            while existing and existing[0].strip() == fence_open.strip():
+                existing.pop(0)
+            while existing and existing[-1].strip() == fence_close.strip():
+                existing.pop()
+
+            # Ordering is left to ruff, which is the only thing that can sort the block
+            # correctly: the hand-written imports sharing this block are not ours to move.
+            body = existing + pending
+            if fence_open:
+                body = [fence_open] + body
+            if fence_close:
+                body = body + [fence_close]
+
+            return "\n".join(lines[:first + 1] + body + lines[last:])
 
     def _find_root_prim_module(self) -> Optional[str]:
         """Locate the package-root prim.py by walking up from the schema directory.
@@ -538,18 +563,33 @@ class CodeGenerator:
     def _format_api_accessor(
         self, method_name: str, class_name: str, schema_kind: str
     ) -> str:
-        # The hop through `Any` is needed because `ty` reads PrimSpec.__getattr__'s
-        # declared return type through getattr, so the result is a union rather than
-        # assignable to the schema class directly. Annotating locals rather than
-        # calling cast keeps the API classes out of the runtime namespace: cast
-        # evaluates its first argument, and PEP 563 does not evaluate annotations.
+        """A declaration for one API schema, with no body.
+
+        These are declarations rather than forwarders. Prim.__getattr__ already routes
+        every ``*_api`` name to PrimSpec.__getattr__, which consults the registry and
+        returns the schema object or an APIWrapper, so a generated body would be a second
+        implementation of a path that already exists -- 41 of them, each three lines.
+
+        They live under ``if TYPE_CHECKING`` so the class carries them for a type checker
+        and an IDE while the runtime never sees them and attribute access keeps falling
+        through to Prim.__getattr__. That placement is what makes this possible without a
+        stub: a module must not ship both a .py and a .pyi, because ty then treats the two
+        declarations of the same class as distinct nominal types. A pyusd/prim.pyi holding
+        these was measured at needing the whole public surface of Prim re-declared -- 68
+        members -- to keep importers seeing anything at all, and still left six
+        dual-identity errors in prim.py to be suppressed.
+
+        MultipleApplyAPI schemas take an instance name; the rest are single-apply and read
+        as properties, which is how the generated accessors in the schema stubs spell them.
+        """
         if schema_kind == 'SchemaKind.MultipleApplyAPI':
             return "\n".join([
-                f"    def {method_name}(self, instance_name:str)->{class_name}:",
-                f'        api:Any = getattr(self._edit_spec(), "{method_name}")',
-                f"        result:{class_name} = api(instance_name)",
-                "        return result",
+                "        def " + method_name + "(self, instance_name:str)->" + class_name + ": ...",
             ])
+        return "\n".join([
+            "        @property",
+            "        def " + method_name + "(self)->" + class_name + ": ...",
+        ])
         return "\n".join([
             "    @property",
             f"    def {method_name}(self)->{class_name}:",

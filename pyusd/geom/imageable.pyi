@@ -4,6 +4,7 @@ from ..attribute_spec import AttributeSpec
 from ..dtypes import token
 from ..relationship_spec import RelationshipSpec
 from ..typed import Typed
+from .visibility_api import VisibilityAPI
 
 class Imageable(Typed):
     """Base class for all prims that may require rendering or
@@ -78,3 +79,6 @@ class Imageable(Typed):
 
     @proxyPrim.setter
     def proxyPrim(self, value:RelationshipSpec)->None: ...
+
+    @property
+    def visibility_api(self)->VisibilityAPI: ...

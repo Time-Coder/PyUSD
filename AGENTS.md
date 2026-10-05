@@ -106,21 +106,29 @@ Useful checks and workflows:
 - API schema accessors are generated into `pyusd/prim.py`, between the
   `generated api imports` and `generated api accessors` marker pairs. They used to be
   declared in a `pyusd/prim.pyi`; that stub is what kept the duplicate-`Prim` problem
-  above alive, and it was the only stub left doing so. The accessors are typed
-  forwarders onto `PrimSpec.__getattr__`, which stays the single runtime path, and
-  `Prim.__getattr__` still routes any `*_api` name to the spec so a schema that
-  appears without a regeneration keeps working. Three things about this are load
-  bearing and easy to get wrong:
-  - The forwarders annotate two locals rather than calling `cast`, because `cast`
-    evaluates its first argument and PEP 563 does not evaluate annotations. That is
-    what keeps the API classes inside `TYPE_CHECKING`; importing them at runtime
-    would create a cycle, since every schema class imports `Prim`.
-  - `ty` reads `PrimSpec.__getattr__`'s declared return type through `getattr`, so
-    the result is `Property | APISchemaBase | APIWrapper` and is not assignable to
-    the schema class directly. The first local is annotated `Any` to absorb that.
-  - Whether an item is already present cannot be a substring test against the file.
-    An accessor named `light_api` is a substring of its own import line, so a
-    substring check declares every accessor present as soon as its import lands.
+  above alive, and it was the only stub left doing so. They are now **declarations with
+  no body, inside an `if TYPE_CHECKING:` block in the class body**. That is what lets
+  `Prim.__getattr__` stay the single runtime path -- the class simply has no such
+  attributes, so every `*_api` read still falls through to the registry route -- while a
+  type checker and an IDE still see all 41 members. The imports they annotate already
+  live in the module-level `TYPE_CHECKING` block above the class.
+  They were forwarders with bodies at first, which was 41 three-line reimplementations
+  of a path that already existed. Moving them to a `.pyi` instead was measured and
+  rejected: a stub **replaces** the module for importers rather than adding to it, so
+  `prim.pyi` would have had to re-declare all 68 public members of `Prim` -- a `class
+  Prim(Any)` stub made `stage`, `prop_names` and `def_` resolve to `Unknown` -- and even
+  a complete one left six unavoidable `Prim@pyusd/prim.py` vs `Prim@pyusd/prim.pyi`
+  errors to be whitelisted. `if TYPE_CHECKING` needs no stub, no whitelist, and costs
+  nothing at runtime. The `generated api imports` region is separate only because `ruff`
+  re-sorts it; both regions come from `_collect_api_accessors`, whose `present` test
+  cannot be a substring check against the file -- an accessor named `light_api` is a
+  substring of its own import line, so a substring test declares every accessor present
+  as soon as its import lands.
+- The forwarders used two locals rather than `cast`, because `cast` evaluates its first
+  argument and PEP 563 does not evaluate annotations. That is what kept the API classes
+  inside `TYPE_CHECKING`; importing them at runtime would create a cycle, since every
+  schema class imports `Prim`. It no longer applies now that there are no bodies.
+
 - `_merge_fenced_region` judges presence against the whole file, not the region,
   because `ruff` re-sorts the `TYPE_CHECKING` block and carries the opening marker
   along with the imports it thinks belong before it. Import order is deliberately

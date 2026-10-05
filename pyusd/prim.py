@@ -327,204 +327,82 @@ class Prim:
     # runtime path; these are typed forwarders onto it, and __getattr__ still covers
     # any API schema that appears without a regeneration.
     # --- BEGIN generated api accessors ---
-    @property
-    def model_api(self)->ModelAPI:
-        api:Any = self._edit_spec().model_api
-        result:ModelAPI = api
-        return result
-    @property
-    def color_space_api(self)->ColorSpaceAPI:
-        api:Any = self._edit_spec().color_space_api
-        result:ColorSpaceAPI = api
-        return result
-    def color_space_definition_api(self, instance_name:str)->ColorSpaceDefinitionAPI:
-        api:Any = self._edit_spec().color_space_definition_api
-        result:ColorSpaceDefinitionAPI = api(instance_name)
-        return result
-    def collection_api(self, instance_name:str)->CollectionAPI:
-        api:Any = self._edit_spec().collection_api
-        result:CollectionAPI = api(instance_name)
-        return result
-    @property
-    def clips_api(self)->ClipsAPI:
-        api:Any = self._edit_spec().clips_api
-        result:ClipsAPI = api
-        return result
-    @property
-    def primvars_api(self)->PrimvarsAPI:
-        api:Any = self._edit_spec().primvars_api
-        result:PrimvarsAPI = api
-        return result
-    @property
-    def geom_model_api(self)->GeomModelAPI:
-        api:Any = self._edit_spec().geom_model_api
-        result:GeomModelAPI = api
-        return result
-    @property
-    def motion_api(self)->MotionAPI:
-        api:Any = self._edit_spec().motion_api
-        result:MotionAPI = api
-        return result
-    @property
-    def xform_common_api(self)->XformCommonAPI:
-        api:Any = self._edit_spec().xform_common_api
-        result:XformCommonAPI = api
-        return result
-    @property
-    def light_api(self)->LightAPI:
-        api:Any = self._edit_spec().light_api
-        result:LightAPI = api
-        return result
-    @property
-    def mesh_light_api(self)->MeshLightAPI:
-        api:Any = self._edit_spec().mesh_light_api
-        result:MeshLightAPI = api
-        return result
-    @property
-    def volume_light_api(self)->VolumeLightAPI:
-        api:Any = self._edit_spec().volume_light_api
-        result:VolumeLightAPI = api
-        return result
-    @property
-    def light_list_api(self)->LightListAPI:
-        api:Any = self._edit_spec().light_list_api
-        result:LightListAPI = api
-        return result
-    @property
-    def list_api(self)->ListAPI:
-        api:Any = self._edit_spec().list_api
-        result:ListAPI = api
-        return result
-    @property
-    def shaping_api(self)->ShapingAPI:
-        api:Any = self._edit_spec().shaping_api
-        result:ShapingAPI = api
-        return result
-    @property
-    def shadow_api(self)->ShadowAPI:
-        api:Any = self._edit_spec().shadow_api
-        result:ShadowAPI = api
-        return result
-    @property
-    def asset_previews_api(self)->AssetPreviewsAPI:
-        api:Any = self._edit_spec().asset_previews_api
-        result:AssetPreviewsAPI = api
-        return result
-    @property
-    def node_def_api(self)->NodeDefAPI:
-        api:Any = self._edit_spec().node_def_api
-        result:NodeDefAPI = api
-        return result
-    @property
-    def connectable_api(self)->ConnectableAPI:
-        api:Any = self._edit_spec().connectable_api
-        result:ConnectableAPI = api
-        return result
-    @property
-    def material_binding_api(self)->MaterialBindingAPI:
-        api:Any = self._edit_spec().material_binding_api
-        result:MaterialBindingAPI = api
-        return result
-    def coord_sys_api(self, instance_name:str)->CoordSysAPI:
-        api:Any = self._edit_spec().coord_sys_api
-        result:CoordSysAPI = api(instance_name)
-        return result
-    @property
-    def physics_rigid_body_api(self)->PhysicsRigidBodyAPI:
-        api:Any = self._edit_spec().physics_rigid_body_api
-        result:PhysicsRigidBodyAPI = api
-        return result
-    @property
-    def physics_mass_api(self)->PhysicsMassAPI:
-        api:Any = self._edit_spec().physics_mass_api
-        result:PhysicsMassAPI = api
-        return result
-    @property
-    def physics_collision_api(self)->PhysicsCollisionAPI:
-        api:Any = self._edit_spec().physics_collision_api
-        result:PhysicsCollisionAPI = api
-        return result
-    @property
-    def physics_mesh_collision_api(self)->PhysicsMeshCollisionAPI:
-        api:Any = self._edit_spec().physics_mesh_collision_api
-        result:PhysicsMeshCollisionAPI = api
-        return result
-    @property
-    def physics_material_api(self)->PhysicsMaterialAPI:
-        api:Any = self._edit_spec().physics_material_api
-        result:PhysicsMaterialAPI = api
-        return result
-    @property
-    def physics_filtered_pairs_api(self)->PhysicsFilteredPairsAPI:
-        api:Any = self._edit_spec().physics_filtered_pairs_api
-        result:PhysicsFilteredPairsAPI = api
-        return result
-    def physics_limit_api(self, instance_name:str)->PhysicsLimitAPI:
-        api:Any = self._edit_spec().physics_limit_api
-        result:PhysicsLimitAPI = api(instance_name)
-        return result
-    def physics_drive_api(self, instance_name:str)->PhysicsDriveAPI:
-        api:Any = self._edit_spec().physics_drive_api
-        result:PhysicsDriveAPI = api(instance_name)
-        return result
-    @property
-    def physics_articulation_root_api(self)->PhysicsArticulationRootAPI:
-        api:Any = self._edit_spec().physics_articulation_root_api
-        result:PhysicsArticulationRootAPI = api
-        return result
-    @property
-    def statements_api(self)->StatementsAPI:
-        api:Any = self._edit_spec().statements_api
-        result:StatementsAPI = api
-        return result
-    @property
-    def ri_material_api(self)->RiMaterialAPI:
-        api:Any = self._edit_spec().ri_material_api
-        result:RiMaterialAPI = api
-        return result
-    @property
-    def ri_spline_api(self)->RiSplineAPI:
-        api:Any = self._edit_spec().ri_spline_api
-        result:RiSplineAPI = api
-        return result
-    def semantics_labels_api(self, instance_name:str)->SemanticsLabelsAPI:
-        api:Any = self._edit_spec().semantics_labels_api
-        result:SemanticsLabelsAPI = api(instance_name)
-        return result
-    @property
-    def skel_binding_api(self)->SkelBindingAPI:
-        api:Any = self._edit_spec().skel_binding_api
-        result:SkelBindingAPI = api
-        return result
-    @property
-    def node_graph_node_api(self)->NodeGraphNodeAPI:
-        api:Any = self._edit_spec().node_graph_node_api
-        result:NodeGraphNodeAPI = api
-        return result
-    @property
-    def scene_graph_prim_api(self)->SceneGraphPrimAPI:
-        api:Any = self._edit_spec().scene_graph_prim_api
-        result:SceneGraphPrimAPI = api
-        return result
-    def accessibility_api(self, instance_name:str)->AccessibilityAPI:
-        api:Any = self._edit_spec().accessibility_api
-        result:AccessibilityAPI = api(instance_name)
-        return result
-    @property
-    def particle_field_position_base_api(self)->ParticleFieldPositionBaseAPI:
-        api:Any = self._edit_spec().particle_field_position_base_api
-        result:ParticleFieldPositionBaseAPI = api
-        return result
-    @property
-    def particle_field_kernel_base_api(self)->ParticleFieldKernelBaseAPI:
-        api:Any = self._edit_spec().particle_field_kernel_base_api
-        result:ParticleFieldKernelBaseAPI = api
-        return result
-    @property
-    def particle_field_radiance_base_api(self)->ParticleFieldRadianceBaseAPI:
-        api:Any = self._edit_spec().particle_field_radiance_base_api
-        result:ParticleFieldRadianceBaseAPI = api
-        return result
+    if TYPE_CHECKING:
+        @property
+        def model_api(self)->ModelAPI: ...
+        @property
+        def color_space_api(self)->ColorSpaceAPI: ...
+        def color_space_definition_api(self, instance_name:str)->ColorSpaceDefinitionAPI: ...
+        def collection_api(self, instance_name:str)->CollectionAPI: ...
+        @property
+        def clips_api(self)->ClipsAPI: ...
+        @property
+        def primvars_api(self)->PrimvarsAPI: ...
+        @property
+        def geom_model_api(self)->GeomModelAPI: ...
+        @property
+        def motion_api(self)->MotionAPI: ...
+        @property
+        def xform_common_api(self)->XformCommonAPI: ...
+        @property
+        def light_api(self)->LightAPI: ...
+        @property
+        def mesh_light_api(self)->MeshLightAPI: ...
+        @property
+        def volume_light_api(self)->VolumeLightAPI: ...
+        @property
+        def light_list_api(self)->LightListAPI: ...
+        @property
+        def list_api(self)->ListAPI: ...
+        @property
+        def shaping_api(self)->ShapingAPI: ...
+        @property
+        def shadow_api(self)->ShadowAPI: ...
+        @property
+        def asset_previews_api(self)->AssetPreviewsAPI: ...
+        @property
+        def node_def_api(self)->NodeDefAPI: ...
+        @property
+        def connectable_api(self)->ConnectableAPI: ...
+        @property
+        def material_binding_api(self)->MaterialBindingAPI: ...
+        def coord_sys_api(self, instance_name:str)->CoordSysAPI: ...
+        @property
+        def physics_rigid_body_api(self)->PhysicsRigidBodyAPI: ...
+        @property
+        def physics_mass_api(self)->PhysicsMassAPI: ...
+        @property
+        def physics_collision_api(self)->PhysicsCollisionAPI: ...
+        @property
+        def physics_mesh_collision_api(self)->PhysicsMeshCollisionAPI: ...
+        @property
+        def physics_material_api(self)->PhysicsMaterialAPI: ...
+        @property
+        def physics_filtered_pairs_api(self)->PhysicsFilteredPairsAPI: ...
+        def physics_limit_api(self, instance_name:str)->PhysicsLimitAPI: ...
+        def physics_drive_api(self, instance_name:str)->PhysicsDriveAPI: ...
+        @property
+        def physics_articulation_root_api(self)->PhysicsArticulationRootAPI: ...
+        @property
+        def statements_api(self)->StatementsAPI: ...
+        @property
+        def ri_material_api(self)->RiMaterialAPI: ...
+        @property
+        def ri_spline_api(self)->RiSplineAPI: ...
+        def semantics_labels_api(self, instance_name:str)->SemanticsLabelsAPI: ...
+        @property
+        def skel_binding_api(self)->SkelBindingAPI: ...
+        @property
+        def node_graph_node_api(self)->NodeGraphNodeAPI: ...
+        @property
+        def scene_graph_prim_api(self)->SceneGraphPrimAPI: ...
+        def accessibility_api(self, instance_name:str)->AccessibilityAPI: ...
+        @property
+        def particle_field_position_base_api(self)->ParticleFieldPositionBaseAPI: ...
+        @property
+        def particle_field_kernel_base_api(self)->ParticleFieldKernelBaseAPI: ...
+        @property
+        def particle_field_radiance_base_api(self)->ParticleFieldRadianceBaseAPI: ...
     # --- END generated api accessors ---
 
 # Declared after the class so the bound can name Prim without a forward ref; a string

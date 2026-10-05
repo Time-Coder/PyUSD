@@ -25,6 +25,7 @@ from pyusd import (
     Stage,
 )
 from pyusd.geom import Camera, Mesh, Scope, Sphere, Xform
+from pyusd.model_api import ModelAPI
 from pyusd.sdf import Specifier
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -298,6 +299,35 @@ check_true("overwrote file lost the old prim", "hello" not in new_file.read_text
 check_true("overwrote file has the new prim", "onlyThis" in new_file.read_text())
 new_file.unlink()
 new_dir.rmdir()
+
+# --- api accessors are declarations, not implementations ---------------------
+# Prim.__getattr__ routes every *_api name to PrimSpec.__getattr__, which consults the
+# registry, checks apiSchemaCanOnlyApplyTo and hands back the schema object or an
+# APIWrapper. A generated body per accessor would be a second implementation of a path
+# that already exists -- 41 of them, three lines each. They are declarations under
+# if TYPE_CHECKING instead, so the class carries them for a type checker and the runtime
+# never sees them.
+check_true("API accessor works at runtime", isinstance(api_prim.model_api, ModelAPI))
+# If the class really had these attributes, __getattr__ would never run and the API
+# registry, apiSchemaCanOnlyApplyTo and the multiple-apply wrapper would all be bypassed.
+check_true(
+    "API accessors are not real class attributes",
+    not any(
+        name in vars(klass)
+        for klass in type(api_prim).__mro__
+        for name in ("model_api", "collection_api")
+    ),
+)
+check(
+    "multiple-apply accessor still routes",
+    type(api_prim.collection_api("via_getattr")).__name__,
+    "CollectionAPI",
+)
+# Assigning over an *_api name still authors a property of that name, which is
+# pre-existing Prim.__setattr__ behaviour; the point is that removing the generated
+# bodies did not change it.
+api_prim.model_api = "a property, not a schema"
+check("assignment authors a property of that name", api_prim.has_prop("model_api"), True)
 
 # --- variants -------------------------------------------------------------
 # Variants are authored as real child prims, the way USDA encodes them inline.
