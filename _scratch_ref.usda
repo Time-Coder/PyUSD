@@ -1,0 +1,11 @@
+#usda 1.0
+
+def Xform "t"
+{
+    double x = 1
+}
+
+def Xform "p"
+{
+    prepend references = </t>
+}

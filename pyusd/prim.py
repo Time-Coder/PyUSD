@@ -213,7 +213,48 @@ class Prim:
     def _edit_spec(self) -> PrimSpec:
         return self._stage._ensure_edit_prim(self._path)
 
-    def _add_arc(self, attr_name: str, target: Any, prepend: bool) -> None:
+    def _as_arc_target(self, target: Union[Prim, PrimSpec, Layer]) -> Union[PrimSpec, Layer]:
+        """Reduce an arc target to what the composition engine understands.
+
+        The engine reads three shapes: a ``PrimSpec`` (resolved through the layer it
+        lives in), a ``Layer`` (the whole file), and a string (an ``@asset@</path>``
+        or a bare path). A ``Prim`` was none of those, and nothing rejected it -- it was
+        appended to the arc list as-is and serialised as ``prepend references =
+        Prim(</t>)``, which is not a reference at all and does not survive a round trip
+        through OpenUSD. A view is what a caller actually has, so it is accepted and
+        reduced to its spec here rather than being a silent way to write nonsense.
+
+        The spec has to be authored in *some* layer: an arc is stored data, so a prim
+        that exists only as a composed result has nothing to point at. Passing the
+        target's own ``authored_prim`` stays available for the case where the spec lives
+        in a layer other than this stage's edit target, which is what a cross-layer
+        reference needs.
+
+        ``Layer`` is imported here rather than at module scope: it appears only in the
+        annotations, which PEP 563 leaves unevaluated, and importing it for real would
+        close a cycle, since stage.py imports this module.
+        """
+        from .layer import Layer
+
+        if isinstance(target, (PrimSpec, Layer)):
+            return target
+
+        spec = target.authored_prim
+        if spec is None:
+            raise ValueError(
+                f"{target.path} is not authored in this stage's edit layer, so it has "
+                "no stored form to reference; pass its authored_prim instead"
+            )
+
+        return spec
+
+    def _add_arc(
+        self,
+        attr_name: str,
+        target: Union[Prim, PrimSpec, Layer],
+        prepend: bool,
+    ) -> None:
+        target = self._as_arc_target(target)
         spec = self._edit_spec()
         arcs = getattr(spec, attr_name)
         if target in arcs:
@@ -226,7 +267,10 @@ class Prim:
 
         self._stage.invalidate()
 
-    def _remove_arc(self, attr_name: str, target: Any) -> None:
+    def _remove_arc(
+        self, attr_name: str, target: Union[Prim, PrimSpec, Layer]
+    ) -> None:
+        target = self._as_arc_target(target)
         spec = self._edit_spec()
         arcs = getattr(spec, attr_name)
         if target in arcs:
@@ -234,28 +278,28 @@ class Prim:
 
         self._stage.invalidate()
 
-    def inherit(self, target: Union[PrimSpec, Layer], prepend: bool = True) -> None:
+    def inherit(self, target: Union[Prim, PrimSpec, Layer], prepend: bool = True) -> None:
         self._add_arc("_inherits", target, prepend)
 
-    def remove_inherit(self, target: Union[PrimSpec, Layer]) -> None:
+    def remove_inherit(self, target: Union[Prim, PrimSpec, Layer]) -> None:
         self._remove_arc("_inherits", target)
 
-    def reference(self, target: Union[PrimSpec, Layer], prepend: bool = True) -> None:
+    def reference(self, target: Union[Prim, PrimSpec, Layer], prepend: bool = True) -> None:
         self._add_arc("_references", target, prepend)
 
-    def remove_reference(self, target: Union[PrimSpec, Layer]) -> None:
+    def remove_reference(self, target: Union[Prim, PrimSpec, Layer]) -> None:
         self._remove_arc("_references", target)
 
-    def payload(self, target: Union[PrimSpec, Layer], prepend: bool = True) -> None:
+    def payload(self, target: Union[Prim, PrimSpec, Layer], prepend: bool = True) -> None:
         self._add_arc("_payloads", target, prepend)
 
-    def remove_payload(self, target: Union[PrimSpec, Layer]) -> None:
+    def remove_payload(self, target: Union[Prim, PrimSpec, Layer]) -> None:
         self._remove_arc("_payloads", target)
 
-    def specialize(self, target: Union[PrimSpec, Layer], prepend: bool = True) -> None:
+    def specialize(self, target: Union[Prim, PrimSpec, Layer], prepend: bool = True) -> None:
         self._add_arc("_specializes", target, prepend)
 
-    def remove_specialize(self, target: Union[PrimSpec, Layer])->None:
+    def remove_specialize(self, target: Union[Prim, PrimSpec, Layer])->None:
         self._remove_arc("_specializes", target)
 
     def def_(self, prim_type: Type[PrimType], path: str) -> PrimType:

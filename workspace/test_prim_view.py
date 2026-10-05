@@ -26,6 +26,7 @@ from pyusd import (
 )
 from pyusd.geom import Camera, Mesh, Scope, Sphere, Xform
 from pyusd.model_api import ModelAPI
+from pyusd.prim_spec import PrimSpec
 from pyusd.sdf import Specifier
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -139,6 +140,43 @@ check(
     asset.prim_spec_at("/Asset").mass.get(),
     50.0,
 )
+
+# Arc targets accept the view, not just the stored spec. A Prim used to be appended to
+# the arc list as-is and serialised as "prepend references = Prim(</t>)", which is not a
+# reference and does not survive a round trip through OpenUSD. Passing one is the
+# natural thing to do, so it is reduced to its spec instead.
+arc_asset = Layer("smoke_arc_asset.usda")
+arc_asset.def_(Xform, "/Source")
+arc_stage = Stage(arc_asset)
+arc_src = arc_stage["/Source"]
+arc_dst = arc_stage.def_(Xform, "/Dest")
+arc_dst.reference(arc_src)
+check("reference accepts a Prim", len(arc_dst.authored_prim._references), 1)
+check_true(
+    "the stored arc is a spec, not a view",
+    isinstance(arc_dst.authored_prim._references[0], PrimSpec),
+)
+check_true(
+    "the serialised arc is a path, not a repr",
+    "Prim(" not in arc_stage.root_layer.to_str(),
+)
+# All four arc kinds go through the same reduction.
+for kind in ("inherit", "payload", "specialize"):
+    getattr(arc_dst, kind)(arc_src)
+arcs = arc_dst.authored_prim
+check("inherit accepted a Prim", len(arcs._inherits), 1)
+check("payload accepted a Prim", len(arcs._payloads), 1)
+check("specialize accepted a Prim", len(arcs._specializes), 1)
+arc_dst.remove_reference(arc_src)
+check("remove_reference accepts a Prim", len(arc_dst.authored_prim._references), 0)
+
+# A prim that exists only as a composed result has no stored form to point at, so it
+# is refused rather than silently written as something unreadable.
+try:
+    arc_dst.inherit(Stage(Layer("smoke_arc_unauthored.usda"))["/Nowhere"])
+    check("an unauthored target is refused", False, True)
+except KeyError:
+    check("an unauthored target is refused", True, True)
 
 # --- payload load state is per stage --------------------------------------
 payload_layer = Layer("smoke_payload.usda")
