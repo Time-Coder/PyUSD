@@ -499,14 +499,32 @@ try:
     anchored_layer = Layer(str(arc_pkg / "anchored.usda"), new=True)
     anchored = Stage(anchored_layer).def_(Xform, "/Q")
     anchored.reference("@./local.usda@</L>")
+    # The reported case: the layer has a file name and the author still wrote a path that
+    # reads as working-directory relative. to_str alone is enough to fix it -- no save.
+    named = Layer(str(arc_pkg / "named.usda"), new=True)
+    named_prim = Stage(named).def_(Xform, "/Named")
+    named_prim.reference("@./asset.usda@</A>")
+    check_true(
+        "a named layer rewrites a cwd-relative path in to_str",
+        "@../asset.usda@</A>" in named.to_str(),
+    )
+    check_true(
+        "and never turns an arc into a repr",
+        "Prim(" not in named.to_str(),
+    )
+
+    # Every relative asset path authored through the API is recorded, whether or not the
+    # layer has a file name -- here it does, and the author still wrote a path that reads
+    # as working-directory relative. What decides whether to rebase is whether the
+    # as-stored reading already resolves, so a path that was already correct is left alone.
     check(
-        "a layer that already has a file name is not marked",
+        "a relative path is recorded even with a file name",
         anchored_layer._impl._cwd_relative_assets,
-        set(),
+        {"./local.usda"},
     )
     anchored_layer.save()
     check_true(
-        "and its arc is written unchanged",
+        "but a path already correct for the layer is written unchanged",
         "@./local.usda@</L>" in (arc_pkg / "anchored.usda").read_text(),
     )
 finally:

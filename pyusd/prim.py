@@ -302,23 +302,24 @@ class Prim:
     def _note_cwd_relative_asset(self, target: Union[PrimSpec, Layer, str]) -> None:
         """Record a relative asset path that only the working directory can resolve.
 
-        A relative asset path is read relative to the layer containing it. A layer with
-        no file name has no directory, so the working directory stands in -- and the path
-        means something different the moment that layer is written to a file. These are
-        the paths the serializer has to re-express against the destination, and marking
-        them is the only way to tell them apart from a relative path that came out of a
-        file and is already anchored correctly.
+        A relative asset path is read relative to the layer containing it, so what a path
+        meant when it was authored -- resolved against the working directory -- and what
+        the stored string will mean -- resolved against the layer -- are two different
+        things whenever those directories differ. Both cases need it: a layer with no
+        file name has no directory at all, and a layer with one still turns `@./a.usda@`
+        written from elsewhere into a reference to a file beside itself.
+
+        Every relative asset path authored through the API is recorded, whether or not
+        the layer has a file name. What decides at serialization is whether to rebase is
+        the existence of the two candidates, not the marking: a path that came out of a
+        file is never recorded, so it stays byte for byte identical.
         """
         if not isinstance(target, str) or not target.startswith("@"):
             return
 
-        edit_layer = self._stage.edit_layer
-        if edit_layer.file_name:
-            return
-
         asset = target[1:].partition("@")[0]
         if asset and not os.path.isabs(asset):
-            edit_layer._impl._cwd_relative_assets.add(asset)
+            self._stage.edit_layer._impl._cwd_relative_assets.add(asset)
 
     def _add_arc(
         self,

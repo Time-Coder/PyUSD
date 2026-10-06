@@ -275,14 +275,21 @@ Useful checks and workflows:
   anchor is `owner_spec.layer` -- the layer that actually holds the reference, not the
   root or the edit target. A layer with no file name has no directory, so the working
   directory stands in, and the same string denotes a different file once that layer is
-  written somewhere. `_note_cwd_relative_asset` records exactly those paths on the layer
-  and `MetadataSerializer._rebase_cwd_relative_assets` re-expresses them against the
-  destination. Marking them is the whole point: rebasing every relative path would
-  re-derive a path that came out of a file from the current working directory, and would
-  make a round trip depend on where the script was run. The equivalence test compares
-  the authored meaning, working-directory relative, against the as-stored meaning,
-  layer-relative -- comparing the rebased form instead would be circular, because
-  `relpath` is computed to make the two equal.
+  written somewhere. `_note_cwd_relative_asset` records every relative asset path authored
+  through the API on the owning layer, and
+  `MetadataSerializer._rebase_cwd_relative_assets` re-expresses the recorded ones against
+  the layer's own directory -- in `to_str`, so it applies whether or not `save` is called.
+  Recording them is what separates them from a relative path that came out of a file,
+  which is never recorded and so stays byte for byte identical; that is what keeps a round
+  trip from depending on where the script was run.
+
+  Recording is not the decision. Both spellings are relative and neither is wrong on its
+  face -- `./a.usda` beside the layer and `./a.usda` beside the script are different files
+  and the string cannot say which was meant -- so the filesystem decides: if the as-stored
+  reading already resolves it is the one the author wrote against and is left alone,
+  otherwise the authored reading is re-expressed, and if neither resolves nothing is
+  guessed. The first cut got this backwards by skipping the mark whenever the layer had a
+  file name, which is exactly the case where the rewrite is still needed.
 - `Layer.save(other_path)` updates `_file_name`, before serializing rather than after.
   A relative asset path is resolved against the layer's directory, so a layer that keeps
   the old name after being written elsewhere keeps resolving against a directory it no

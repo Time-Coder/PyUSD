@@ -58,8 +58,19 @@ class MetadataSerializer:
             # path is read relative to the layer holding it. Comparing the rebased form
             # against the authored one would be circular -- relpath is computed to make
             # those equal -- so it is the as-read meaning that has to match.
-            as_stored = os.path.normcase(os.path.abspath(os.path.join(anchor_dir, asset)))
-            if as_stored == as_authored:
+            as_stored = os.path.abspath(os.path.join(anchor_dir, asset))
+            if os.path.normcase(as_stored) == as_authored:
+                return value
+
+            # Both spellings are relative and neither is wrong on its face: "./a.usda"
+            # beside the layer and "./a.usda" beside the script are different files and the
+            # string cannot say which was meant. The filesystem can. If the as-stored
+            # reading already resolves, it is the one the author wrote against and is left
+            # alone; otherwise the authored reading is re-expressed, and if neither
+            # resolves nothing is guessed.
+            if os.path.exists(as_stored):
+                return value
+            if not os.path.exists(as_authored):
                 return value
 
             rebased = os.path.relpath(as_authored, anchor_dir).replace(os.sep, "/")
