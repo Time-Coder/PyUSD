@@ -1,15 +1,74 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List
+import os
+import re
+from typing import TYPE_CHECKING, Any, List, Optional
 
 from .usda_serializer import UsdaSerializer
 from .utils import infer_type
 
 if TYPE_CHECKING:
+    from .layer import Layer
     from .metadata import Metadata
 
 
 class MetadataSerializer:
+
+    _ASSET_ARC_RE = re.compile(r"^@([^@]*)@(.*)$", re.DOTALL)
+
+    @staticmethod
+    def _rebase_cwd_relative_assets(values: Any, rel_layer: Optional[Layer]) -> Any:
+        """Re-express marked asset paths against the directory this layer is written to.
+
+        An asset path authored while its layer had no file name was resolved against the
+        working directory, and a relative path is otherwise read relative to the layer
+        holding it -- so the same string denotes a different file once the layer has an
+        address. Only paths Prim._note_cwd_relative_asset marked are touched, which is
+        what keeps a relative path that came out of a file byte for byte unchanged; the
+        alternative, rebasing every relative path, makes a round trip depend on where the
+        script was run from.
+
+        The comparison is on resolved paths rather than on spelling, so a marked path that
+        already means the right file is left alone.
+        """
+        if rel_layer is None or not rel_layer.file_name:
+            return values
+
+        pending = getattr(rel_layer._impl, "_cwd_relative_assets", None)
+        if not pending:
+            return values
+
+        anchor_dir = os.path.dirname(os.path.abspath(rel_layer.file_name))
+
+        def rebase(value: Any) -> Any:
+            if not isinstance(value, str):
+                return value
+
+            match = MetadataSerializer._ASSET_ARC_RE.match(value.strip())
+            if match is None:
+                return value
+
+            asset, tail = match.group(1), match.group(2)
+            if asset not in pending or os.path.isabs(asset):
+                return value
+
+            # What the author meant: the path resolved against the working directory.
+            as_authored = os.path.normcase(os.path.abspath(asset))
+            # What the stored string will mean once it is read back, since a relative
+            # path is read relative to the layer holding it. Comparing the rebased form
+            # against the authored one would be circular -- relpath is computed to make
+            # those equal -- so it is the as-read meaning that has to match.
+            as_stored = os.path.normcase(os.path.abspath(os.path.join(anchor_dir, asset)))
+            if as_stored == as_authored:
+                return value
+
+            rebased = os.path.relpath(as_authored, anchor_dir).replace(os.sep, "/")
+            return f"@{rebased}@{tail}"
+
+        if isinstance(values, list):
+            return [rebase(item) for item in values]
+
+        return rebase(values)
 
     @staticmethod
     def _dedupe(values):
@@ -99,6 +158,9 @@ class MetadataSerializer:
                     rel_layer = metadata._parent.layer
                 elif isinstance(metadata._parent, Layer):
                     rel_layer = metadata._parent
+
+            if is_ref:
+                value = MetadataSerializer._rebase_cwd_relative_assets(value, rel_layer)
 
             value_str = UsdaSerializer.value_str(
                 value, indents+1,

@@ -13,6 +13,7 @@ through :attr:`Prim.resolved_prim`, :attr:`Prim.authored_prim` or
 
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING, Any, List, Optional, Type, TypeVar, Union, cast
 
 from .composition import normalize_prim_path, path_items, prim_at
@@ -298,6 +299,27 @@ class Prim:
 
         return spec
 
+    def _note_cwd_relative_asset(self, target: Union[PrimSpec, Layer, str]) -> None:
+        """Record a relative asset path that only the working directory can resolve.
+
+        A relative asset path is read relative to the layer containing it. A layer with
+        no file name has no directory, so the working directory stands in -- and the path
+        means something different the moment that layer is written to a file. These are
+        the paths the serializer has to re-express against the destination, and marking
+        them is the only way to tell them apart from a relative path that came out of a
+        file and is already anchored correctly.
+        """
+        if not isinstance(target, str) or not target.startswith("@"):
+            return
+
+        edit_layer = self._stage.edit_layer
+        if edit_layer.file_name:
+            return
+
+        asset = target[1:].partition("@")[0]
+        if asset and not os.path.isabs(asset):
+            edit_layer._impl._cwd_relative_assets.add(asset)
+
     def _add_arc(
         self,
         attr_name: str,
@@ -305,6 +327,7 @@ class Prim:
         prepend: bool,
     ) -> None:
         target = self._as_arc_target(attr_name, target)
+        self._note_cwd_relative_asset(target)
         spec = self._edit_spec()
         arcs = getattr(spec, attr_name)
         if target in arcs:

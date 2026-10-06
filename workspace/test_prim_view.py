@@ -454,6 +454,64 @@ check(
 api_prim.model_api = "a property, not a schema"
 check("assignment authors a property of that name", api_prim.has_prop("model_api"), True)
 
+# --- a working-directory relative arc survives being written to a file ---------
+# A relative asset path is read relative to the layer holding it. A layer with no file
+# name has no directory, so the working directory stands in -- and the same string means a
+# different file the moment that layer is written somewhere. These are the paths that get
+# re-expressed against the destination; nothing else is touched, which is what keeps a
+# relative path that came out of a file byte for byte identical.
+import os
+
+arc_root = tempfile.mkdtemp()
+arc_pkg = Path(arc_root) / "pkg"
+arc_pkg.mkdir()
+asset_body = '#usda 1.0\n\ndef Xform "A"\n{\n    double mass = 7\n}\n'
+(Path(arc_root) / "asset.usda").write_text(asset_body)
+(Path(arc_pkg) / "local.usda").write_text(asset_body)
+
+previous_cwd = os.getcwd()
+os.chdir(arc_root)
+try:
+    anonymous = Stage(Layer())
+    referenced = anonymous.def_(Xform, "/P")
+    referenced.reference("@./asset.usda@</A>")
+    check("cwd relative arc resolves while authoring", referenced.mass.get(), 7.0)
+    check(
+        "and is marked as working-directory relative",
+        anonymous.root_layer._impl._cwd_relative_assets,
+        {"./asset.usda"},
+    )
+
+    anonymous.root_layer.save(str(arc_pkg / "scene.usda"))
+    written = (arc_pkg / "scene.usda").read_text()
+    check_true("written relative to the layer", "@../asset.usda@</A>" in written)
+
+    # The whole point: the file opens from anywhere.
+    elsewhere = tempfile.mkdtemp()
+    os.chdir(elsewhere)
+    check(
+        "reopened from an unrelated directory",
+        Stage(str(arc_pkg / "scene.usda"))["/P"].mass.get(),
+        7.0,
+    )
+
+    os.chdir(arc_root)
+    anchored_layer = Layer(str(arc_pkg / "anchored.usda"), new=True)
+    anchored = Stage(anchored_layer).def_(Xform, "/Q")
+    anchored.reference("@./local.usda@</L>")
+    check(
+        "a layer that already has a file name is not marked",
+        anchored_layer._impl._cwd_relative_assets,
+        set(),
+    )
+    anchored_layer.save()
+    check_true(
+        "and its arc is written unchanged",
+        "@./local.usda@</L>" in (arc_pkg / "anchored.usda").read_text(),
+    )
+finally:
+    os.chdir(previous_cwd)
+
 # --- variants -------------------------------------------------------------
 # Variants are authored as real child prims, the way USDA encodes them inline.
 # variant_set["name"] returns the storage spec, because a prim inside a variant

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import uuid
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Set, Type, Union
 from weakref import WeakValueDictionary
 
 from beartype import beartype
@@ -51,6 +51,11 @@ class LayerImpl:
         self._loaded = False
         self._dirty = False
         self._stage: Optional[Any] = None
+        # Asset paths authored while this layer had no file name, so they were resolved
+        # against the working directory rather than against a directory of their own. Once
+        # the layer is written somewhere, a relative path would silently change meaning,
+        # so the serializer re-expresses exactly these against the destination directory.
+        self._cwd_relative_assets: Set[str] = set()
 
     def touch(self) -> None:
         self._revision += 1
@@ -73,6 +78,7 @@ class Layer:
     _loaded: bool
     _dirty: bool
     _is_new: bool
+    _cwd_relative_assets: Set[str]
     _stage: Optional[Any]
 
     @staticmethod
@@ -416,6 +422,14 @@ class Layer:
         return f'Layer("{self.file_name}")'
 
     def save(self, file_name:str="")->None:
+        if file_name and file_name != self._file_name:
+            # Saving elsewhere makes that the layer's address. Leaving the old name in
+            # place is not merely cosmetic: a relative asset path is read relative to the
+            # layer that holds it, so the layer would keep resolving against a directory
+            # it no longer lives in. The registry is keyed on construction and is not
+            # re-keyed here.
+            self._file_name = file_name
+
         LayerSerializer.save(self, file_name)
         self._impl._dirty = False
         self._impl._loaded = True

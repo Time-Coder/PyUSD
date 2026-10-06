@@ -271,6 +271,22 @@ Useful checks and workflows:
   scratch layer that carries a name is not that file's layer, so sharing or clobbering
   one would be wrong in both directions, and two of them are independent the way two
   anonymous layers are.
+- A relative asset path in an arc is read relative to the layer that contains it, so the
+  anchor is `owner_spec.layer` -- the layer that actually holds the reference, not the
+  root or the edit target. A layer with no file name has no directory, so the working
+  directory stands in, and the same string denotes a different file once that layer is
+  written somewhere. `_note_cwd_relative_asset` records exactly those paths on the layer
+  and `MetadataSerializer._rebase_cwd_relative_assets` re-expresses them against the
+  destination. Marking them is the whole point: rebasing every relative path would
+  re-derive a path that came out of a file from the current working directory, and would
+  make a round trip depend on where the script was run. The equivalence test compares
+  the authored meaning, working-directory relative, against the as-stored meaning,
+  layer-relative -- comparing the rebased form instead would be circular, because
+  `relpath` is computed to make the two equal.
+- `Layer.save(other_path)` updates `_file_name`, before serializing rather than after.
+  A relative asset path is resolved against the layer's directory, so a layer that keeps
+  the old name after being written elsewhere keeps resolving against a directory it no
+  longer lives in. The registry is keyed on construction and is not re-keyed.
 - `Layer.load` inside one process hands back the registry's layer instead of re-reading,
   because `Layer.__init__` finds the cached impl first and the parser's `_loaded`
   early-return then short-circuits. One load per path per process;
