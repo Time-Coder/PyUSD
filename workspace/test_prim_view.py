@@ -499,6 +499,34 @@ try:
     anchored_layer = Layer(str(arc_pkg / "anchored.usda"), new=True)
     anchored = Stage(anchored_layer).def_(Xform, "/Q")
     anchored.reference("@./local.usda@</L>")
+    # Case must survive: normcase lowercases on Windows, and feeding that to relpath
+    # turned "@./Asset.usda@" into "@../asset.usda@", naming a file that does not exist
+    # on a case-sensitive filesystem.
+    cased = Layer(str(arc_pkg / "cased.usda"), new=True)
+    cased_prim = Stage(cased).def_(Xform, "/Cased")
+    cased_prim.reference("@./asset.usda@</A>")
+    cased_arc = next(
+        line for line in cased.to_str().splitlines() if "references" in line
+    )
+    check_true("case is preserved when rebasing", "asset.usda@" in cased_arc)
+
+
+    nested = Path(tempfile.mkdtemp()) / "inner"
+    nested.mkdir()
+    (nested / "Same.usda").write_text(asset_body)
+    previous = os.getcwd()
+    os.chdir(nested)
+    try:
+        beside = Layer(str(arc_pkg / "beside.usda"), new=True)
+        beside_prim = Stage(beside).def_(Xform, "/Beside")
+        beside_prim.reference("@./Same.usda@</A>")
+        beside_arc = next(
+            line for line in beside.to_str().splitlines() if "references" in line
+        )
+        check_true("a rebased path keeps its case", "Same.usda@" in beside_arc)
+    finally:
+        os.chdir(previous)
+
     # The reported case: the layer has a file name and the author still wrote a path that
     # reads as working-directory relative. to_str alone is enough to fix it -- no save.
     named = Layer(str(arc_pkg / "named.usda"), new=True)
@@ -526,6 +554,13 @@ try:
     check_true(
         "but a path already correct for the layer is written unchanged",
         "@./local.usda@</L>" in (arc_pkg / "anchored.usda").read_text(),
+    )
+    # Spelling is preserved too, "./" included: a path that needs no rewrite is returned
+    # untouched, and a rewrite can never produce a bare filename, because that would mean
+    # the target sits beside the layer -- the case that is not rewritten at all.
+    check_true(
+        "an untouched path keeps its ./ prefix",
+        "references = @./local.usda@</L>" in (arc_pkg / "anchored.usda").read_text(),
     )
 finally:
     os.chdir(previous_cwd)

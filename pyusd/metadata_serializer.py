@@ -53,13 +53,17 @@ class MetadataSerializer:
                 return value
 
             # What the author meant: the path resolved against the working directory.
-            as_authored = os.path.normcase(os.path.abspath(asset))
+            # Deliberately *not* normcase: on Windows normcase lowercases, and feeding
+            # that to relpath below rewrote "@./Asset.usda@" as "@../asset.usda@" -- the
+            # reference then names a file that does not exist on a case-sensitive
+            # filesystem. normcase is for comparing, not for producing output.
+            authored_abs = os.path.abspath(asset)
             # What the stored string will mean once it is read back, since a relative
             # path is read relative to the layer holding it. Comparing the rebased form
             # against the authored one would be circular -- relpath is computed to make
             # those equal -- so it is the as-read meaning that has to match.
-            as_stored = os.path.abspath(os.path.join(anchor_dir, asset))
-            if os.path.normcase(as_stored) == as_authored:
+            stored_abs = os.path.abspath(os.path.join(anchor_dir, asset))
+            if os.path.normcase(stored_abs) == os.path.normcase(authored_abs):
                 return value
 
             # Both spellings are relative and neither is wrong on its face: "./a.usda"
@@ -68,12 +72,17 @@ class MetadataSerializer:
             # reading already resolves, it is the one the author wrote against and is left
             # alone; otherwise the authored reading is re-expressed, and if neither
             # resolves nothing is guessed.
-            if os.path.exists(as_stored):
+            if os.path.exists(stored_abs):
                 return value
-            if not os.path.exists(as_authored):
+            if not os.path.exists(authored_abs):
                 return value
 
-            rebased = os.path.relpath(as_authored, anchor_dir).replace(os.sep, "/")
+            # A rebased path can never come out as a bare filename: that would mean the
+            # target sits beside the layer, which is exactly the case where the as-stored
+            # reading resolves and nothing is rewritten at all. So there is no spelling to
+            # preserve here -- a path that needs no rewrite is returned untouched, "./"
+            # included.
+            rebased = os.path.relpath(authored_abs, anchor_dir).replace(os.sep, "/")
             return f"@{rebased}@{tail}"
 
         if isinstance(values, list):
