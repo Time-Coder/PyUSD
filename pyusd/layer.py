@@ -2,7 +2,17 @@ from __future__ import annotations
 
 import os
 import uuid
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Set, Type, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+)
 from weakref import WeakValueDictionary
 
 from beartype import beartype
@@ -51,11 +61,15 @@ class LayerImpl:
         self._loaded = False
         self._dirty = False
         self._stage: Optional[Any] = None
-        # Asset paths authored while this layer had no file name, so they were resolved
-        # against the working directory rather than against a directory of their own. Once
-        # the layer is written somewhere, a relative path would silently change meaning,
-        # so the serializer re-expresses exactly these against the destination directory.
-        self._cwd_relative_assets: Set[str] = set()
+        # Relative asset paths authored through the API, mapped to the absolute file each
+        # one was resolved to and the directory its stored spelling was made relative to.
+        # A relative asset path is read relative to the layer holding it, so a path written
+        # from elsewhere names one file when authored and another when read back. The
+        # spelling in the layer is already correct for the directory it was authored
+        # against; this remembers enough to re-express it if that directory ever changes,
+        # which happens whenever an anonymous layer is first written somewhere or a named
+        # one is saved under a different path.
+        self._cwd_relative_assets: Dict[str, Tuple[str, str]] = {}
 
     def touch(self) -> None:
         self._revision += 1
@@ -78,7 +92,7 @@ class Layer:
     _loaded: bool
     _dirty: bool
     _is_new: bool
-    _cwd_relative_assets: Set[str]
+    _cwd_relative_assets: Dict[str, Tuple[str, str]]
     _stage: Optional[Any]
 
     @staticmethod

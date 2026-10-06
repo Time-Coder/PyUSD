@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import os
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from .layer import Layer, LayerImpl
 from .prim_spec import PrimSpec
@@ -400,7 +401,7 @@ class CompositionEngine:
             layer = self.layer_cache.materialize(arc, owner_layer.file_name)
             return ArcTarget(layer, self._default_target_path(layer))
 
-        text = str(arc).strip()
+        text = normalize_arc_text(str(arc))
         if not text:
             return None
 
@@ -748,3 +749,95 @@ class CompositionEngine:
             cls._deep_update(result, value)
 
         return result
+
+
+def normalize_arc_text(text: str) -> str:
+    """Spell an arc target the way USDA does, supplying the @ a bare path omits.
+
+    pxr takes a bare asset path in its Sdf API -- Sdf.Reference("a.usda") -- and its text
+    writer supplies the @ itself, exporting that as "@a.usda@". Its parser is strict the
+    other way: in a references list "a.usda" and "a.usda</A>" are both rejected, so a bare
+    string does not mean anything until it is wrapped. Wrapping is what pxr would have
+    written, so the two agree on what the string stands for.
+
+    Without the @ the "<...>" a prim path is written in would also be picked up as a prim
+    path of this layer: "a.usda</A>" would resolve as an internal reference to "/A" instead
+    of an asset path with a target prim.
+
+    A path starting with "/" is left alone. The text form for an internal arc is "</t>",
+    and pyusd accepts "/t" as that shorthand, so the distinction from a bare asset path
+    has to stay where it is rather than move into the @ handling.
+    """
+    stripped = text.strip()
+    if not stripped:
+        return text
+
+    if stripped.startswith("@"):
+        return text
+
+    if stripped.startswith("<") and stripped.endswith(">"):
+        return text
+
+    if stripped.startswith("/"):
+        return stripped
+
+    # The <...> is a target prim, so the @ that closes the asset goes immediately before it.
+    # Deciding on the "<" rather than on the presence of an @ is what separates "a.usda</A>",
+    # which has no @ at all and needs the asset closed, from "./a.usda@</A>", which already
+    # has that @ and needs only the opening one. Wrapping either whole produces "@a.usda@
+    # </A>@" rather than "@a.usda@</A>".
+    if "<" in stripped:
+        head, bracket, tail = stripped.partition("<")
+        if not head.endswith("@"):
+            head += "@"
+        return f"@{head}{bracket}{tail}"
+
+    if stripped.endswith("@"):
+        return "@" + stripped
+
+    return f"@{stripped}@"
+
+
+def resolve_asset_arc(asset: str, anchor_dir: str) -> Tuple[str, Optional[str]]:
+    """Spell `asset` so it names the same file when read from `anchor_dir`.
+
+    A relative asset path is read relative to the layer that holds it, so a path written
+    from somewhere else means one file when authored and another when read back. Returns
+    the spelling to store, plus the absolute path it was resolved to -- None when neither
+    reading resolves, since then there is nothing to be faithful to.
+
+    Both readings are relative and neither is wrong on its face: "./a.usda" beside the
+    layer and "./a.usda" beside the script are different files and the string cannot say
+    which was meant. The filesystem decides. If the as-stored reading already resolves it
+    is the one the author wrote against and the spelling is left alone; otherwise the
+    authored reading is re-expressed against `anchor_dir`.
+    """
+    # What the author meant: the path resolved against the working directory.
+    # Deliberately *not* normcase: on Windows normcase lowercases, and feeding that to
+    # relpath below rewrote "@./Asset.usda@" as "@../asset.usda@" -- naming a file that
+    # does not exist on a case-sensitive filesystem. normcase is for comparing, not for
+    # producing output.
+    authored_abs = os.path.abspath(asset)
+    # What the stored string will mean once it is read back. Comparing the re-expressed
+    # form against the authored one would be circular -- relpath is computed to make those
+    # equal -- so it is the as-read meaning that has to match.
+    stored_abs = os.path.abspath(os.path.join(anchor_dir, asset))
+    if os.path.normcase(stored_abs) == os.path.normcase(authored_abs):
+        return asset, stored_abs
+
+    if os.path.exists(stored_abs):
+        return asset, stored_abs
+
+    if not os.path.exists(authored_abs):
+        return asset, None
+
+    rebased = os.path.relpath(authored_abs, anchor_dir).replace(os.sep, "/")
+    # Keep the "./" USD writes for an asset beside the layer. It does come up: an authored
+    # path can leave the layer's directory and come back, e.g. "@../../Asset.usda@"
+    # written from two levels down, which re-expresses to the bare "Asset.usda". Dropping
+    # the prefix there would be a gratuitous spelling change on a path that is right
+    # either way.
+    if "/" not in rebased:
+        rebased = "./" + rebased
+
+    return rebased, authored_abs

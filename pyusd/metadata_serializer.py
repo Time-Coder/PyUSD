@@ -23,13 +23,14 @@ class MetadataSerializer:
         An asset path authored while its layer had no file name was resolved against the
         working directory, and a relative path is otherwise read relative to the layer
         holding it -- so the same string denotes a different file once the layer has an
-        address. Only paths Prim._note_cwd_relative_asset marked are touched, which is
-        what keeps a relative path that came out of a file byte for byte unchanged; the
+        address. Only paths Prim._canonicalise_asset_arc marked are touched, which is what
+        keeps a relative path that came out of a file byte for byte unchanged; the
         alternative, rebasing every relative path, makes a round trip depend on where the
         script was run from.
 
-        The comparison is on resolved paths rather than on spelling, so a marked path that
-        already means the right file is left alone.
+        Each marked path also records the directory its spelling was made relative to, so a
+        path that needs no change is left alone even when the layer has since been written
+        elsewhere.
         """
         if rel_layer is None or not rel_layer.file_name:
             return values
@@ -52,38 +53,18 @@ class MetadataSerializer:
             if asset not in pending or os.path.isabs(asset):
                 return value
 
-            # What the author meant: the path resolved against the working directory.
-            # Deliberately *not* normcase: on Windows normcase lowercases, and feeding
-            # that to relpath below rewrote "@./Asset.usda@" as "@../asset.usda@" -- the
-            # reference then names a file that does not exist on a case-sensitive
-            # filesystem. normcase is for comparing, not for producing output.
-            authored_abs = os.path.abspath(asset)
-            # What the stored string will mean once it is read back, since a relative
-            # path is read relative to the layer holding it. Comparing the rebased form
-            # against the authored one would be circular -- relpath is computed to make
-            # those equal -- so it is the as-read meaning that has to match.
-            stored_abs = os.path.abspath(os.path.join(anchor_dir, asset))
-            if os.path.normcase(stored_abs) == os.path.normcase(authored_abs):
+            target_abs, recorded_anchor = pending[asset]
+            # Nothing to do unless the directory the spelling was made relative to is not
+            # the one it will be read from -- which is the anonymous layer being written
+            # somewhere for the first time, or a named one saved under a different path.
+            if os.path.normcase(recorded_anchor) == os.path.normcase(anchor_dir):
                 return value
 
-            # Both spellings are relative and neither is wrong on its face: "./a.usda"
-            # beside the layer and "./a.usda" beside the script are different files and the
-            # string cannot say which was meant. The filesystem can. If the as-stored
-            # reading already resolves, it is the one the author wrote against and is left
-            # alone; otherwise the authored reading is re-expressed, and if neither
-            # resolves nothing is guessed.
-            if os.path.exists(stored_abs):
-                return value
-            if not os.path.exists(authored_abs):
-                return value
+            spelling = os.path.relpath(target_abs, anchor_dir).replace(os.sep, "/")
+            if "/" not in spelling:
+                spelling = "./" + spelling
 
-            # A rebased path can never come out as a bare filename: that would mean the
-            # target sits beside the layer, which is exactly the case where the as-stored
-            # reading resolves and nothing is rewritten at all. So there is no spelling to
-            # preserve here -- a path that needs no rewrite is returned untouched, "./"
-            # included.
-            rebased = os.path.relpath(authored_abs, anchor_dir).replace(os.sep, "/")
-            return f"@{rebased}@{tail}"
+            return f"@{spelling}@{tail}"
 
         if isinstance(values, list):
             return [rebase(item) for item in values]

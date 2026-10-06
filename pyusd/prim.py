@@ -16,7 +16,13 @@ from __future__ import annotations
 import os
 from typing import TYPE_CHECKING, Any, List, Optional, Type, TypeVar, Union, cast
 
-from .composition import normalize_prim_path, path_items, prim_at
+from .composition import (
+    normalize_arc_text,
+    normalize_prim_path,
+    path_items,
+    prim_at,
+    resolve_asset_arc,
+)
 from .prim_spec import PrimSpec
 from .property import Property
 from .sdf import Specifier
@@ -251,7 +257,10 @@ class Prim:
             return target
 
         if isinstance(target, str):
-            text = target.strip()
+            # A bare asset path is completed to "@asset@" first, so the two forms pxr
+            # distinguishes are decided on the canonical spelling and a path that only
+            # lacked its @ lands here looking like any other asset arc.
+            text = normalize_arc_text(target.strip())
             if text.startswith("@"):
                 if attr_name == "_inherits":
                     # Class inheritance is internal only. OpenUSD rejects
@@ -280,10 +289,9 @@ class Prim:
 
                 return f"<{path}>"
 
-            # Anything else is neither of the two forms the composition engine can
-            # resolve: no leading @ means no asset, and no angle brackets means no prim
-            # path, so it composes to nothing while looking stored. USD does not parse it
-            # either. A layer's whole contents are still reachable by passing a Layer.
+            # normalize_arc_text left this alone, so it is neither of the two forms the
+            # composition engine can resolve and USD does not parse it either. A layer's
+            # whole contents are still reachable by passing a Layer.
             raise ValueError(
                 f"{target!r} is not an arc this package can resolve. Use an internal path "
                 "such as '/Other' or '</Other>', or an asset reference such as "
@@ -299,27 +307,59 @@ class Prim:
 
         return spec
 
-    def _note_cwd_relative_asset(self, target: Union[PrimSpec, Layer, str]) -> None:
-        """Record a relative asset path that only the working directory can resolve.
+    def _canonicalise_asset_arc(
+        self, target: Union[PrimSpec, Layer, str]
+    ) -> Union[PrimSpec, Layer, str]:
+        """Store a relative asset path as the spelling the layer will actually read.
 
         A relative asset path is read relative to the layer containing it, so what a path
-        meant when it was authored -- resolved against the working directory -- and what
-        the stored string will mean -- resolved against the layer -- are two different
-        things whenever those directories differ. Both cases need it: a layer with no
-        file name has no directory at all, and a layer with one still turns `@./a.usda@`
-        written from elsewhere into a reference to a file beside itself.
+        meant when it was authored -- resolved against the working directory -- and what the
+        stored string will mean -- resolved against the layer -- are two different things
+        whenever those directories differ. Re-expressing it here rather than at
+        serialization keeps composition, `to_str` and `save` describing the same file: a
+        layer corrected only on the way out still points somewhere else until it is
+        written, which is a silent difference between the two.
 
-        Every relative asset path authored through the API is recorded, whether or not
-        the layer has a file name. What decides at serialization is whether to rebase is
-        the existence of the two candidates, not the marking: a path that came out of a
-        file is never recorded, so it stays byte for byte identical.
+        With a file name there is a directory to correct against, so the layer stores the
+        corrected spelling straight away. Without one there is no directory yet, so the path
+        is left as written and remembered for the serializer to re-express whenever the
+        layer is first written somewhere.
         """
-        if not isinstance(target, str) or not target.startswith("@"):
-            return
+        # Anything that is not a string is passed through as the same object: a PrimSpec or
+        # Layer target has no spelling to correct, and turning one into a string here would
+        # replace a stored spec with a name nothing can resolve.
+        if not isinstance(target, str):
+            return target
 
-        asset = target[1:].partition("@")[0]
-        if asset and not os.path.isabs(asset):
-            self._stage.edit_layer._impl._cwd_relative_assets.add(asset)
+        text = normalize_arc_text(target)
+        if not text.startswith("@"):
+            return text
+
+        asset = text[1:].partition("@")[0]
+        if not asset or os.path.isabs(asset):
+            return text
+
+        impl = self._stage.edit_layer._impl
+        anchor_dir = None
+        file_name = self._stage.edit_layer.file_name
+        if file_name:
+            anchor_dir = os.path.dirname(os.path.abspath(file_name))
+
+        if anchor_dir is None:
+            # No directory to correct against yet, so the stored string has to keep
+            # meaning what it meant. Remember the file it was written against so the
+            # serializer can re-express it once there is one.
+            authored_abs = os.path.abspath(asset)
+            if os.path.exists(authored_abs):
+                impl._cwd_relative_assets[asset] = (authored_abs, os.getcwd())
+            return text
+
+        spelling, target_abs = resolve_asset_arc(asset, anchor_dir)
+        if spelling != asset and target_abs is not None:
+            impl._cwd_relative_assets[spelling] = (target_abs, anchor_dir)
+
+        tail = text[1 + len(asset) :]
+        return f"@{spelling}{tail}"
 
     def _add_arc(
         self,
@@ -327,8 +367,7 @@ class Prim:
         target: Union[Prim, PrimSpec, Layer, str],
         prepend: bool,
     ) -> None:
-        target = self._as_arc_target(attr_name, target)
-        self._note_cwd_relative_asset(target)
+        target = self._canonicalise_asset_arc(self._as_arc_target(attr_name, target))
         spec = self._edit_spec()
         arcs = getattr(spec, attr_name)
         if target in arcs:

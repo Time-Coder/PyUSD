@@ -24,6 +24,7 @@ from pyusd import (
     Relationship,
     Stage,
 )
+from pyusd.composition import normalize_arc_text
 from pyusd.geom import Camera, Mesh, Scope, Sphere, Xform
 from pyusd.model_api import ModelAPI
 from pyusd.prim_spec import PrimSpec
@@ -233,29 +234,56 @@ for label, target, expected in (
     dest.reference(target)
     check(f"{label} composes", dest.mass.get(), expected)
 
-# Anything the engine cannot resolve is refused. A string with no leading @ has no asset
-# and no brackets means no prim path, so it composes to nothing while looking stored --
-# and USD does not parse it either.
-for bad in ("./a.usda", "a.usda", "rel/path", "", "<>"):
+# A bare asset path is completed to "@asset@" rather than refused, because that is what pxr
+# does with the same string: Sdf.Reference("a.usda") takes it as-is, and ExportToString
+# writes it back as "@a.usda@". Its parser is the strict side -- in a references list "a.usda"
+# and "a.usda</A>" are both rejected -- so the wrapping is what makes the string mean anything.
+bare_stage = Stage(Layer(str(Path(tempfile.mkdtemp()) / "bare.usda"), new=True))
+bare_prim = bare_stage.def_(Xform, "/Bare")
+for bare in ("a.usda", "./a.usda", "rel/path.usda"):
+    bare_prim.reference(bare)
+    check(
+        f"a bare {bare!r} is wrapped",
+        list(bare_prim.authored_prim._references)[0],
+        "@" + bare + "@",
+    )
+
+# A path that only lost its opening @ keeps the closing one it still has; wrapping the whole
+# string again would produce "@a.usda@</A>@" rather than "@a.usda@</A>".
+half_stage = Stage(Layer(str(Path(tempfile.mkdtemp()) / "half.usda"), new=True))
+half_prim = half_stage.def_(Xform, "/Half")
+half_prim.reference("./a.usda@</A>")
+check(
+    "a missing opening @ is supplied, not wrapped twice",
+    list(half_prim.authored_prim._references)[0],
+    "@./a.usda@</A>",
+)
+
+# The <...> in a bare asset path is a target prim, not an internal reference. Left alone,
+# "a.usda</A>" would resolve as an internal arc to "/A" of this same layer, so the @ has to
+# go in before the brackets are read as a prim path.
+check(
+    "a bare path with a target prim is not read as an internal arc",
+    normalize_arc_text("a.usda</A>"),
+    "@a.usda@</A>",
+)
+
+# What is left over has no arc in it at all, and is refused rather than stored as something
+# that composes to nothing while looking stored.
+for bad in ("", "<>"):
     try:
         str_prim.reference(bad)
         check(f"{bad!r} is refused", False, True)
     except ValueError:
         check(f"{bad!r} is refused", True, True)
 
-# Two things OpenUSD rejects, refused here rather than written into a file that will not
-# open: an asset arc for inherits, which is internal-only, and an asset path with the
-# leading @ left off.
+# Class inheritance is internal-only, and OpenUSD rejects an asset arc for it outright, so
+# that one is refused rather than written into a file that will not open.
 try:
     str_prim.inherit("@./a.usda@</A>")
     check("inherits refuses an asset arc", False, True)
 except ValueError:
     check("inherits refuses an asset arc", True, True)
-try:
-    str_prim.reference("./a.usda@</A>")
-    check("a missing leading @ is refused", False, True)
-except ValueError:
-    check("a missing leading @ is refused", True, True)
 
 # A prim that exists only as a composed result has no stored form to point at, so it
 # is refused rather than silently written as something unreadable.
@@ -476,10 +504,19 @@ try:
     referenced = anonymous.def_(Xform, "/P")
     referenced.reference("@./asset.usda@</A>")
     check("cwd relative arc resolves while authoring", referenced.mass.get(), 7.0)
+    # The mark records where the spelling was made relative to as well as what it names,
+    # because those are the two things a later re-expression needs. An anonymous layer has no
+    # directory of its own, so the working directory is what it was made relative to.
+    marked = anonymous.root_layer._impl._cwd_relative_assets
     check(
         "and is marked as working-directory relative",
-        anonymous.root_layer._impl._cwd_relative_assets,
-        {"./asset.usda"},
+        list(marked),
+        ["./asset.usda"],
+    )
+    check(
+        "recording the file it was written against",
+        marked["./asset.usda"],
+        (str(Path(arc_root) / "asset.usda"), arc_root),
     )
 
     anonymous.root_layer.save(str(arc_pkg / "scene.usda"))
@@ -527,6 +564,36 @@ try:
     finally:
         os.chdir(previous)
 
+    # A named layer corrects the spelling as it is authored, not on the way out. Correcting
+    # it only at serialization left the layer pointing at one file before save() and another
+    # after, silently -- to_str said "../Asset.usda@" while composition still resolved
+    # "./Asset.usda@" against the layer's own directory and found nothing.
+    live = Layer(str(arc_pkg / "live.usda"), new=True)
+    live_prim = Stage(live).def_(Xform, "/Live")
+    live_prim.reference("@./asset.usda@</A>")
+    check("a named layer composes before it is saved", Stage(live)["/Live"].mass.get(), 7.0)
+    check_true(
+        "and stores the spelling the layer will read",
+        "@../asset.usda@</A>" in live.to_str(),
+    )
+
+    # Saving elsewhere must not change which file is meant: the path was written against the
+    # working directory, and the recorded target is what says so, not the directory it
+    # happened to be authored in.
+    moved_to = Path(tempfile.mkdtemp()) / "moved_to"
+    moved_to.mkdir()
+    (moved_to / "asset.usda").write_text(asset_body.replace("7", "99"))
+    # The layer sits in a subdirectory, so its own reading of the path and the working
+    # directory's disagree -- which is the only case where anything is recorded at all.
+    moved = Layer(str(Path(arc_root) / "pkg" / "moved.usda"), new=True)
+    Stage(moved).def_(Xform, "/Moved").reference("@./asset.usda@</A>")
+    moved.save(str(moved_to / "moved.usda"))
+    check(
+        "saving elsewhere keeps the file the author meant",
+        Stage(str(moved_to / "moved.usda"))["/Moved"].mass.get(),
+        7.0,
+    )
+
     # The reported case: the layer has a file name and the author still wrote a path that
     # reads as working-directory relative. to_str alone is enough to fix it -- no save.
     named = Layer(str(arc_pkg / "named.usda"), new=True)
@@ -541,14 +608,14 @@ try:
         "Prim(" not in named.to_str(),
     )
 
-    # Every relative asset path authored through the API is recorded, whether or not the
-    # layer has a file name -- here it does, and the author still wrote a path that reads
-    # as working-directory relative. What decides whether to rebase is whether the
-    # as-stored reading already resolves, so a path that was already correct is left alone.
+    # A path that already means the right file is not recorded at all. There is a directory
+    # to correct against, the as-stored reading resolves, and so there is nothing to fix --
+    # and nothing recorded that a later move could mis-apply. The layer keeps the author's
+    # exact spelling.
     check(
-        "a relative path is recorded even with a file name",
+        "a path already correct for a named layer is not recorded",
         anchored_layer._impl._cwd_relative_assets,
-        {"./local.usda"},
+        {},
     )
     anchored_layer.save()
     check_true(
@@ -562,6 +629,27 @@ try:
         "an untouched path keeps its ./ prefix",
         "references = @./local.usda@</L>" in (arc_pkg / "anchored.usda").read_text(),
     )
+
+    # And a rewritten one keeps it too. An authored path can leave the layer's directory
+    # and come back -- "../../Pkg/Asset.usda@" written from two levels down rebases to the
+    # bare "Asset.usda" -- so the prefix has to be put back rather than assumed away.
+    detour = Path(tempfile.mkdtemp()) / "Pkg"
+    (detour / "deep" / "deeper").mkdir(parents=True)
+    (detour / "Asset.usda").write_text(asset_body)  # two levels up from the cwd
+    previous = os.getcwd()
+    os.chdir(detour / "deep" / "deeper")
+    try:
+        round_trip = Layer(str(detour / "detour.usda"), new=True)
+        Stage(round_trip).def_(Xform, "/Detour").reference("@../../Asset.usda@</A>")
+        detour_arc = next(
+            line for line in round_trip.to_str().splitlines() if "references" in line
+        )
+        check_true(
+            "a rewritten path keeps the ./ prefix USD writes",
+            "@./Asset.usda@</A>" in detour_arc,
+        )
+    finally:
+        os.chdir(previous)
 finally:
     os.chdir(previous_cwd)
 
