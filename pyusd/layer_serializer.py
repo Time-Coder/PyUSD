@@ -24,6 +24,9 @@ class LayerSerializer:
             prims_str_list.append(prim.to_str())
 
         result += "\n".join(prims_str_list)
+        # pxr's writer ends the layer with a blank line after the last prim.
+        if prims_str_list:
+            result += "\n"
 
         return result
 

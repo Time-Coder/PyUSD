@@ -29,6 +29,19 @@ class Attribute(_Arithmetic, Property):
         return prop if isinstance(prop, AttributeSpec) else None
 
     def _value(self) -> Any:
+        # Inside a variant edit context a read comes from the target, not from
+        # composition: the whole point of the context is that what you just wrote
+        # is what you read back. pxr does the same -- an attribute read within an
+        # edit context reads the edit target -- and composition alone would not
+        # see it, because a variant's over is weaker than the stage's own opinion
+        # on the same path.
+        target_prop = self._stage._edit_target_property(self._prim_path, self._prop_name)
+        if isinstance(target_prop, AttributeSpec):
+            if target_prop.value_state == PropertySpec.ValueState.Cleared:
+                return None
+
+            return target_prop.value
+
         prop = self._attribute
         if prop is None:
             return None
@@ -43,6 +56,27 @@ class Attribute(_Arithmetic, Property):
 
     def set(self, value: Any) -> None:
         self._stage._set_property(self._prim_path, self._prop_name, value)
+
+    def block(self) -> None:
+        """Author a value block (pxr's ``Block``): an opinion with no value.
+
+        Where ``clear`` removes this layer's value so weaker opinions compose
+        through, a block is itself an opinion -- the strongest one there is for
+        the value -- and the text serializer spells it ``= None``.
+        """
+        from .attribute_spec import AttributeSpec
+
+        prop = self._stage._ensure_edit_property(
+            self._stage._ensure_edit_prim(self._prim_path),
+            self._prop_name,
+            self.resolved_property,
+        )
+        if isinstance(prop, AttributeSpec):
+            prop.block()
+        else:
+            prop._value_state = PropertySpec.ValueState.Cleared
+
+        self._stage.invalidate()
 
     # -- the three hooks _Arithmetic asks for ---------------------------------
     #

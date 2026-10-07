@@ -40,7 +40,16 @@ class AttributeParser:
 
         prop = AttributeSpec(AttributeParser.usd_type(type_name), name=name, value=None, metadata=metadata, uniform=uniform, custom=custom, fix_type=False)
         prop._value = value
-        prop._value_state = PropertySpec.ValueState.Authored if has_value else PropertySpec.ValueState.NotAuthored
+        # `= None` is pxr's value block, not a bare declaration: an authored None
+        # that stops weaker layers' opinions, so it has to land in Cleared rather
+        # than Authored -- a block with a None value reads the same either way,
+        # but a block is what resolve_property honours across the layer stack.
+        if not has_value:
+            prop._value_state = PropertySpec.ValueState.NotAuthored
+        elif value is None:
+            prop._value_state = PropertySpec.ValueState.Cleared
+        else:
+            prop._value_state = PropertySpec.ValueState.Authored
         for key, authored_value in metadata.items():
             MetadataParser.set_authored(prop._metadata, key, authored_value)
 
@@ -61,6 +70,7 @@ class AttributeParser:
     def usd_type_registry()->Dict[str, type]:
         if AttributeParser._LOAD_USD_TYPES is None:
             from . import dtypes, gf
+
             registry: Dict[str, type] = {
                 "bool": bool,
                 "int": int,

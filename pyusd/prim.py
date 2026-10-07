@@ -14,6 +14,7 @@ through :attr:`Prim.resolved_prim`, :attr:`Prim.authored_prim` or
 from __future__ import annotations
 
 import os
+from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, List, Optional, Type, TypeVar, Union, cast
 
 from .composition import (
@@ -27,8 +28,8 @@ from .prim_spec import PrimSpec
 from .property import Property
 from .sdf import Specifier
 from .stage_metadata import StageMetadata
-from .stage_variant_sets import StageVariantSets
 from .utils import join_relative_path
+from .variant_sets import VariantSets
 
 if TYPE_CHECKING:
     from .clips_api import ClipsAPI
@@ -135,8 +136,11 @@ class Prim:
         # _type_name is accepted only so that it reaches __new__ without error: Python
         # passes the same arguments to both. The instance holds (stage, path) and
         # nothing else, which is what lets a cached view be handed straight back.
-        object.__setattr__(self, "_stage", stage)
-        object.__setattr__(self, "_path", normalize_prim_path(path))
+        # object.__setattr__ is not needed here: __setattr__ below lets every
+        # underscore-prefixed name through untouched, so the plain assignment is
+        # the same write without the detour.
+        self._stage = stage
+        self._path = normalize_prim_path(path)
 
     @property
     def stage(self) -> Stage:
@@ -152,8 +156,34 @@ class Prim:
         return items[-1] if items else ""
 
     @property
-    def variant_sets(self) -> StageVariantSets:
-        return StageVariantSets(self)
+    def parent_path(self) -> Optional[str]:
+        """The path of this prim's parent, or None at the root, pxr's ``GetParent``."""
+        items = path_items(self._path)
+        if not items:
+            return None
+
+        return "/" + "/".join(items[:-1])
+
+    @property
+    def parent(self) -> Optional[Prim]:
+        """The composed parent prim, or None at the root, pxr's ``GetParent``.
+
+        Derived from the path rather than looked up, because a parent is a path
+        relationship and not a composed question: the enclosing path composes
+        whenever this prim does, so there is nothing for the engine to add. That
+        is also why it can return a prim whose type is only declared by a weak
+        layer -- it is still the parent of this prim. ``None`` at the root is
+        pxr's answer rather than a missing-key error.
+        """
+        parent_path = self.parent_path
+        if parent_path is None:
+            return None
+
+        return self._stage[parent_path]
+
+    @property
+    def variant_sets(self) -> VariantSets:
+        return VariantSets(self)
 
     @property
     def metadata(self) -> StageMetadata:
@@ -190,6 +220,17 @@ class Prim:
     @property
     def children(self) -> List[Prim]:
         return [self.child(name) for name in self.child_names]
+
+    def traverse(self, all: bool = False) -> Iterable[Prim]:
+        """This prim and everything beneath it, depth first.
+
+        Delegates to ``Stage.traverse`` at this prim's path, so the active rule is
+        the stage's: with ``all`` False an inactive prim -- possibly this one --
+        and its subtree are skipped, with ``all`` True everything is visited. The
+        prim itself is yielded first, which is what makes traversing an inactive
+        start yield nothing by default.
+        """
+        return self._stage.traverse(self._path, all)
 
     @property
     def prop_names(self) -> List[str]:
@@ -339,11 +380,10 @@ class Prim:
         if not asset or os.path.isabs(asset):
             return text
 
-        impl = self._stage.edit_layer._impl
+        layer = self._stage.edit_layer
         anchor_dir = None
-        file_name = self._stage.edit_layer.file_name
-        if file_name:
-            anchor_dir = os.path.dirname(os.path.abspath(file_name))
+        if layer.file_name:
+            anchor_dir = os.path.dirname(os.path.abspath(layer.file_name))
 
         if anchor_dir is None:
             # No directory to correct against yet, so the stored string has to keep
@@ -351,12 +391,12 @@ class Prim:
             # serializer can re-express it once there is one.
             authored_abs = os.path.abspath(asset)
             if os.path.exists(authored_abs):
-                impl._cwd_relative_assets[asset] = (authored_abs, os.getcwd())
+                layer._cwd_relative_assets[asset] = (authored_abs, os.getcwd())
             return text
 
         spelling, target_abs = resolve_asset_arc(asset, anchor_dir)
         if spelling != asset and target_abs is not None:
-            impl._cwd_relative_assets[spelling] = (target_abs, anchor_dir)
+            layer._cwd_relative_assets[spelling] = (target_abs, anchor_dir)
 
         tail = text[1 + len(asset) :]
         return f"@{spelling}{tail}"
@@ -433,21 +473,22 @@ class Prim:
     def __delitem__(self, path: str) -> None:
         del self._stage[join_relative_path(self._path, path)]
 
-    def __getattr__(self, name: str) -> Any:
-        if name.startswith("_"):
-            # Prim is the base of every schema class, so in_annotations would pick
-            # up their property declarations and mistake authored names for
-            # internal fields. Internal state is underscore-prefixed by definition.
-            raise AttributeError(name)
+    if not TYPE_CHECKING:
+        def __getattr__(self, name: str) -> Any:
+            if name.startswith("_"):
+                # Prim is the base of every schema class, so in_annotations would pick
+                # up their property declarations and mistake authored names for
+                # internal fields. Internal state is underscore-prefixed by definition.
+                raise AttributeError(name)
 
-        # An API schema is not a property. PrimSpec.__getattr__ is what consults the
-        # API registry, checks apiSchemaCanOnlyApplyTo, and hands back the schema
-        # object (or an APIWrapper for multiple-apply), so route _api names there
-        # instead of fabricating a property handle that resolves to nothing.
-        if name.endswith("_api"):
-            return getattr(self._edit_spec(), name)
+            # An API schema is not a property. PrimSpec.__getattr__ is what consults the
+            # API registry, checks apiSchemaCanOnlyApplyTo, and hands back the schema
+            # object (or an APIWrapper for multiple-apply), so route _api names there
+            # instead of fabricating a property handle that resolves to nothing.
+            if name.endswith("_api"):
+                return getattr(self._edit_spec(), name)
 
-        return Property.wrap(self._stage, self._path, name)
+            return Property.wrap(self._stage, self._path, name)
 
     def __setattr__(self, name: str, value: Any) -> None:
         if name.startswith("_"):
@@ -457,7 +498,7 @@ class Prim:
         self._stage._set_property(self._path, name, value)
 
     def __str__(self) -> str:
-        return f"Prim(<{self._path}>)"
+        return f"{self.__class__.__name__}(<{self._path}>)"
 
     def __repr__(self) -> str:
         return str(self)

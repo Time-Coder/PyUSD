@@ -33,9 +33,9 @@ from .relationship import Relationship
 from .relationship_spec import RelationshipSpec
 from .stage import Stage
 from .stage_metadata import StageMetadata
-from .stage_variant_sets import StageVariantSets
 from .typed import Typed
 from .utils import abspath
+from .variant_sets import VariantSets
 
 __all__ = [
     "Layer",
@@ -52,7 +52,7 @@ __all__ = [
     "RelationshipSpec",
     "Stage",
     "StageMetadata",
-    "StageVariantSets",
+    "VariantSets",
     "Data",
     "double",
     "half",

@@ -48,6 +48,11 @@ class UsdaParser:
             return UsdaParser.load_string(node)
         if node.type == "bool":
             return text == "true"
+        if node.type == "None":
+            # pxr spells a value block `= None`; that is an authored None, not a
+            # missing value, and the text fallback would turn it into the string
+            # "None".
+            return None
         if node.type in ["int", "integer"]:
             return int(text)
         if node.type == "float":
@@ -125,6 +130,7 @@ class UsdaParser:
             "arc_path",
             "asset_path",
             "prim_path",
+            "None",
         }
 
     @staticmethod

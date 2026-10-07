@@ -3,7 +3,9 @@
 ## Project Structure & Module Organization
 
 - `pyusd/` is the installable package. Core USD objects and parsers live at the package root: `stage.py` (composed stage and edit target), `prim.py` (the prim view), `prim_spec.py` (one layer's stored opinion), `layer.py`, `attribute.py`, and the serializer/parser modules.
-- Namespaces such as `pyusd.geom`, `pyusd.physics`, `pyusd.render`, `pyusd.shade`, `pyusd.skel`, and `pyusd.gf` contain hand-written and schema-generated APIs. Keep `.py`, `.pyi`, and schema changes synchronized.
+- Namespaces such as `pyusd.geom`, `pyusd.physics`, `pyusd.render`, `pyusd.shade`, and `pyusd.skel` contain hand-written and schema-generated APIs. Keep `.py`, `.pyi`, and schema changes synchronized.
+- **`pygf` is a separate project** (`../pygf`, its own git repository). It holds the vector, matrix and quaternion types, so that PyUSD, PyMaterialX and PyRHI can all depend on them without depending on each other. It is published on PyPI, so it resolves as an ordinary dependency -- there is no path override here and none is needed. While it was unpublished, `[tool.uv.sources]` pointed at `../pygf` and `[tool.ty.environment] extra-paths` named the same directory, because `ty` cannot see through an editable install's path hook; both were removed once the real install landed in site-packages. Its own conventions, tests and static checks live there -- `python ../pygf/static_check.py` and `python ../pygf/tests/test_pygf.py` -- and `AGENTS.md` in that repository documents them. The notes below on the `gf` layer are what is worth knowing from *this* side; they describe behaviour, not layout.
+- **`pyusd/gf/` is a forwarding shim, not an implementation.** Its single `__init__.py` re-exports every public name from `pygf`, and all 71 call sites import through it as `from .gf import ...` / `from ..gf import ...` (or `from pygf.genVec3 import Vec3Type` for the width-specific aliases, which `pygf.__all__` does not list). So PyUSD has one import path for the math types while `pygf` stays independently installable. Two things to know about the shim: the names have to be imported *explicitly*, because a module-level `import *` would work for `from pyusd.gf import X` only by accident of ordering, and `from pyusd.gf.genVec3 import genVec3` does **not** work -- there is no submodule behind it, only re-exported names. Delete the shim once nothing imports through it and switch the call sites to `pygf` directly.
 - `workspace/` contains development utilities, smoke tests, code-generation scripts, and runnable examples. `_assets/` stores small USDA fixtures and generated example output.
 - `openusd_core_spec/` is the Git submodule containing AOUSD specifications; initialize it when documentation or schema behavior requires it.
 
@@ -66,28 +68,119 @@ path and neither needs a bound/unbound mode.
   result back, and `__iadd__` returns `self`. `Stage._set_property` therefore
   unwraps a `Property` handed to it, so `prim.radius = other.radius` and
   `prim.radius += 1` both mean "that value" rather than "author a handle".
-- Metadata and variant views live in `stage_metadata.py` and
-  `stage_variant_sets.py`, mirroring their `Stage*` classes.
+- Metadata and variant views live in `stage_metadata.py`, `variant_sets.py` and
+  `variant_set.py`. The composed/stored split follows pxr's Usd/Sdf split:
+  `Prim.variant_sets` hands out `VariantSets`, whose per-set handles are `VariantSet`
+  (the analogue of `UsdVariantSets`/`UsdVariantSet`), while `PrimSpec.variant_sets`
+  hands out `VariantSetsSpec` and `VariantSetSpec` (the analogue of
+  `SdfPrimSpec.variantSets` over `Sdf.VariantSetSpec`). Only metadata keeps a
+  `Stage*` prefix. The split is also a split of direction: the composed side reads
+  across the layer stack -- set names are the strength-ordered union over
+  `prim_index(path).specs`, and the selection is the strongest authored one, which is
+  what makes a set declared only in a weak layer visible -- and it must never go
+  through the stored `VariantSetsSpec.__getitem__`, because that one creates lazily
+  and a read would author an empty variant set into the edit layer (`get` is the
+  non-creating lookup). Writes still land on the edit layer's spec, reached through
+  the prim's edit target, because variant content has no stage path to hang a view
+  on.
 - The composition engine reads storage nodes directly, so it needs the in-layer
   path and the raw authored arcs, neither of which a composed view can express.
 - Variants are the exception: a prim inside a variant has no absolute stage path, so
   variant authoring goes through `Prim.variant_sets` onto the spec.
+- `VariantSets.all_variant_selections()` is pxr's `GetAllVariantSelections()`: it
+  reports only the sets that have an authored selection, so a set that is merely
+  declared is absent and one whose selection was cleared drops out. It reaches
+  `self[name]` only for names that already compose, which is what keeps it free of
+  the read side effect above.
+- A variant selection is a three-way opinion, not a name, and the three compose
+  differently. `VariantSetSpec.selection` is `None` for no opinion in that layer,
+  `""` for an authored empty selection, and a variant name otherwise;
+  `select_variant` / `clear_selection` / `block_selection` are pxr's
+  `SetVariantSelection` / `ClearVariantSelection` / `BlockVariantSelection`, and
+  `select_variant("")` **clears** rather than blocks. Spelling clear and block the
+  same way is what made clearing silently block, and what let `PrimSpec("")` --
+  whose `__init__` substitutes its own class name for an empty one -- author a
+  variant literally called `PrimSpec`.
+  Only `""` and a name are authored values, so the serializer skips `None` and
+  writes `string x = ""` for a block.
+- The engine resolves the selection **before** reading any variant content:
+  `_composed_variant_selections` takes the strongest authored opinion per set name
+  over the contributing specs, and `_stored_variant` then gathers that variant's
+  content from every layer that holds it. Taking each spec's own selection instead
+  composed two variants' content at once -- a strong layer switching a weak layer's
+  variant reported the new name while the stage still showed the old variant's
+  children. `variants.usda` never caught it because its variant content is authored
+  as plain children beside the selection rather than inside a `variantSet` block.
+- One divergence is left in this area: the selection is stored on the
+  `VariantSetSpec`, so authoring one into a layer that never declared the set also
+  writes `prepend variantSets` there, where pxr writes only the `variants` field.
+  Giving the prim spec the selection map as its own field, the way Sdf does, is
+  what would remove it.
+- The selection is threaded through the arcs too: `_build_prim_index` takes the
+  selections stronger specs have already authored (its `selection` argument), seeds
+  them into `_composed_variant_selections`, and hands the per-owner result down
+  through `_collect_composition_arcs` into the target build. That is what lets a
+  referencing layer's choice reach the referenced file's own variant content.
+  Resolving it per composition node instead reported the referencing selection while
+  the stage still composed the referenced file's own variant. Checked against pxr for
+  a reference, a payload, a two-deep reference chain and an inherited class, in each
+  case also with the referencing layer silent (the file decides) and blocking (`""`,
+  no content at all).
+- The stored/composed split leaves a predictable set of one-sided members.
+  `workspace/probe_spec_vs_composed.py` prints the current diff for every pair. A
+  stored node owns the mapping protocol because it *is* a container of stored
+  children: that is why `VariantSetSpec` has `keys`/`values`/`items` and
+  `VariantSetsSpec` has them too, while the composed `VariantSets`/`VariantSet`
+  answer with names. The composed side has no object for "a variant's content" --
+  it composes as ordinary children of the owning prim -- which is why pxr's
+  analogue there is an edit target (`GetVariantEditTarget`) rather than a
+  subscript; pyusd has no edit targets, so `VariantSet.__getitem__` hands back the
+  stored `PrimSpec` instead, creating on a miss exactly as
+  `VariantSets.__getitem__` does for a set. The same line explains why `create_*`,
+  `add_child`, `remove_child`, `detach_*`, `to_str`, `clone`, `update_children`
+  and `*Spec.parent` are storage-only, and why `exists`, `is_valid`, `stage`,
+  `prim_path`, `resolved_property` and `wrap` are composed-only. Two protocol
+  asymmetries are deliberate: the composed handles carry value-shaped `__bool__`/
+  `__getitem__`/`__iter__`/`__len__` over `_value()`, while `AttributeSpec` keeps
+  `Data.__setitem__` (in-place mutation of a stored value) which a handle composed
+  out of a layer stack must not have.
+- Four one-sided members that the survey turned up were gaps rather than decisions,
+  and are now closed. `Prim.parent` and `Prim.parent_path` are pxr's `GetParent`,
+  derived from the path rather than looked up -- a parent composes whenever its
+  child does, so there is nothing for the engine to add -- and `None` at the root
+  is pxr's answer (it returns an invalid prim), not a missing-key error.
+  `VariantSets.get()` is the non-creating counterpart `VariantSetsSpec.get`
+  already had, and it is what makes "does this prim have that set" safe to ask:
+  `__getitem__` authors a set into the edit layer on a miss, so reaching for the
+  key to ask would author the answer. `Relationship` carries the behaviour once,
+  in `get_targets`/`set_targets` (pxr's spelling), with the `targets` property as
+  a thin alias over the pair rather than a second implementation. And two names
+  were simply wrong: `Layer.remove_relacate` is spelled `remove_relocate`, and
+  `Stage.stage_has_prim` -- which answers with a `Prim` and so fought with
+  `Stage.has_prim` -- is `get_prim_at_path`, pxr's `GetPrimAtPath`. That one
+  cannot be `__getitem__`, because a missing prim has to raise there; a lookup
+  that guesses is worse than one that says no, which is what `default_prim` needs.
+
 
 ## Build, Test, and Development Commands
 
-Create or activate a Python 3.7+ virtual environment, then install the package and development tools:
+Create or activate a Python 3.10+ virtual environment, then install the package and development tools:
 
 ```powershell
 python -m pip install -e ".[dev]"
 ```
 
+`pygf` is an ordinary dependency and is pulled in with it. If the configured
+mirror has not yet synced a new `pygf` release, install it straight from the index:
+`python -m pip install --index-url https://pypi.org/simple/ pygf`.
+
 Useful checks and workflows:
 
 - `python static_check.py` runs the repository static checks: `compileall -q pyusd`,
-  `ruff check --fix --unsafe-fixes .`, then `ty check .`. All three pass clean, and the
+  `ruff check --fix --unsafe-fixes .`, then `ty check .`. All pass clean, and the
   script exits 0. When a reported file is generated, fix `code_generator.py` and
   regenerate; when it is hand-written, fix the file directly. Do not silence findings
-  with `per-file-ignores` or a type-check baseline.
+  with `per-file-ignores` or a type-check baseline. `pygf` has its own, next door.
 - **A module must not ship both a `.py` and a `.pyi`.** When it does, `ty` treats the
   two declarations of the same class as distinct nominal types, so passing an instance
   from the implementation to a parameter annotated with the stub is an
@@ -202,6 +295,11 @@ Useful checks and workflows:
   derives it from the schema directory instead. The core schema is not in
   `generate_code.py` at all, which is why this went unnoticed -- that script's real cost
   is that running it rewrites 243 files, so do not run it as part of an unrelated change.
+- The gf import a generated module makes is still relative -- `from {up}gf import ...` --
+  because `pyusd/gf` remains the single entry point; nothing about the move to `pygf`
+  reaches the generator. `code_generator.py` holds `gf_types` as a hard-coded name set
+  rather than importing either package to introspect it, so it is the only place that
+  has to agree with what `pyusd/gf/__init__.py` re-exports.
 - A default parsed from a schema **is** emitted into the generated declaration, so a
   property the type declares but no layer authored still reads as what the schema says
   it is. pxr does the same and reports it as un-authored; the fallback at the end of
@@ -264,18 +362,27 @@ Useful checks and workflows:
   nothing, and the file's contents appear only on the first prim query. "Loaded" is
   therefore not observable from the constructor.
 - `new=True` on `Layer.__init__` and `Stage.__init__` means "never read this file". It
-  sets a flag on `LayerImpl` rather than threading a parameter, because `materialize` is
-  the path that has to honour it and it only ever sees a `Layer`. The flag is declared on
-  `Layer`'s annotation block too, since `Layer.__getattr__` delegates only names in
-  annotations. A new layer neither looks up nor registers in `_registry`: an empty
-  scratch layer that carries a name is not that file's layer, so sharing or clobbering
-  one would be wrong in both directions, and two of them are independent the way two
-  anonymous layers are.
+  sets a flag on the layer itself, because `materialize` is the path that has to honour
+  it and it only ever sees a `Layer`. A new layer neither looks up nor registers in
+  `_registry`: an empty scratch layer that carries a name is not that file's layer, so
+  sharing or clobbering one would be wrong in both directions, and two of them are
+  independent the way two anonymous layers are.
+- A `Layer` is interned by file name: `Layer(f) is Layer(f)`. `__new__` consults
+  `_registry` and hands back the existing instance, so there is no impl/wrapper split to
+  forward through and no second object for one file. This is load-bearing, not cosmetic:
+  `add_root_prim` and `remove_root_prim` test `prim._layer is self`, and before interning
+  a spec remembered whichever wrapper constructed it, so the same operation through
+  another construction of the same file raised `ValueError` -- the Impl split had landed
+  only half way, and one `is` in `layer.py` was wrong while another, `_impl is`, was
+  right. Two consequences: `__init__` re-runs when `__new__` returns a cached instance
+  and must be idempotent (state belongs to the layer, not the call -- the same trap
+  `Prim.__init__` has), and `new=True` plus anonymous layers bypass the registry in
+  `__new__` itself, since a falsy or opted-out key must never intern.
 - A relative asset path in an arc is read relative to the layer that contains it, so the
   anchor is `owner_spec.layer` -- the layer that actually holds the reference, not the
   root or the edit target. A layer with no file name has no directory, so the working
   directory stands in, and the same string denotes a different file once that layer is
-  written somewhere. `_note_cwd_relative_asset` records every relative asset path authored
+  written somewhere. `_canonicalise_asset_arc` records every relative asset path authored
   through the API on the owning layer, and
   `MetadataSerializer._rebase_cwd_relative_assets` re-expresses the recorded ones against
   the layer's own directory -- in `to_str`, so it applies whether or not `save` is called.
@@ -295,11 +402,11 @@ Useful checks and workflows:
   the old name after being written elsewhere keeps resolving against a directory it no
   longer lives in. The registry is keyed on construction and is not re-keyed.
 - `Layer.load` inside one process hands back the registry's layer instead of re-reading,
-  because `Layer.__init__` finds the cached impl first and the parser's `_loaded`
-  early-return then short-circuits. One load per path per process;
+  because `Layer.__new__` interns by file name and the parser's `_loaded` early-return
+  then short-circuits. One load per path per process;
   `LayerCache.invalidate(file_name)` drops the mtime/size cache for the lazy path.
-- A `Prim` is an interned view: `stage["/M"] is stage["/M"]`. The cache lives on
-  `StageImpl` and is keyed by `(path, class)` -- keying on the class is what keeps it
+- A `Prim` is an interned view: `stage["/M"] is stage["/M"]`. The cache lives on the
+  `Stage` itself and is keyed by `(path, class)` -- keying on the class is what keeps it
   correct with no invalidation hook, since the class comes from the composed typeName,
   so a prim retyped by a stronger layer lands on a different key and the view built for
   its old type is never handed out again. It is per Stage, so `stage` and `layer.stage`
@@ -317,13 +424,65 @@ Useful checks and workflows:
   most of the remaining cost and is the obvious next step; it touches all ten
   `prim_index` call sites.
 
-- `pyusd/gf/` carries bool result types alongside the numeric ones: `bool2`, `bool3`,
+- `Stage.to_str` flattens the composed stage into USDA text (pxr's
+  `ExportToString`). It assembles a fresh anonymous layer from the composed result
+  rather than serializing any real layer, which is what makes the three inlining rules
+  fall out naturally: sub-layers, references, inherits, payloads and relocates
+  contribute their opinions to the composed prim and then vanish, because the arcs
+  themselves are never copied (`_FLATTEN_SKIPPED_PRIM_METADATA`), and a selected
+  variant's children are composed children, so they are written as plain prims with
+  no `variantSet` left behind. A reference composes *into the referencing prim* --
+  the referenced default prim's properties become the referencing prim's own -- which
+  is pxr semantics and easy to misread as a bug when the output first shows it.
+  Specifiers compose the way pxr composes them, by specifier *kind* and not by layer
+  strength -- def > class > over across every contributing spec (`_composed_specifier`)
+  -- so an over that references a def flattens to a def and carries the referenced
+  typeName with it; taking the strongest spec's specifier instead is what produced
+  `over "refSphere"` in the referencing example's output, and a non-def specifier
+  also suppresses the typeName in the prim header, losing the type entirely. Only
+  authored opinions survive: property names are enumerated from the contributing
+  specs' `_props`, never from `property_names` (whose schema-declared tail would dump
+  every declaration into the output), and a resolved spec in `Fallback` state is
+  skipped, because a schema default re-derives on parse and is not an opinion.
+
+- `active` is a built-in default on `PrimMetadata` (`"active": True`), and that
+  placement is load-bearing twice over. It gives composition a fallback (a prim is
+  active unless a layer says otherwise), and it is what sends an authored False to
+  the top-level `active = false` field on serialization instead of into customData,
+  where pxr would read it as plain custom data. The composition engine itself stays
+  active-blind: inactive prims remain composed and reachable by explicit path,
+  `child_names` still reports them, and flatten carries them with `active = false`.
+  That is a real divergence from pxr, whose composition drops inactive subtrees
+  entirely; the one place the field is honoured is traversal -- `Stage.traverse`,
+  whose `all=True` is pxr's `TraverseAll`, and the `Prim.traverse` / `Layer.traverse`
+  delegates, which forward to it (a Layer through `layer.stage`, so a layer's file
+  is what a layer traversal covers; a Prim at its own path, which is what makes
+  traversing an inactive prim yield nothing by default).
+  Widening the engine's awareness -- `has_prim`, `child_names`, `prim_index` -- is
+  the open follow-up, and traversal's pruning is the only consumer until then.
+
+- pxr has two no-value operations and pyusd mirrors both; the states and spellings
+  must not be swapped. `AttributeSpec.clear()` is pxr's `Clear()`: the authored value
+  goes away, the spec survives as a bare `custom double x` (`NotAuthored`), and weaker
+  opinions or the schema fallback compose through. `AttributeSpec.block()` is pxr's
+  `Block()`: `Cleared` is an authored opinion that stops weaker layers
+  (`resolve_property` returns it outright), and the text spells it `= None`. The
+  parse side restores exactly these: an explicit `= None` lands in `Cleared` -- the
+  `None` node had once not been an `is_value_node` type at all, so a block degraded
+  to `NotAuthored` and a weaker layer's value leaked through after a round trip --
+  while a bare declaration stays `NotAuthored`. A relationship has no Cleared state
+  of its own: `Property.clear` empties its targets into `NotAuthored`, which is what
+  pxr's `ClearTargets` writes.
+
+- `pygf/` carries bool result types alongside the numeric ones: `bool2`, `bool3`,
   `bool4`, `matrix2b`, `matrix3b`, `matrix4b`, and `quatb`. `genType.gen_type` builds
   those module names for a `c_bool` dtype, so an ordering comparison or `funcs.not_`
   cannot work without them. They are deliberately absent from `usd_vector_types` and
   friends in `utils.py`, because USDA has no bool vector type; the classes exist only
-  to hold comparison results. Matrices are always square: `genMat.mat_type` reads
-  `shape[0]` and ignores the rest, so a `(2, 3)` request silently yields a 2x2.
+  to hold comparison results. Matrices are square-only, and `genMat.mat_type` now
+  *rejects* a non-square request instead of reading `shape[0]` and ignoring the rest.
+  That check is what `outerProduct` depends on: it used to build a `len(y)` square and
+  then write `len(x)` rows into it, raising `IndexError` out of ctypes.
 - Three things about the `gf` layer are load-bearing and easy to get wrong.
   `genType` declares `__len__`/`__getitem__`/`__setitem__`/`__iter__` that raise
   `NotImplementedError`, because every element-wise helper in `funcs.py` is annotated
@@ -335,7 +494,7 @@ Useful checks and workflows:
   advertise `genVec` for that reason. The `genQuat` w/x/y/z properties are shadowed
   at instance level by the ctypes field descriptor on the concrete subclass, so
   their bodies reach the field through `ctypes.Structure.__getattribute__`.
-- `workspace/test_gf_types.py` covers the `gf` layer. Type checking found eight real
+- `pygf/tests/test_pygf.py` covers the `gf` layer. Type checking found eight real
   defects there that every other smoke script missed, including `funcs.abs`/`min`/
   `max` going through `__builtins__` (a dict inside an imported module), ordering
   comparisons on vectors and matrices, `matrix *= matrix` silently doing nothing
@@ -359,12 +518,71 @@ Useful checks and workflows:
     wants one positional value per field, so `quatd()` raised "must be real number,
     not list". Every quaternion operator default-constructs its result, so all of
     quaternion arithmetic was dead.
+- `_slot_count` was the fix for the operators, but `funcs.py` never received it, so
+  the *element-wise helpers* stayed broken for matrices: seven of twelve
+  representative calls raised. Three more sites had the same shape and are now
+  covered by `_equal_leaves` and `_has_negative` in `genType.py` and by
+  `genMat.__contains__` -- `__eq__`, `__ne__`, `__neg__`, `in` and the `**`
+  negative check all counted `len(self)`, so `matrix == matrix` raised `IndexError`
+  rather than answering `True`. **The count alone is not the whole fix:** a matrix
+  slot is a *row*, so `_bin_op` and `_single_op` recurse into it. Handing the row
+  whole to `builtins.abs` still fails once the count is right. `any`/`all` recurse
+  for a different reason -- a row is truthy for as long as it has a length, so
+  `any(zero_matrix)` silently answered `True`.
+- `patch_nparray` replaces `numpy.array` process-wide, which is a real hazard for
+  any third party in the same interpreter. It is kept deliberately (callers across
+  PyUSD already pass these types to `np.array` directly) and now only intercepts
+  arguments it recognises, delegating everything else. Two things it had to get
+  right: a `genMat` yields rows while `__len__` is ctypes' flat storage, so rows
+  must become plain nested lists -- that is what turns `np.array(matrix3d())` from
+  an `IndexError` into a `(3, 3)` array; and a half type stores `uint16` bit
+  patterns in private `_hx` fields, so the component names have to be mapped back
+  to the public ones or numpy is handed the bit patterns.
+- `half` is a real IEEE-754 binary16, not a `float` in disguise. ctypes has no
+  `c_half`, so a half stores its bit pattern in a `c_uint16` field and converts on
+  every access via `struct`'s native `e` format -- stdlib since 3.6, so this is the
+  one numpy-independent part of the package. The components are properties and the
+  fields are private (`_hx`), because a ctypes Structure cannot carry both a field
+  and a converting property under one name. `ctypes.Structure.__setattr__` *does*
+  dispatch to a property setter, which is what keeps `genVec.__setattr__`'s swizzle
+  path working. Two consequences: `__iter__` and `__contains__` must go through
+  `self[i]` rather than `_fields_` names, and `genQuat.__init__` assigns through
+  `self[i]` rather than `ctypes.Structure.__init__`. Overflow saturates to infinity
+  rather than raising, which is what a GPU buffer would hold.
+- A module must not ship both a `.py` and a `.pyi`. Nine did (`double/float/int` x
+  2/3/4), which is the exact hazard documented above for `prim.py`: `ty` reads the
+  two declarations as distinct nominal types. The stubs were 300-3600 lines of
+  swizzle properties each, so they could not just be deleted -- the swizzles would
+  become invisible and fall through `genVec.__getattr__`, which is `Any`. They now
+  live in an `if TYPE_CHECKING:` block in the `.py`, and `tools/sync_swizzle_blocks.py`
+  regenerates them. Four things that tool had to get right, each of which produced a
+  broken file until it was fixed:
+  - The sibling imports (`from .double2 import double2`) go in a **module-level**
+    guard, not at module level and not in the class body. At module level they are
+    a circular import -- `double2`'s block names `double4` and `double4`'s names
+    `double2`. Inside the class body they become class attributes, which is not
+    what an annotation in the same body resolves against, and `ruff` reported
+    `F821` on all 6000-odd swizzle return types.
+  - A class body is not in the scope of its own name, so a 4-vector's 4-component
+    swizzles annotate `-> uint4` from inside `uint4.py`. Importing the class from
+    its own module does not help (`ty` says "no member uint4"), so the self-reference
+    is **quoted**: `-> "uint4"`. That was 5186 diagnostics.
+  - The import set is derived from the emitted text, not tabulated. A width the
+    block does not mention got `F401` and was removed, and the next run then failed.
+    A 2-vector swizzles `xy`/`rg`/`st`, so its longest swizzle is 3 components and
+    it never names the 4-vector at all.
+  - The tool loads `helper.py` **by path**. `from pygf.helper import ...` would
+    execute `pygf/__init__.py`, i.e. every module the tool is about to rewrite, so a
+    file caught mid-edit would make the generator unrunnable.
 - `genVec3`, `genMat3` and `genQuat` have no `dtype`, and that is by design: they
   are abstract intermediates, and the `dtype`/`math_form`/`shape` they would have to
   guess belong to the concrete subclass. Only instantiate the concrete types
   (`double3`, `matrix4d`, `quatd`), and reach for `gen_type` when the concrete type
   is not known statically.
 - Treat a new `gf` finding as a possible bug until proven otherwise.
+- `python ../pygf/tests/test_pygf.py` covers the extracted math package. It is where a
+  new `pygf` check belongs, not `workspace/`, and it must stay independent of
+  `pyusd` so the package can be split out without dragging this repo's tests with it.
 - `python workspace/test_roundtrip.py` asserts every `_assets/` fixture survives a
   parse/serialize round trip unchanged.
 - `python workspace/test_pxr_parity.py` cross-checks composed prim paths, typeNames,

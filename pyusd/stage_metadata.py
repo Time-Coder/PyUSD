@@ -19,13 +19,9 @@ class StageMetadata:
     def __init__(
         self, stage: Stage, prim_path: Optional[str], prop_name: str = ""
     ) -> None:
-        object.__setattr__(self, "_stage", stage)
-        object.__setattr__(
-            self, "_prim_path", normalize_prim_path(prim_path) if prim_path else None
-        )
-        object.__setattr__(
-            self, "_prop_name", normalize_property_name(prop_name) if prop_name else ""
-        )
+        self._stage = stage
+        self._prim_path = normalize_prim_path(prim_path) if prim_path else None
+        self._prop_name = normalize_property_name(prop_name) if prop_name else ""
 
     def get(self, key: str, default: Any = None) -> Any:
         value = self._stage._engine.resolve_metadata(
@@ -36,14 +32,15 @@ class StageMetadata:
     def set(self, key: str, value: Any) -> None:
         self._stage._set_metadata(self._prim_path, key, value, self._prop_name)
 
-    def __getattr__(self, name: str) -> Any:
-        value = self._stage._engine.resolve_metadata(
-            self._prim_path, name, self._prop_name
-        )
-        if value is None:
-            raise AttributeError(name)
+    if not TYPE_CHECKING:
+        def __getattr__(self, name: str) -> Any:
+            value = self._stage._engine.resolve_metadata(
+                self._prim_path, name, self._prop_name
+            )
+            if value is None:
+                raise AttributeError(name)
 
-        return value
+            return value
 
     def __setattr__(self, name: str, value: Any) -> None:
         if hasattr(self.__class__, name) or in_annotations(name, self.__class__):

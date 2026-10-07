@@ -33,9 +33,9 @@ class Property:
     _prop_name: str
 
     def __init__(self, stage: Stage, prim_path: str, prop_name: str) -> None:
-        object.__setattr__(self, "_stage", stage)
-        object.__setattr__(self, "_prim_path", normalize_prim_path(prim_path))
-        object.__setattr__(self, "_prop_name", normalize_property_name(prop_name))
+        self._stage = stage
+        self._prim_path = normalize_prim_path(prim_path)
+        self._prop_name = normalize_property_name(prop_name)
 
     # -- which kind of property is this? ------------------------------------
 
@@ -127,6 +127,13 @@ class Property:
         raise NotImplementedError
 
     def clear(self) -> None:
+        """pxr's Clear(): remove this layer's authored value, keep the spec.
+
+        The spec survives as a bare declaration, so the property keeps existing
+        but no longer holds an opinion, and weaker layers or the schema fallback
+        compose through again. To author a value block that stops weaker
+        opinions instead, use ``Attribute.block``.
+        """
         from .attribute_spec import AttributeSpec
         from .relationship_spec import RelationshipSpec
 
@@ -139,9 +146,9 @@ class Property:
             prop.clear()
         elif isinstance(prop, RelationshipSpec):
             prop._targets = []
-            prop._value_state = PropertySpec.ValueState.Cleared
+            prop._value_state = PropertySpec.ValueState.NotAuthored
         else:
-            prop._value_state = PropertySpec.ValueState.Cleared
+            prop._value_state = PropertySpec.ValueState.NotAuthored
 
         self._stage.invalidate()
 
@@ -167,33 +174,34 @@ class Property:
 
         return schema.declared_prop(f"{self._prop_name}:{name}") is not None
 
-    def __getattr__(self, name: str) -> Any:
-        if name.startswith("_"):
-            # Never proxy dunder/private lookups, or calling the resulting
-            # object recurses through this method forever.
-            raise AttributeError(name)
+    if not TYPE_CHECKING:
+        def __getattr__(self, name: str) -> Any:
+            if name.startswith("_"):
+                # Never proxy dunder/private lookups, or calling the resulting
+                # object recurses through this method forever.
+                raise AttributeError(name)
 
-        child_name = f"{self._prop_name}:{name}"
+            child_name = f"{self._prop_name}:{name}"
 
-        # A nested schema such as XformOp owns its op attributes, so those are
-        # real properties rather than attributes of the composed value.
-        resolved = self.resolved_property
-        if resolved is not None and name in resolved._props:
-            return self.wrap(self._stage, self._prim_path, child_name)
+            # A nested schema such as XformOp owns its op attributes, so those are
+            # real properties rather than attributes of the composed value.
+            resolved = self.resolved_property
+            if resolved is not None and name in resolved._props:
+                return self.wrap(self._stage, self._prim_path, child_name)
 
-        if self._declared_child(name):
-            return self.wrap(self._stage, self._prim_path, child_name)
+            if self._declared_child(name):
+                return self.wrap(self._stage, self._prim_path, child_name)
 
-        value = self._value()
-        if value is not None and hasattr(value, name):
-            return getattr(value, name)
+            value = self._value()
+            if value is not None and hasattr(value, name):
+                return getattr(value, name)
 
-        # Anything else is a mistake rather than an unauthored property: a plain
-        # attribute has no members, so `prim.radius.foo` is a typo, and saying so
-        # beats handing back a handle to a property named `radius:foo`.
-        raise AttributeError(
-            f"{type(self).__name__} {self.path!r} has no member {name!r}"
-        )
+            # Anything else is a mistake rather than an unauthored property: a plain
+            # attribute has no members, so `prim.radius.foo` is a typo, and saying so
+            # beats handing back a handle to a property named `radius:foo`.
+            raise AttributeError(
+                f"{type(self).__name__} {self.path!r} has no member {name!r}"
+            )
 
     def __setattr__(self, name: str, value: Any) -> None:
         if hasattr(self.__class__, name) or in_annotations(name, self.__class__):

@@ -8,7 +8,8 @@ writes opinions into the edit layer.
 from __future__ import annotations
 
 import os
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union, cast
+from collections.abc import Iterable
+from typing import Any, Dict, List, Optional, Set, Tuple, Type, Union, cast
 
 from .attribute import Attribute
 from .attribute_spec import AttributeSpec
@@ -23,43 +24,40 @@ from .relationship_spec import RelationshipSpec
 from .sdf import Specifier
 from .stage_metadata import StageMetadata
 from .utils import (
-    in_annotations,
     infer_type,
     join_relative_path,
     normalize_prim_path,
     normalize_property_name,
+    path_items,
     prim_at,
 )
 
-
-class StageImpl:
-    root_layer: Layer
-    edit_layer: Layer
-    layer_cache: LayerCache
-    _engine: CompositionEngine
-    prim_views: Dict[Tuple[str, type], Prim]
-
-    def __init__(self, root_layer: Layer, edit_layer: Optional[Layer] = None) -> None:
-        self.root_layer = root_layer
-        self.edit_layer = edit_layer or root_layer
-        self.layer_cache = LayerCache()
-        self._engine = CompositionEngine(root_layer, self.layer_cache)
-        # One Prim view per (path, class), so asking a stage for the same path twice
-        # hands back the same object. Keying on the class rather than the path alone
-        # is what keeps this correct without an invalidation hook: the class comes from
-        # the composed typeName, so a stronger layer that retypes a prim lands on a
-        # different key and the stale view is never handed out again. It stays in the
-        # dict, unreferenced by anything but itself.
-        self.prim_views: Dict[Tuple[str, type], Prim] = {}
+# Metadata a flattened prim must not carry. The specifier and typeName are written
+# in the prim header; the arcs are inlined by the flattening itself (references,
+# inherits and payloads contribute their opinions directly, relocates are applied,
+# variants are resolved into plain children), so carrying them would ask the reader
+# to compose the same opinions a second time, from files the flattened text no
+# longer mentions.
+_FLATTEN_SKIPPED_PRIM_METADATA = frozenset({
+    "specifier",
+    "typeName",
+    "inherits",
+    "references",
+    "payloads",
+    "specializes",
+    "variantSets",
+    "variants",
+})
 
 
 class Stage:
-    _impl: StageImpl
     root_layer: Layer
     edit_layer: Layer
     layer_cache: LayerCache
     _engine: CompositionEngine
     prim_views: Dict[Tuple[str, type], Prim]
+    _variant_edit_target: Optional[Tuple[str, PrimSpec]]
+    _variant_edit_target_stack: List[Tuple[str, PrimSpec]]
 
     def __init__(
         self,
@@ -85,25 +83,186 @@ class Stage:
                 else:
                     resolved_root = Layer(file_name)
 
-        object.__setattr__(self, "_impl", StageImpl(resolved_root, edit_layer))
+        # The per-stage state lives directly on the stage: unlike Layer, a Stage is
+        # never interned or shared, so there is no wrapper/impl split to maintain --
+        # one stage, one engine, one cache, one view table.
+        self.root_layer = resolved_root
+        self.edit_layer = edit_layer or resolved_root
+        self.layer_cache = LayerCache()
+        self._engine = CompositionEngine(resolved_root, self.layer_cache)
+        # One Prim view per (path, class), so asking a stage for the same path twice
+        # hands back the same object. Keying on the class rather than the path alone
+        # is what keeps this correct without an invalidation hook: the class comes from
+        # the composed typeName, so a stronger layer that retypes a prim lands on a
+        # different key and the stale view is never handed out again. It stays in the
+        # dict, unreferenced by anything but itself.
+        self.prim_views: Dict[Tuple[str, type], Prim] = {}
+        # No variant edit context until one is entered; the stack makes nesting
+        # work, which a single slot would not.
+        self._variant_edit_target: Optional[Tuple[str, PrimSpec]] = None
+        self._variant_edit_target_stack: List[Tuple[str, PrimSpec]] = []
 
-    def __getattr__(self, name: str) -> Any:
-        if name != "_impl" and in_annotations(name, self.__class__):
-            return getattr(self._impl, name)
-
-        raise AttributeError(name)
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        if name == "_impl":
-            object.__setattr__(self, name, value)
-        elif in_annotations(name, self.__class__) and "_impl" in self.__dict__:
-            setattr(self._impl, name, value)
-        else:
-            object.__setattr__(self, name, value)
+    def __iter__(self):
+        return self.traverse()
 
     @staticmethod
     def open(file_name: str) -> Stage:
         return Stage(file_name)
+
+    def save(self, file_name: str = "") -> None:
+        """Save the root layer; ``file_name`` relocates it, as ``Layer.save`` does."""
+        self.root_layer.save(file_name)
+
+    def to_str(self) -> str:
+        """USDA text of the fully composed stage, flattened.
+
+        pxr spells this ``UsdStage.ExportToString``. A fresh anonymous layer is
+        assembled from the composed result and serialized: every populated prim
+        contributes its strongest specifier and typeName, its composed metadata,
+        and the strongest opinion for every property any contributing spec
+        authored. Nothing survives that the composed stage does not answer for --
+        schema-declared fallbacks are not opinions and do not appear -- so parsing
+        the text back builds a stage that answers the same values as this one,
+        with no arc left to resolve.
+        """
+        flat = Layer()
+        self._flatten_layer_metadata(flat)
+        for name in self.child_names("/"):
+            flat.add_root_prim(self._flatten_prim(join_relative_path("/", name)))
+
+        return flat.to_str()
+
+    def _flatten_layer_metadata(self, flat: Layer) -> None:
+        keys: List[str] = []
+        seen: Set[str] = set()
+        for layer in self._engine.layer_stack(self.root_layer):
+            metadata = layer.metadata
+            for key, is_set in metadata._builtin_is_set.items():
+                if is_set and key not in seen:
+                    seen.add(key)
+                    keys.append(key)
+
+            for key in metadata._custom_data:
+                if key not in seen:
+                    seen.add(key)
+                    keys.append(key)
+
+        for key in keys:
+            if key in ("subLayers", "relocates"):
+                # Composition arcs, not scene content: flattening is what removes them.
+                continue
+
+            value = self._engine.resolve_metadata(None, key)
+            if value is None:
+                continue
+
+            setattr(flat.metadata, key, value)
+
+    def _flatten_prim(self, path: str) -> PrimSpec:
+        engine = self._engine
+        path = normalize_prim_path(path)
+        index = engine.prim_index(path)
+        name = path_items(path)[-1] if path_items(path) else ""
+        spec = PrimSpec(name=name, specifier=self._composed_specifier(index))
+
+        if index.type_name:
+            spec._metadata._builtin_data["typeName"] = index.type_name
+
+        self._flatten_prim_metadata(path, spec)
+
+        names: List[str] = []
+        seen: Set[str] = set()
+        for source in index.specs:
+            for prop_name in engine._flatten_property_names(source.prim._props.values()):
+                engine._append_name(names, seen, prop_name)
+
+        for prop_name in names:
+            resolved = engine.resolve_property(path, prop_name)
+            if resolved is None or resolved.value_state == PropertySpec.ValueState.Fallback:
+                continue
+
+            prop = resolved.clone()
+            self._flatten_property_metadata(path, prop_name, prop)
+            self._install_property(spec, prop_name, prop)
+
+        for child_name in engine.child_names(path):
+            spec.add_child(self._flatten_prim(join_relative_path(path, child_name)))
+
+        return spec
+
+    @staticmethod
+    def _composed_specifier(index: Any) -> Specifier:
+        """The composed specifier, by specifier kind rather than layer strength.
+
+        pxr composes specifiers as def > class > over across all contributing
+        specs, so an over that references (or inherits) a def composes to def --
+        that is what makes a flattened reference chain read as plain defs instead
+        of the overs the editing layer authored. Layer strength plays no part:
+        an over in the strongest layer does not drag a def in a weaker one back
+        down to over.
+        """
+        specifier = Specifier.Over
+        for source in index.specs:
+            source_specifier = source.prim.specifier
+            if source_specifier == Specifier.Def:
+                return Specifier.Def
+
+            if source_specifier == Specifier.Class:
+                specifier = Specifier.Class
+
+        return specifier
+
+    def _flatten_prim_metadata(self, path: str, spec: PrimSpec) -> None:
+        keys: List[str] = []
+        seen: Set[str] = set()
+        for source in self._engine.prim_index(path).specs:
+            metadata = source.prim._metadata
+            for key, is_set in metadata._builtin_is_set.items():
+                if is_set and key not in seen:
+                    seen.add(key)
+                    keys.append(key)
+
+            for key in metadata._custom_data:
+                if key not in seen:
+                    seen.add(key)
+                    keys.append(key)
+
+        for key in keys:
+            if key in _FLATTEN_SKIPPED_PRIM_METADATA:
+                continue
+
+            value = self._engine.resolve_metadata(path, key)
+            if value is None:
+                continue
+
+            setattr(spec._metadata, key, value)
+
+    def _flatten_property_metadata(
+        self,
+        path: str,
+        prop_name: str,
+        prop: PropertySpec,
+    ) -> None:
+        keys: List[str] = []
+        seen: Set[str] = set()
+        for source in self._engine.property_specs(path, prop_name):
+            metadata = source._metadata
+            for key, is_set in metadata._builtin_is_set.items():
+                if is_set and key not in seen:
+                    seen.add(key)
+                    keys.append(key)
+
+            for key in metadata._custom_data:
+                if key not in seen:
+                    seen.add(key)
+                    keys.append(key)
+
+        for key in keys:
+            value = self._engine.resolve_metadata(path, key, prop_name)
+            if value is None:
+                continue
+
+            setattr(prop._metadata, key, value)
 
     @staticmethod
     def from_layer(layer: Layer, edit_layer: Optional[Layer] = None) -> Stage:
@@ -200,16 +359,106 @@ class Stage:
         if not path.startswith("/"):
             path = "/" + path
 
-        self.metadata.defaultPrim = path
+        # defaultPrim carries the prim NAME: pxr writes `defaultPrim = "hello"`,
+        # not the path spelling, so authoring here has to match or every layer
+        # this stage saves diverges from what pxr itself would have written.
+        self.metadata.defaultPrim = path.lstrip("/")
 
     def invalidate(self) -> None:
         self._engine.clear()
 
+    @property
+    def variant_edit_target(self) -> Optional[Tuple[str, PrimSpec]]:
+        """The variant an edit context is writing into, or None outside one.
+
+        Held as the stage path of the owning prim together with that prim's
+        variant spec. A variant's content has no absolute stage path of its own,
+        so this is what lets a write aimed at ``/hello/world`` land on the prim
+        the variant calls ``world``: the target's path is the prefix every
+        authored path is resolved against, and the spec is where the lookup
+        actually happens.
+
+        Composed reads are untouched by it, which is the point -- ``with``
+        changes where a write lands, not what the stage reports.
+        """
+        return self._variant_edit_target
+
+    def _push_variant_edit_target(self, prim_path: str, variant: PrimSpec) -> None:
+        self._variant_edit_target_stack.append((prim_path, variant))
+        self._variant_edit_target = (prim_path, variant)
+
+    def _pop_variant_edit_target(self) -> None:
+        if not self._variant_edit_target_stack:
+            return
+
+        self._variant_edit_target_stack.pop()
+        self._variant_edit_target = (
+            self._variant_edit_target_stack[-1] if self._variant_edit_target_stack
+            else None
+        )
+
+    def _resolve_edit_target_path(self, path: str) -> Optional[str]:
+        """``path`` relative to the active variant, or None when it is not under it.
+
+        A path outside the variant's prim has no meaning inside it, so this
+        answers None rather than inventing a location for it.
+        """
+        if self._variant_edit_target is None:
+            return None
+
+        root, _ = self._variant_edit_target
+        if path == root:
+            return ""
+
+        prefix = root + "/"
+        if not path.startswith(prefix):
+            return None
+
+        return path[len(prefix):]
+
+    def _edit_target_property(
+        self, prim_path: str, prop_name: str
+    ) -> Optional[PropertySpec]:
+        """The property as the active variant stores it, or None.
+
+        None means "read this one the usual way": either there is no edit
+        context, or the prim is not inside the variant being edited. It also
+        covers a prim the variant does not mention, since an opinion that is not
+        there has nothing to read and the composed value is the right answer.
+        """
+        relative = self._resolve_edit_target_path(normalize_prim_path(prim_path))
+        if relative is None:
+            return None
+
+        target = self._variant_edit_target
+        if target is None:
+            return None
+
+        variant = target[1]
+        if relative == "":
+            spec = variant
+        else:
+            spec = variant
+            for item in relative.split("/"):
+                if item not in spec._children:
+                    return None
+
+                spec = spec._children[item]
+
+        return self._engine._prop_at(spec, normalize_property_name(prop_name))
+
     def has_prim(self, path: str) -> bool:
         return self._engine.has_prim(path)
 
-    def stage_has_prim(self, path: str) -> Optional[Prim]:
-        """Return the prim view at ``path``, or None when it is not populated."""
+    def get_prim_at_path(self, path: str) -> Optional[Prim]:
+        """The prim view at ``path``, or None when it is not populated.
+
+        pxr's ``GetPrimAtPath``: the answering form of the question
+        :meth:`has_prim` asks. ``__getitem__`` cannot be it, because a missing
+        prim has to raise ``KeyError`` there -- a stage lookup that guesses is
+        worse than one that says no, and :attr:`default_prim` above needed
+        exactly this shape.
+        """
         path = normalize_prim_path(path)
         if path == "/":
             return self[path]
@@ -225,14 +474,30 @@ class Stage:
     def children(self, path: str = "/") -> List[Prim]:
         return [self[join_relative_path(path, name)] for name in self.child_names(path)]
 
-    def traverse(self, path: str = "/") -> Iterable[Prim]:
+    def traverse(self, path: str = "/", all: bool = False) -> Iterable[Prim]:
+        """Yield the composed prims beneath ``path``, depth first.
+
+        With ``all`` False (the default) this is pxr's ``Traverse``: a prim whose
+        composed ``active`` metadata is False is skipped together with everything
+        beneath it. With ``all`` True this is ``TraverseAll``: every prim is
+        visited. The composition engine itself stays active-blind -- inactive
+        prims remain composed and reachable by explicit path either way -- so
+        deactivation is a traversal-time decision here, not a composition one.
+        """
         path = normalize_prim_path(path)
         if path != "/":
+            if not all and not self._is_active_prim(path):
+                return
+
             yield self[path]
 
         for child_name in self.child_names(path):
             child_path = join_relative_path(path, child_name)
-            yield from self.traverse(child_path)
+            yield from self.traverse(child_path, all)
+
+    def _is_active_prim(self, path: str) -> bool:
+        """The composed ``active`` opinion; nothing authored means active."""
+        return self._engine.resolve_metadata(path, "active") is not False
 
     def load(self, path: str = "") -> None:
         if not path:
@@ -287,6 +552,39 @@ class Stage:
         path = normalize_prim_path(path)
         if path == "/":
             raise ValueError("cannot author the pseudo-root prim")
+
+        # Inside a variant edit context a write aimed at a stage path lands on
+        # the prim the variant calls by that name. The spec has to be an over
+        # carrying the type the path composes as, or an attribute written here
+        # has no type to infer from and falls back to tuple[] plus custom --
+        # which is what authoring through the variant's own spec already does.
+        target = self._variant_edit_target
+        variant_path = self._resolve_edit_target_path(path)
+        if target is not None and variant_path is not None:
+            variant = target[1]
+            if variant_path == "":
+                return variant
+
+            relative = variant_path.split("/")
+
+            existing = variant
+            for item in relative[:-1]:
+                existing = existing._children[item]
+
+            name = relative[-1]
+            prim = existing._children.get(name)
+            if prim is None:
+                prim = PrimSpec(name, specifier=Specifier.Over)
+                existing[name] = prim
+                # An over authored inside a variant composes as whatever the
+                # stage calls it at that path, so record that type: it is what
+                # lets an attribute written here infer its own type instead of
+                # falling back to tuple[] with a custom prefix.
+                resolved = self._engine.resolve_type_name(path)
+                if resolved:
+                    prim._metadata._builtin_data["typeName"] = resolved
+
+            return prim
 
         prim = prim_at(self.edit_layer, path)
         if prim is not None:

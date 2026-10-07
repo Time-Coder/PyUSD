@@ -36,9 +36,6 @@ class PrimSerializer:
             if prop_str:
                 props_str_list.append(prop_str)
 
-        if props_str_list:
-            result += "\n".join(props_str_list) + "\n"
-
         children_str_list = []
         for child in prim._children.values():
             children_str_list.append(child.to_str(indents + 1))
@@ -49,11 +46,24 @@ class PrimSerializer:
 
             children_str_list.append(variant_set.to_str(indents + 1))
 
-        if children_str_list:
-            if props_str_list:
+        if props_str_list:
+            result += "\n".join(props_str_list) + "\n"
+
+            # pxr puts a blank line between the property list and what comes
+            # after it, but only when something does: a prim holding properties
+            # and nothing else closes straight after the last one.
+            if children_str_list:
                 result += "\n"
 
-            result += "\n".join(children_str_list)
+        if children_str_list:
+            # Every child string ends in a newline, so a separator of one puts
+            # a blank line between siblings, both inside a variant and in the
+            # prim body. The first child instead takes its blank line from the
+            # property list above, since there is no sibling before it.
+            for index, child_str in enumerate(children_str_list):
+                if index:
+                    result += "\n"
+                result += child_str
 
         result += f'{tabs}}}\n'
         return result

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from .layer import Layer, LayerImpl
+from .layer import Layer
 from .prim_spec import PrimSpec
 from .property_spec import PropertySpec
 from .sdf import Specifier
@@ -160,22 +160,22 @@ class CompositionEngine:
         self._layer_stack_cache: Dict[
             int, Tuple[Tuple[Tuple[int, int], ...], List[Layer]]
         ] = {}
-        self._seen_revision = LayerImpl.global_revision
+        self._seen_revision = Layer.global_revision
 
     def clear(self) -> None:
         self._prim_index_cache.clear()
         self._layer_stack_cache.clear()
 
     def prim_index(self, path: str, root_layer: Optional[Layer] = None) -> PrimIndex:
-        if self._seen_revision != LayerImpl.global_revision:
+        if self._seen_revision != Layer.global_revision:
             self.clear()
-            self._seen_revision = LayerImpl.global_revision
+            self._seen_revision = Layer.global_revision
 
         root_layer = root_layer or self.root_layer
         path = normalize_prim_path(path)
         payload_key = tuple(sorted(self.unloaded_payloads))
         layer_signature = tuple(
-            (id(layer._impl), layer.revision)
+            (id(layer), layer.revision)
             for layer in self.layer_stack(root_layer)
         )
         key = (id(root_layer), path, self.load_payloads, payload_key, layer_signature)
@@ -252,14 +252,19 @@ class CompositionEngine:
                         )
             return names
 
-        for spec in reversed(self.prim_index(path, root_layer).specs):
+        specs = self.prim_index(path, root_layer).specs
+        selections = self._composed_variant_selections(specs)
+        for spec in reversed(specs):
             for name in spec.prim._children:
                 self._append_populated_name(
                     names, seen, join_path(path, name), root_layer
                 )
 
-            for variant_set in spec.prim._variant_sets.values():
-                selected = variant_set.selected_variant
+            for set_name, variant_name in selections.items():
+                # The selection is one composed opinion, so the variant it names is
+                # taken from whichever layers hold it -- a layer's own choice is not
+                # what decides, which is the whole point of composing the field first.
+                selected = self._stored_variant(spec.prim, set_name, variant_name)
                 if selected is None:
                     continue
 
@@ -369,9 +374,9 @@ class CompositionEngine:
         return self._resolve_prim_metadata(root_layer, path, key)
 
     def layer_stack(self, root_layer: Layer) -> List[Layer]:
-        if self._seen_revision != LayerImpl.global_revision:
+        if self._seen_revision != Layer.global_revision:
             self.clear()
-            self._seen_revision = LayerImpl.global_revision
+            self._seen_revision = Layer.global_revision
 
         key = id(root_layer)
         cached = self._layer_stack_cache.get(key)
@@ -388,7 +393,7 @@ class CompositionEngine:
 
     @staticmethod
     def _layer_signature(layer_stack: Iterable[Layer]) -> Tuple[Tuple[int, int], ...]:
-        return tuple((id(layer._impl), layer.revision) for layer in layer_stack)
+        return tuple((id(layer), layer.revision) for layer in layer_stack)
 
     def resolve_arc_target(self, arc: Any, owner_layer: Layer) -> Optional[ArcTarget]:
         if isinstance(arc, PrimSpec):
@@ -431,7 +436,17 @@ class CompositionEngine:
         root_layer: Layer,
         path: str,
         stack: Set[Tuple[int, str]],
+        selection: Optional[Dict[str, str]] = None,
     ) -> PrimIndex:
+        """The index at ``path``, with ``selection`` already resolved above it.
+
+        ``selection`` carries the variant selections that stronger specs have
+        already authored for this prim. A selection is a field of the composed
+        prim rather than a per-node choice, so a referencing layer's opinion has to
+        reach the referenced file's own variant content -- and it has to win there,
+        which is why it is handed down and seeded before the weaker opinions are
+        read.
+        """
         key = (id(root_layer), path)
         if key in stack:
             return PrimIndex(path, [])
@@ -440,13 +455,34 @@ class CompositionEngine:
         next_stack.add(key)
 
         specs: List[SourcePrimSpec] = []
-        specs.extend(self._collect_local_specs(root_layer, path, ArcType.LOCAL))
-        specs.extend(self._collect_composition_arcs(root_layer, path, "_inherits", ArcType.INHERITS, next_stack))
-        specs.extend(self._collect_variant_specs(root_layer, path))
+        local = self._collect_local_specs(root_layer, path, ArcType.LOCAL)
+        inherits = self._collect_composition_arcs(
+            root_layer, path, "_inherits", ArcType.INHERITS, next_stack, selection
+        )
+        specs.extend(local)
+        specs.extend(inherits)
+        # Local and inherited opinions are already known, and the arcs below are
+        # weaker than both, so the variant content can be selected now. An arc's own
+        # selection opinion is weaker still and is applied when that arc is built.
+        specs.extend(self._collect_variant_specs(root_layer, path, selection, local + inherits))
         specs.extend(self._collect_relocate_specs(root_layer, path))
-        specs.extend(self._collect_composition_arcs(root_layer, path, "_references", ArcType.REFERENCES, next_stack))
-        specs.extend(self._collect_composition_arcs(root_layer, path, "_payloads", ArcType.PAYLOADS, next_stack))
-        specs.extend(self._collect_composition_arcs(root_layer, path, "_specializes", ArcType.SPECIALIZES, next_stack))
+        specs.extend(
+            self._collect_composition_arcs(
+                root_layer, path, "_references", ArcType.REFERENCES, next_stack, selection
+            )
+        )
+        specs.extend(
+            self._collect_composition_arcs(
+                root_layer, path, "_payloads", ArcType.PAYLOADS, next_stack, selection
+            )
+        )
+        specs.extend(
+            self._collect_composition_arcs(
+                root_layer, path, "_specializes", ArcType.SPECIALIZES, next_stack, selection
+            )
+        )
+
+        return PrimIndex(path, specs)
 
         return PrimIndex(path, specs)
 
@@ -481,6 +517,7 @@ class CompositionEngine:
         attr_name: str,
         arc_type: ArcType,
         stack: Set[Tuple[int, str]],
+        selection: Optional[Dict[str, str]] = None,
     ) -> List[SourcePrimSpec]:
         path = normalize_prim_path(path)
         specs: List[SourcePrimSpec] = []
@@ -489,7 +526,11 @@ class CompositionEngine:
                 continue
 
             suffix = path_suffix(owner_path, path)
-            for owner_spec in self._arc_owner_specs(root_layer, owner_path):
+            owner_specs = self._arc_owner_specs(root_layer, owner_path, selection)
+            # Resolved at the prim the arc is authored on, because that is the prim
+            # whose variant selection the arc's own opinions are weaker than.
+            owner_selection = self._composed_variant_selections(owner_specs, selection)
+            for owner_spec in owner_specs:
                 arcs = getattr(owner_spec.prim, attr_name)
                 for arc in arcs:
                     target = self.resolve_arc_target(arc, owner_spec.layer)
@@ -497,20 +538,89 @@ class CompositionEngine:
                         continue
 
                     target_path = join_path(target.path, suffix)
-                    target_index = self._build_prim_index(target.layer, target_path, stack)
+                    target_index = self._build_prim_index(
+                        target.layer, target_path, stack, owner_selection
+                    )
                     for target_spec in target_index.specs:
                         specs.append(target_spec.with_arc_type(arc_type, path))
 
         return specs
 
-    def _collect_variant_specs(self, root_layer: Layer, path: str) -> List[SourcePrimSpec]:
+    def _composed_variant_selections(
+        self,
+        specs: List[SourcePrimSpec],
+        inherited: Optional[Dict[str, str]] = None,
+    ) -> Dict[str, str]:
+        """Set name to selected variant name over ``specs``, strongest opinion first.
+
+        A variant selection is a composed field rather than a per-layer choice, so
+        this has to be resolved before any variant content is read. ``inherited``
+        holds what stronger specs -- a referencing layer, say -- have already
+        decided, and is seeded first so those opinions win. An authored empty
+        selection (pxr's ``BlockVariantSelection``) is kept as ``""`` and stops the
+        search there, while ``None`` is the absence of an opinion and lets a weaker
+        layer decide.
+        """
+        selections: Dict[str, str] = dict(inherited) if inherited else {}
+        for source in specs:
+            for set_name, variant_set in source.prim._variant_sets.items():
+                if set_name in selections:
+                    continue
+
+                selection = variant_set.selection
+                if selection is None:
+                    continue
+
+                selections[set_name] = selection
+
+        return selections
+
+    @staticmethod
+    def _stored_variant(
+        prim: PrimSpec, set_name: str, variant_name: str
+    ) -> Optional[PrimSpec]:
+        """The variant ``variant_name`` as this layer stores it, if it stores it.
+
+        None is a real answer here rather than a stand-in for a failure: a
+        contributing layer need not hold the selected variant at all, and the walk
+        is asking each one in turn. Both stored lookups raise ``KeyError`` on a
+        miss, so membership is the way to ask -- ``__getitem__`` would author the
+        variant and ``__contains__`` does neither.
+        """
+        if not variant_name:
+            return None
+
+        if set_name not in prim._variant_sets:
+            return None
+
+        variant_set = prim._variant_sets[set_name]
+        if variant_name not in variant_set:
+            return None
+
+        return variant_set.variant(variant_name)
+
+    def _collect_variant_specs(
+        self,
+        root_layer: Layer,
+        path: str,
+        selection: Optional[Dict[str, str]] = None,
+        own_specs: Optional[List[SourcePrimSpec]] = None,
+    ) -> List[SourcePrimSpec]:
         path = normalize_prim_path(path)
         specs: List[SourcePrimSpec] = []
         for owner_path in ancestors(path):
             suffix = path_suffix(owner_path, path)
-            for owner_spec in self._collect_local_specs(root_layer, owner_path, ArcType.LOCAL):
-                for variant_set in owner_spec.prim._variant_sets.values():
-                    selected = variant_set.selected_variant
+            if owner_path == path and own_specs is not None:
+                # The caller already has the local and inherited specs at the prim
+                # the path names, and they are what its selection is read from.
+                owner_specs = own_specs
+            else:
+                owner_specs = self._collect_local_specs(root_layer, owner_path, ArcType.LOCAL)
+
+            selections = self._composed_variant_selections(owner_specs, selection)
+            for owner_spec in owner_specs:
+                for set_name, variant_name in selections.items():
+                    selected = self._stored_variant(owner_spec.prim, set_name, variant_name)
                     if selected is None:
                         continue
 
@@ -556,10 +666,15 @@ class CompositionEngine:
             for spec in specs
         ]
 
-    def _arc_owner_specs(self, root_layer: Layer, owner_path: str) -> List[SourcePrimSpec]:
+    def _arc_owner_specs(
+        self,
+        root_layer: Layer,
+        owner_path: str,
+        selection: Optional[Dict[str, str]] = None,
+    ) -> List[SourcePrimSpec]:
         specs: List[SourcePrimSpec] = []
         specs.extend(self._collect_local_specs(root_layer, owner_path, ArcType.LOCAL))
-        specs.extend(self._collect_variant_specs(root_layer, owner_path))
+        specs.extend(self._collect_variant_specs(root_layer, owner_path, selection))
         specs.extend(self._collect_relocate_specs(root_layer, owner_path))
         return specs
 

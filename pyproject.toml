@@ -14,7 +14,9 @@ authors = [
 dependencies = [
     "tree-sitter",
     "tree-sitter-usd",
-    "beartype"
+    "beartype",
+    "pygf",
+    "numpy",
 ]
 
 [project.optional-dependencies]

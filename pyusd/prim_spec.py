@@ -23,8 +23,8 @@ from .prim_serializer import PrimSerializer
 from .property_spec import PropertySpec
 from .relationship_spec import RelationshipSpec
 from .sdf import Specifier
-from .utils import abspath, in_annotations, infer_type
-from .variant_sets import VariantSets
+from .utils import abspath, in_annotations, infer_type, join_relative_path
+from .variant_sets_spec import VariantSetsSpec
 
 if TYPE_CHECKING:
     from .layer import Layer
@@ -45,10 +45,15 @@ class PrimSpec:
     _references: List[Union[PrimSpec, Layer]]
     _payloads: List[Union[PrimSpec, Layer]]
     _specializes: List[Union[PrimSpec, Layer]]
-    _variant_sets: VariantSets
+    _variant_sets: VariantSetsSpec
     _apis: Dict[Tuple[str, str], APISchemaBase]
     _api_wrappers: Dict[str, APIWrapper]
     _is_variant: bool = False
+    # Set by VariantSet.__getitem__ on the variant prim it hands back, so that
+    # `with vset["red"]:` can enter an edit context on it. A spec reached any
+    # other way has neither, and is not an edit context.
+    _edit_stage: Any = None
+    _edit_root_path: str = ""
 
     schema_kind: SchemaKind = SchemaKind.ConcreteTyped
     meta: Dict[str, Any] = {}
@@ -74,7 +79,7 @@ class PrimSpec:
         self._references: List[Union[PrimSpec, Layer]] = []
         self._payloads: List[Union[PrimSpec, Layer]] = []
         self._specializes: List[Union[PrimSpec, Layer]] = []
-        self._variant_sets: VariantSets = VariantSets(self)
+        self._variant_sets: VariantSetsSpec = VariantSetsSpec(self)
         self._apis: Dict[Tuple[str, str], APISchemaBase] = {}
         self._api_wrappers: Dict[str, APIWrapper] = {}
         self._is_variant: bool = False
@@ -92,6 +97,11 @@ class PrimSpec:
         self._metadata:PrimMetadata = PrimMetadata(self, {
             "specifier": specifier,
             "typeName": type_name,
+            # USD's built-in default: a prim is active unless a layer says otherwise.
+            # Being in the builtin set is what sends an authored False to the
+            # top-level `active = false` field on serialization instead of into
+            # customData, where pxr would read it as plain custom data.
+            "active": True,
             "apiSchemas": [],
             "assetInfo": {
                 "identifier": None,
@@ -124,7 +134,7 @@ class PrimSpec:
         self._metadata.specifier = specifier
 
     @property
-    def variant_sets(self)->VariantSets:
+    def variant_sets(self)->VariantSetsSpec:
         return self._variant_sets
 
     def _fetch_from_class(self, cls:Union[Type[PrimSpec], Type[APISchemaBase]], instance_name:str="")->None:
@@ -305,6 +315,37 @@ class PrimSpec:
         path_items = path.split("/")
         return self._getitem(path_items)
 
+    def __enter__(self)->PrimSpec:
+        """Author inside this variant, pxr's ``GetVariantEditContext``.
+
+        The handle a write needs is the stage path it was aimed at, and a prim
+        inside a variant has none of its own -- which is why this redirects the
+        stage instead of handing back a differently-shaped prim. Inside the
+        block, ``world.primvars.displayColor = ...`` lands on the prim this
+        variant calls ``world``; reads still compose from the layer stack, so
+        only the destination changes.
+
+        Only the variant prim handed back by
+        :meth:`~pyusd.variant_set.VariantSet.__getitem__` can do this. Any other
+        spec is stored data with no stage to redirect, and raising is the honest
+        answer -- silently doing nothing would drop the writes instead.
+        """
+        if self._edit_stage is None:
+            raise TypeError(
+                f"{type(self).__name__} is not a variant edit context; "
+                "reach it through VariantSet.__getitem__"
+            )
+
+        self._edit_stage._push_variant_edit_target(self._edit_root_path, self)
+        return self
+
+    def __exit__(self, exc_type:Any, exc_value:Any, traceback:Any)->bool:
+        if self._edit_stage is not None:
+            self._edit_stage._pop_variant_edit_target()
+            self._edit_stage.invalidate()
+
+        return False
+
     def _setitem(self, path_items:List[str], prim:PrimSpec)->None:
         name = path_items[-1]
         if not name.isidentifier():
@@ -403,10 +444,54 @@ class PrimSpec:
         self[path] = prim
         return prim
 
-    def over_(self, path:str)->PrimSpec:
+    def over_(self, path:str, prim_type:Optional[type]=None)->PrimSpec:
+        """Author an ``over`` at ``path``, pxr's ``CreateOverPrim``.
+
+        An over carries no type of its own -- that is what makes it an over, and
+        it composes as whatever the layers beneath it declare. Recording the type
+        anyway is what lets an attribute authored through it infer its own type:
+        ``primvars.displayColor = [(1, 0, 0)]`` on a typed over serialises as
+        ``color3f[]``, while the same write on an untyped one has nothing to
+        infer from and falls back to ``tuple[]`` plus ``custom``. Pass
+        ``prim_type`` to say it outright, or leave it off and let this resolve the
+        type the path already composes as in this layer stack.
+        """
         prim = PrimSpec(specifier=Specifier.Over)
+        if prim_type is not None:
+            prim._metadata._builtin_data["typeName"] = prim_type.__name__
+        else:
+            resolved = self._resolve_type_name_at(path)
+            if resolved:
+                prim._metadata._builtin_data["typeName"] = resolved
+
         self[path] = prim
         return prim
+
+    def _resolve_type_name_at(self, path:str)->Optional[str]:
+        """The typeName this spec's layer stack composes ``path`` as, or None.
+
+        The layer has to be found by walking up: a prim inside a variant carries
+        no ``_layer`` of its own -- it hangs off its variant parent -- and the
+        path has to be rebuilt as the stage sees it, which means dropping the
+        variant name and leaving the prim it overrides. ``path`` is relative to
+        this spec, so it joins onto the outermost non-variant ancestor.
+        """
+        layer = self._layer
+        node = self
+        while layer is None and node._parent is not None:
+            node = node._parent
+            layer = node._layer
+
+        if layer is None:
+            return None
+
+        base = node.path
+        if node._is_variant:
+            # <host>/<variantName>/<child> -> <host>/<child>
+            base = base.rsplit("/", 1)[0]
+
+        target = join_relative_path("/" + base, path) if base else path
+        return layer.stage._engine.resolve_type_name(target) or None
 
     def inherit(self, prim:Union[PrimSpec, Layer], prepend:bool=True)->None:
         if prim in self._inherits:
@@ -610,58 +695,59 @@ class PrimSpec:
         return self._is_variant
 
     def __str__(self)->str:
-        return self.__class__.__name__ + "(<" + self.path + ">)"
+        return f"{self.__class__.__name__}(<{self.path}>)"
 
-    def __getattr__(self, name:str)->Union[PropertySpec, APISchemaBase, APIWrapper]:
-        if name in self._props:
-            return self._props[name]
+    if not TYPE_CHECKING:
+        def __getattr__(self, name:str)->Union[PropertySpec, APISchemaBase, APIWrapper]:
+            if name in self._props:
+                return self._props[name]
 
-        declared = self._declared_prop(name)
-        if declared is not None:
-            return self._install_declared(name, declared)
+            declared = self._declared_prop(name)
+            if declared is not None:
+                return self._install_declared(name, declared)
 
-        if name.endswith("_api"):
-            if (name, "") in self._apis:
-                return self._apis[name, ""]
+            if name.endswith("_api"):
+                if (name, "") in self._apis:
+                    return self._apis[name, ""]
 
-            api_type = APISchemaBase.schema(name)
-            if "customData" in api_type.meta and "apiSchemaCanOnlyApplyTo" in api_type.meta["customData"]:
-                allowed_types = api_type.meta["customData"]["apiSchemaCanOnlyApplyTo"]
+                api_type = APISchemaBase.schema(name)
+                if "customData" in api_type.meta and "apiSchemaCanOnlyApplyTo" in api_type.meta["customData"]:
+                    allowed_types = api_type.meta["customData"]["apiSchemaCanOnlyApplyTo"]
 
-                # The prim's schema identity lives in its metadata, not in the
-                # Python class: every stored spec is a plain PrimSpec and the
-                # typed class only exists on the (stage, path) view. The
-                # registry supplies the schema inheritance chain, so a Mesh
-                # satisfies an apiSchemaCanOnlyApplyTo of Imageable.
-                schema_names = {self._metadata.typeName}
-                schema_names.update(inherit.strip("</>") for inherit in self._metadata.inherits)
+                    # The prim's schema identity lives in its metadata, not in the
+                    # Python class: every stored spec is a plain PrimSpec and the
+                    # typed class only exists on the (stage, path) view. The
+                    # registry supplies the schema inheritance chain, so a Mesh
+                    # satisfies an apiSchemaCanOnlyApplyTo of Imageable.
+                    schema_names = {self._metadata.typeName}
+                    schema_names.update(inherit.strip("</>") for inherit in self._metadata.inherits)
 
-                from . import schema_registry
+                    from . import schema_registry
 
-                # schema_type reports direct bases only, so walk the chain.
-                pending = [self._metadata.typeName]
-                while pending:
-                    entry = schema_registry.schema_type(pending.pop())
-                    if entry is None:
-                        continue
+                    # schema_type reports direct bases only, so walk the chain.
+                    pending = [self._metadata.typeName]
+                    while pending:
+                        entry = schema_registry.schema_type(pending.pop())
+                        if entry is None:
+                            continue
 
-                    for base in entry.bases:
-                        if base not in schema_names:
-                            schema_names.add(base)
-                            pending.append(base)
+                        for base in entry.bases:
+                            if base not in schema_names:
+                                schema_names.add(base)
+                                pending.append(base)
 
-                if schema_names.isdisjoint(allowed_types):
-                    raise ValueError(f"{api_type.__name__} cannot applied to {self._metadata.typeName}")
+                    if schema_names.isdisjoint(allowed_types):
+                        raise ValueError(f"{api_type.__name__} cannot applied to {self._metadata.typeName}")
 
-            if api_type.schema_kind != SchemaKind.MultipleApplyAPI:
-                self._apis[name, ""] = api_type(self)
-                return self._apis[name, ""]
-            else:
-                if name not in self._api_wrappers:
-                    self._api_wrappers[name] = APIWrapper(name, api_type, self)
-                return self._api_wrappers[name]
+                if api_type.schema_kind != SchemaKind.MultipleApplyAPI:
+                    self._apis[name, ""] = api_type(self)
+                    return self._apis[name, ""]
+                else:
+                    if name not in self._api_wrappers:
+                        self._api_wrappers[name] = APIWrapper(name, api_type, self)
+                    return self._api_wrappers[name]
 
-        return self.create_prop(PropertySpec(name, custom=True, is_leaf=False))
+            return self.create_prop(PropertySpec(name, custom=True, is_leaf=False))
 
     def __setattr__(self, name: str, value: Any) -> None:
         if hasattr(self.__class__, name) or in_annotations(name, self.__class__):

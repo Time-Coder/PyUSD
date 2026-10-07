@@ -35,7 +35,7 @@ class MetadataSerializer:
         if rel_layer is None or not rel_layer.file_name:
             return values
 
-        pending = getattr(rel_layer._impl, "_cwd_relative_assets", None)
+        pending = rel_layer._cwd_relative_assets
         if not pending:
             return values
 
@@ -101,7 +101,15 @@ class MetadataSerializer:
         result = "(\n"
 
         builtin_str_list:List[str] = []
-        for key, value in metadata._builtin_data.items():
+        # pxr writes a prim's variant selections before the list of set names,
+        # however the two were authored. Iterating insertion order would put
+        # variantSets first here, since that is the order the metadata declares
+        # them in, so this one key is moved ahead of the rest.
+        builtin_data = metadata._builtin_data
+        ordered_keys = (["variants"] + [k for k in builtin_data if k != "variants"]
+                        if "variants" in builtin_data else list(builtin_data))
+        for key in ordered_keys:
+            value = builtin_data[key]
             is_ref = key in ["inherits", "references", "payloads", "specializes", "subLayers", "relocates", "variantSets", "variants"]
             use_ori_value = True
             ori_value = value
@@ -135,11 +143,14 @@ class MetadataSerializer:
             elif key == "variants":
                 value = {}
                 for variant_set in metadata._parent._variant_sets.values():
-                    selected_variant = variant_set._selected_variant
-                    if selected_variant is None:
+                    selection = variant_set.selection
+                    if selection is None:
                         continue
 
-                    value[variant_set._name] = selected_variant._name
+                    # "" is an opinion rather than a missing value: it is how pxr
+                    # writes a blocked selection, and it is what stops a weaker
+                    # layer's choice from composing through.
+                    value[variant_set._name] = selection
             elif key == "subLayers":
                 value = metadata._parent._sub_layers
 

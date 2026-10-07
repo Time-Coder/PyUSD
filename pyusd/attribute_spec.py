@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import copy
-from typing import Any, Dict, Iterable, Optional, TypeVar, cast
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any, Dict, Optional, TypeVar, cast
 
 from .attribute_serializer import AttributeSerializer
 from .data import Data
@@ -66,6 +67,16 @@ class AttributeSpec(PropertySpec, Data[T]):
         self._touch()
 
     def clear(self)->None:
+        # pxr's Clear(): the authored value goes away, the spec stays, and weaker
+        # opinions (or the schema fallback) compose through again. NotAuthored is
+        # what the serializer writes as a bare declaration.
+        self._value = None
+        self._value_state = AttributeSpec.ValueState.NotAuthored
+        self._touch()
+
+    def block(self)->None:
+        # pxr's Block(): an authored value block. Cleared is the state that stops
+        # weaker layers in resolve_property, and the serializer spells it `= None`.
         self._value = None
         self._value_state = AttributeSpec.ValueState.Cleared
         self._touch()
@@ -98,16 +109,17 @@ class AttributeSpec(PropertySpec, Data[T]):
         self._uniform = flag
         self._touch()
 
-    def __getattr__(self, name:str)->Any:
-        if "_props" not in self.__dict__ or "_value" not in self.__dict__:
-            return PropertySpec.__getattr__(self, name)
+    if not TYPE_CHECKING:
+        def __getattr__(self, name:str)->Any:
+            if "_props" not in self.__dict__ or "_value" not in self.__dict__:
+                return PropertySpec.__getattr__(self, name)
 
-        if name in self._props:
-            return self._props[name]
-        elif hasattr(self._value, name):
-            return getattr(self._value, name)
-        else:
-            return PropertySpec.__getattr__(self, name)
+            if name in self._props:
+                return self._props[name]
+            elif hasattr(self._value, name):
+                return getattr(self._value, name)
+            else:
+                return PropertySpec.__getattr__(self, name)
 
     def __setattr__(self, name:str, value:Any)->None:
         if hasattr(self.__class__, name) or in_annotations(name, self.__class__):

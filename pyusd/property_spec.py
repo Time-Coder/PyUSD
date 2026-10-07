@@ -225,11 +225,12 @@ class PropertySpec:
             else:
                 instance._prim._props[self._name].set(value)
 
-    def __getattr__(self, name:str)->PropertySpec:
-        if name not in self._props:
-            self.create_prop(PropertySpec(name, custom=True, is_leaf=False))
+    if not TYPE_CHECKING:
+        def __getattr__(self, name:str)->PropertySpec:
+            if name not in self._props:
+                self.create_prop(PropertySpec(name, custom=True, is_leaf=False))
 
-        return self._props[name]
+            return self._props[name]
 
     def __setattr__(self, name: str, value: Any) -> None:
         if hasattr(self.__class__, name) or in_annotations(name, self.__class__):

@@ -36,22 +36,32 @@ class Relationship(Property):
 
         return prop.targets
 
-    @property
-    def targets(self) -> List[Any]:
-        return self._value()
-
-    @targets.setter
-    def targets(self, value: Any) -> None:
-        self.set_targets(value)
-
     def get_targets(self) -> List[Any]:
+        """The composed targets, pxr's ``GetTargets``."""
         return self._value()
 
     def set_targets(self, targets: Any) -> None:
+        """Author the targets into the edit layer, pxr's ``SetTargets``."""
         rel = self._edit_relationship()
         rel._targets = self._coerce_relationship_targets(targets)
         rel._value_state = PropertySpec.ValueState.Authored
         self._stage.invalidate()
+
+    @property
+    def targets(self) -> List[Any]:
+        """The composed targets; the attribute spelling of :meth:`get_targets`.
+
+        The same implementation used to live here and in the pair, and which of
+        the two is canonical is a question the module should not leave open --
+        so the ``get_``/``set_`` pair that matches pxr owns the behaviour and this
+        is a thin alias over it. ``Property.__getattr__`` is not involved either
+        way, because this is a real property rather than a delegated member.
+        """
+        return self.get_targets()
+
+    @targets.setter
+    def targets(self, value: Any) -> None:
+        self.set_targets(value)
 
     def add_target(self, prim: Any) -> None:
         rel = self._edit_relationship()

@@ -1,8 +1,9 @@
 import ast
 import os
 import re
+from collections.abc import Callable
 from types import ModuleType
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from beartype import beartype
 from tree_sitter import Node
@@ -25,9 +26,13 @@ class CodeGenerator:
     }
 
 
+    # The math types live in the separate pygf package now, so the emitted import
+    # is absolute rather than `{up}gf`. They are listed here by name rather than
+    # imported, so this set is the only place that has to agree with pygf.__all__.
     gf_types = {
         "bool2", "bool3", "bool4",
         "int2", "int3", "int4",
+        "uint2", "uint3", "uint4",
         "half2", "half3", "half4",
         "float2", "float3", "float4",
         "double2", "double3", "double4",

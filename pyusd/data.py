@@ -1,4 +1,5 @@
-from typing import Any, Generic, Iterable, Optional, TypeVar, cast
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar, cast
 
 from .dtypes import namespace, token
 from .usda_serializer import UsdaSerializer
@@ -198,11 +199,12 @@ class Data(_Arithmetic, Generic[T]):
     def set(self, value:Optional[T])->None:
         self.value = value
 
-    def __getattr__(self, name:str)->Any:
-        if hasattr(self._value, name):
-            return getattr(self._value, name)
+    if not TYPE_CHECKING:
+        def __getattr__(self, name:str)->Any:
+            if hasattr(self._value, name):
+                return getattr(self._value, name)
 
-        raise AttributeError(f"{type(self).__name__!r} object has no attribute {name!r}")
+            raise AttributeError(f"{type(self).__name__!r} object has no attribute {name!r}")
 
     def __setattr__(self, name:str, value:Any)->None:
         if hasattr(self.__class__, name) or in_annotations(name, self.__class__):

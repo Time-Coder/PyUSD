@@ -9,7 +9,7 @@ from .property_spec import PropertySpec
 from .relationship_parse import RelationshipParser
 from .sdf import Specifier
 from .usda_parser import UsdaParser
-from .variant_set import VariantSet
+from .variant_set_spec import VariantSetSpec
 
 if TYPE_CHECKING:
     from tree_sitter import Node
@@ -52,7 +52,7 @@ class PrimParser:
         return prim
 
     @staticmethod
-    def load_variant_set(parent_prim:PrimSpec, node:Node)->VariantSet:
+    def load_variant_set(parent_prim:PrimSpec, node:Node)->VariantSetSpec:
         name = ""
         for child in node.named_children:
             if child.type == "string":
@@ -70,7 +70,7 @@ class PrimParser:
         return variant_set
 
     @staticmethod
-    def load_variant(variant_set:VariantSet, node:Node)->None:
+    def load_variant(variant_set:VariantSetSpec, node:Node)->None:
         variant_name = ""
         block = None
         for child in node.named_children:
@@ -135,8 +135,16 @@ class PrimParser:
         if isinstance(variants, dict):
             for variant_set_name, variant_name in variants.items():
                 variant_set = prim.variant_sets[str(variant_set_name)]
-                if str(variant_name) not in variant_set:
-                    variant_set[str(variant_name)]
+                if str(variant_name) == "":
+                    # An authored empty selection is pxr's BlockVariantSelection: an
+                    # opinion that stops weaker layers, not a variant whose name is
+                    # the empty string.
+                    variant_set.block_variant_selection()
+                    continue
+
+                # A selection is a field of its own, so a file may name a variant this
+                # layer does not hold. pxr does not materialise one either, and doing
+                # so here would invent content the author never wrote.
                 variant_set.select_variant(str(variant_name))
             prim.metadata._builtin_is_set["variants"] = True
 
